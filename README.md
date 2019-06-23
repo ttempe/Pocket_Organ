@@ -18,6 +18,7 @@ The aim of this project is to develop a real music instrument that:
 * is widely available, ideally from multiple manufacturers, under the generic term "pocket organ".
 
 # Hardware design
+The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
 The device is built around a micro-controller (currently AtMEGA 32u4) and single-chip MIDI synth (SAM2695).
 It has a LiPo battery that lasts a few hours, and a USB port for charging and playing.
 It is smaller but thicker than a smartphone (12.5*6*1.5cm)
