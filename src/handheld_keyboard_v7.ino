@@ -3,14 +3,16 @@
 // * v7 & V8 & V9 boards (2019-05)
 
 /*TODO:
- * Use Minor key to re-do and attack while in a chord
+ * chords: play all chords from the same octave (keep the Si from sounding higher than the Do)
+ * Change the 7th based on the selected key
+ * Change the degree of the fundamental based on the selected key (eg: minor keys...)
  * Tune
  * enable Midi output
- * 7th, 4th, sus2, sus4. Make them work when pressed after the chord button as well
  * more expression channels
- * Use different channels for melody and chords
- * Save analog keyboard calibration to flash memory. Add a keyboard shortcut to run calibration
- * Make each note of a chord play at different pressure levels
+ * use one of the expression channels to add more notes from that chord (lower/higher octaves)
+ * bend only the top key in that loop?
+ * Use different channels for melody and chords?
+ * Make each note of a chord play at different pressure levels?
  * Add expression to melody mode
  * Add display
  * Rythm box
