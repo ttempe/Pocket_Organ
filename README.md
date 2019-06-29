@@ -5,7 +5,7 @@ Most instruments we play today are designed around the manufacturing constrains 
 Newer instruments are often electronic versions, with the same or similar user interface.
 
 Really novel instruments are either:
-1. excellent, but really exensive brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch...)
+1. excellent, but really exensive brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch, the Hang steel drum, EWI electronic woodwind...)
 2. cheap, but not good enough for a musician, lacking in depth and/or playability (eg: the roll-up keyboards, stylophone...)
 
 It doesn't have to be that way, though.
@@ -18,6 +18,7 @@ The aim of this project is to develop a real music instrument that:
 * is widely available, ideally from multiple manufacturers, under the generic term "pocket organ".
 
 # Hardware design
+The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
 The device is built around a micro-controller (currently AtMEGA 32u4) and single-chip MIDI synth (SAM2695).
 It has a LiPo battery that lasts a few hours, and a USB port for charging and playing.
 It is smaller but thicker than a smartphone (12.5*6*1.5cm)
