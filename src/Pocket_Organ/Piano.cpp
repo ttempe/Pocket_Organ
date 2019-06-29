@@ -4,7 +4,7 @@
 #include "arduino.h"
 #include "piano.h"
 #include "Polyphony.h"
-#include "handheld_keyboard.h"
+#include "Pocket_Organ.h"
 
 //Trick: The 3rd is defined by the "minor" button, but the 7th is defined by the scale
 char key = 7; //Default to Sol

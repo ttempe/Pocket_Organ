@@ -1,6 +1,6 @@
 
-#ifndef HEADER_HANDHELD_KEYBOARD
-  #define HEADER_HANDHELD_KEYBOARD
+#ifndef HEADER_POCKET_ORGAN
+  #define HEADER_POCKET_ORGAN
 
 
 #define MIDI_SERIAL Serial1
@@ -149,4 +149,4 @@ static char guitarChords[7][7][6] = //7h, Maj/Min, degree*7, string*6
 };
 
 
-#endif //HEADER_HANDHELD_KEYBOARD
+#endif //HEADER_POCKET_ORGAN

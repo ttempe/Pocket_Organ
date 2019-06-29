@@ -27,7 +27,7 @@
 #ifdef OUT_USB
 #include "MIDIUSB.h"
 #endif
-#include "handheld_keyboard.h"
+#include "Pocket_Organ.h"
 #include "Support.h"
 #include "piano.h"
 #include "tests.h"

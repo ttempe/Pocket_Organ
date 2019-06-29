@@ -1,7 +1,7 @@
 #include "arduino.h"
 #include <EEPROM.h>
 #include "Support.h"
-#include "handheld_keyboard.h"
+#include "Pocket_Organ.h"
 
 ///////////////////////////////////////////////
 //Note keys backlighting
