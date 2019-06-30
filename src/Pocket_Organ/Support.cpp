@@ -34,6 +34,7 @@ void SR_one(char n){
 }
 
 //Light all keys according to the bit maps passed in arguments
+//1=Do, 2=Re, 4=Mi...
 void SR_map(unsigned char green, unsigned char red){
   for (char i=7; i>=0; i--){
     digitalWrite(SR_DATA, (red>>i)&1);
