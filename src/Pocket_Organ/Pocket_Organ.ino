@@ -3,7 +3,6 @@
 // * v7 & V8 & V9 boards (2019-05)
 
 /*TODO:
- * chords: play all chords from the same octave (keep the Si from sounding higher than the Do)
  * Change the 7th based on the selected key
  * Change the degree of the fundamental based on the selected key (eg: minor keys...)
  * Tune
