@@ -3,6 +3,7 @@
 // * v7 & V8 & V9 boards (2019-05)
 
 /*TODO:
+ * Implement key selection
  * Change the 7th based on the selected key
  * Change the degree of the fundamental based on the selected key (eg: minor keys...)
  * Tune

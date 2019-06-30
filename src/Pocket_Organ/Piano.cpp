@@ -43,10 +43,10 @@ void Piano::chordPlay(char degree, char transpose){
   char dim = b_aug and b_minor; //Augmented chord: press Aug. Diminished: press Aug+Aug
   
   //Compute the chord
-  tonic   = (AB_notes[degree]+b_sharp)%12+transpose;
-  third   = (tonic+4-minor+sus4-sus2*2)%12+transpose;
-  fifth   = (tonic+7+aug-dim)%12+transpose;
-  seventh = b_seventh?(tonic+10-b_minor)%12+transpose:-1;
+  tonic   = (AB_notes[degree]+b_sharp)%12+60;
+  third   = (tonic+4-minor+sus4-sus2*2)%12+60;
+  fifth   = (tonic+7+aug-dim)%12+60;
+  seventh = b_seventh?(tonic+10-b_minor)%12+60:-1;
   
   //play
   playChordNotes();
