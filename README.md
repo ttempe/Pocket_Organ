@@ -7,7 +7,7 @@ Newer instruments are often electronic versions, with the same or similar user i
 
 Really novel instruments are either:
 1. excellent, but really exensive brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch, the Hang steel drum, EWI electronic woodwind...)
-2. cheap, but not good enough for a musician, lacking in depth and/or playability (eg: the roll-up keyboards, stylophone...)
+2. cheap, but not good enough for a musician, lacking in depth and/or playability (eg: the roll-up keyboards, stylophone, Otamatone...)
 
 It doesn't have to be that way, though.
 
