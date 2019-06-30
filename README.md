@@ -20,6 +20,8 @@ The aim of this project is to develop a real musical instrument that:
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
 
+![3D rendering of Pocket Organ V7](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V7/V7_rendering_small.png)
+
 # Hardware design
 
 * The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
@@ -51,3 +53,6 @@ The note keys (Do~Si) are also pressure-sensitive. The best way to turn that int
 * Software features are half-way through.
 * Small-series (3D printed, hand-assembled) user testing has just begun as of June 2019.
 * If you're interested in this project, please get in touch, as the building process is not fully documented yet.
+
+
+![Photo of V8 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V7/V8_proto_small.PNG)
