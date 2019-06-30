@@ -3,6 +3,8 @@
 #ifndef HEADER_TESTS
   #define HEADER_TESTS
 
+
+void loop11();
 void loop10();
 void loop9();
 void loop8();

@@ -7,6 +7,13 @@
 ///////////////////////////////////////////////
 //Test loops
 
+void loop11(){//test the SR_map feature for displaying any combination of color on the analog buttons backlight
+  SR_map(0, 0);
+  delay(2000);
+  SR_map(2,0);//green
+  delay(2000);
+}
+
 void loop10(){ //blink the data and clock of the shift registers to make them visible on a voltmeter
   static char a=0;
   digitalWrite(SR_CLK, a&1);
