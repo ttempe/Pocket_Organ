@@ -17,6 +17,8 @@
 
 void SR_blank();
 void SR_one(char n);
+void SR_map(unsigned char green, unsigned char red);
+
 
 void noteOn(char pitch, char vel, char channel);
 void noteOff(char pitch, char channel);

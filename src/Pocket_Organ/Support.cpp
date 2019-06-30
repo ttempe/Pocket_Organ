@@ -4,28 +4,45 @@
 #include "Pocket_Organ.h"
 
 ///////////////////////////////////////////////
-//Note keys backlighting
+//Note keys backlighting (through the shift registers)
+
+//One clock pulse
+void SR_clock(){
+  digitalWrite(SR_CLK, HIGH);
+  digitalWrite(SR_CLK, LOW);  
+}
+
+
+//turn off key backlighting
 void SR_blank(){
   digitalWrite(SR_DATA, LOW);
   for (char i=0; i<17; i++){
-    digitalWrite(SR_CLK, HIGH);
-    digitalWrite(SR_CLK, LOW);
+    SR_clock();
   }
 }
 
+//Light exactly one key, green
 void SR_one(char n){
   if (6==n){return;} //TODO: weird bug on V8, where Si gets almost full reading whenever its green LED is on
   SR_blank();
   digitalWrite(SR_DATA, HIGH);
-  digitalWrite(SR_CLK, HIGH);
-  digitalWrite(SR_CLK, LOW);
+  SR_clock();
   digitalWrite(SR_DATA, LOW);
   for (char i=0; i<=n*2; i++){
-    digitalWrite(SR_CLK, HIGH);
-    digitalWrite(SR_CLK, LOW);
+    SR_clock();
   }
 }
 
+//Light all keys according to the bit maps passed in arguments
+void SR_map(unsigned char green, unsigned char red){
+  for (char i=7; i>=0; i--){
+    digitalWrite(SR_DATA, (red>>i)&1);
+    SR_clock();
+    digitalWrite(SR_DATA, (green>>i)&1);
+    SR_clock();
+  }
+  SR_clock();
+}
 
 ///////////////////////////////////////////////
 //Analog buttons
