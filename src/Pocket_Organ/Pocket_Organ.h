@@ -64,8 +64,16 @@ static char DB[NB_DB] = {6, 12, 0, 10, 8, 7, 17, 16, 11, 5};
 //EEPROM addresses
 
 #define E_VOLUME 0
-#define E_AB_CALIBRATION 1 //14 integers
+#define E_AB_CALIBRATION 1    //28 octets
+#define E_LOOP_STATUS 30      //1 octet; which loops were recorded
+#define E_LOOP_LENGTHS 32     //16 octets
+#define E_LOOP_INSTRUMENTS 48 //8 octets
 
+
+/////////////////
+//I2C addresses
+
+#define ADDR_EEPROM 0x50
 
 /////////////////
 //Prototypes

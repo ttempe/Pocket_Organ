@@ -1,5 +1,6 @@
 #include "arduino.h"
 #include <EEPROM.h>
+#include <Wire.h>
 #include "Support.h"
 #include "Pocket_Organ.h"
 
@@ -43,6 +44,78 @@ void SR_map(unsigned char green, unsigned char red){
     SR_clock();
   }
   SR_clock();
+}
+
+///////////////////////////////////////////////
+//EEPROM storage (on i2c bus)
+
+void ST_write1(unsigned long int addr, byte data){
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.write(data);
+  Wire.endTransmission();
+}
+
+void ST_write5(unsigned long int addr, int data1, byte data2, byte data3, byte data4){
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.write(data1 >> 8);
+  Wire.write(data1 & 0xFF);
+  Wire.write(data2);
+  Wire.write(data3);
+  Wire.write(data4);
+  Wire.endTransmission();
+}
+
+void ST_write2(unsigned long int addr, int data){
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.write(data >> 8);
+  Wire.write(data & 0xFF);
+  Wire.endTransmission();
+}
+
+byte ST_read1(unsigned long int addr){
+  char rdata;
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.requestFrom(0x50, 1);
+  rdata = Wire.read();
+  Wire.endTransmission();
+  return rdata;
+}
+
+int ST_read2(unsigned long int addr){
+  int rdata;
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+  Wire.beginTransmission(ADDR_EEPROM);
+  Wire.requestFrom(0x50, 2);
+  rdata = (int)Wire.read()*256+Wire.read();
+  Wire.endTransmission();
+  return rdata;
+}
+
+void ST_read5(unsigned long int addr, int* data1, byte* data2, byte* data3, byte* data4){
+  Wire.beginTransmission(0x50);
+  Wire.write(addr >> 8);
+  Wire.write(addr & 0xFF);
+  Wire.endTransmission();
+  Wire.beginTransmission(0x50);
+  Wire.requestFrom(0x50, 5);
+  *data1 = (int)Wire.read()*256+Wire.read();
+  *data2 = Wire.read();
+  *data3 = Wire.read();
+  *data4 = Wire.read();
+  Wire.endTransmission();
 }
 
 ///////////////////////////////////////////////
