@@ -24,6 +24,7 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 #include <EEPROM.h>
+#include <Wire.h>
 #ifdef OUT_USB
 #include "MIDIUSB.h"
 #endif
@@ -31,7 +32,7 @@
 #include "Support.h"
 #include "piano.h"
 #include "tests.h"
-
+#include "Looper.h"
 
 
 const char keybExpression[7][2] = //Expression1, Expression2
@@ -48,7 +49,7 @@ char volume = 60;
 char transpose = 60;
 Polyphony P;
 Piano myPiano(&P);
-
+Looper myLooper;
 
 
 void chordPlayGuitar(char degree){
@@ -70,6 +71,7 @@ void chordPlayGuitar(char degree){
 //Setup
 void setup() {
   Serial.begin(115200);
+  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip, but not the display
   for (char i=0; i<NB_DB; i++){
     pinMode( DB[i], INPUT_PULLUP); //Mode switch
   }
@@ -287,4 +289,6 @@ void loopB(){ //Play music based on button presses
 
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
-void loop() {loopB();}
+void loop() {
+  loopB();
+}
