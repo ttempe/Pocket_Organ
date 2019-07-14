@@ -20,20 +20,21 @@ class Looper {
     
     char instruments[NB_LOOPS]; //selected MIDI instruments
 
-    char currentlyRecording=-1; //channel#, 0=none, 1=Do, 2=Re...
-    unsigned char recorded; //one bit per channel, 0=not recorded; 1=recorded. 1=Do, 2=Re, 4=Mi...
-    unsigned char playing;  //one bit per channel, 0=not playing; l=playing. 1=Do, 2=Re, 4=Mi...
+    byte recorded; //one bit per channel, 0=not recorded; 1=recorded. 1=Do, 2=Re, 4=Mi...
+    byte playing;  //one bit per channel, 0=not playing; l=playing. 1=Do, 2=Re, 4=Mi...
 
     unsigned long int loopStartTime; //time of start of loop, modulo maxLoopDuration
     unsigned long int maxLoopDuration, recordingStartedTime;
 
   public:
+    char currentlyRecording=-1; //channel#, -1=none, 0=Do, 1=Re...
     Looper(); //constructor 
-    void displayStatus(); //display through 
+    void displayStatus(); //display through SR key backlight
     void startRecording(char channel);
     void stopRecording();
-    void deleteRecord(char channel);
-    void togglePlay(char channel); //start or stop playing a given channel
+    bool isRecorded(byte loop);
+    void deleteRecord(byte channel);
+    void togglePlay(byte channel); //start or stop playing a given channel
     void recordNote(char note, char vel);
     
 };

@@ -71,7 +71,7 @@ void chordPlayGuitar(char degree){
 //Setup
 void setup() {
   Serial.begin(115200);
-  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip, but not the display
+  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip. TODO: test with the display
   for (char i=0; i<NB_DB; i++){
     pinMode( DB[i], INPUT_PULLUP); //Mode switch
   }
@@ -97,6 +97,34 @@ void setup() {
 
 ///////////////////////////////////////////////
 //Loop
+
+void loopB_Volume(){
+  do {
+    if (not digitalRead(DB[B_PLUS]) and volume<110){
+      volume+=5;
+      delay(100);
+      do {} while (not(digitalRead(DB[B_PLUS])));
+    }
+    if (not digitalRead(DB[B_MINUS]) and volume>10){
+      volume-=5;
+      delay(100);
+      do {} while (not(digitalRead(DB[B_MINUS])));
+    }
+    if (not digitalRead(DB[B_ZERO])){
+      volume = 60;
+      delay(100);
+      do {} while (not(digitalRead(DB[B_ZERO])));
+    }
+    if (not digitalRead(DB[B_INSTR]) and not digitalRead(DB[B_LOOP])){
+      digitalWrite(LED_BUILTIN, HIGH);
+      do {delay(100);} while ((not digitalRead(DB[B_INSTR])) or (not digitalRead(DB[B_LOOP]))or (not digitalRead(DB[B_VOL])));//wait till all 3 keys are released
+      AB::calibrate();
+      digitalWrite(LED_BUILTIN, LOW);
+    }
+  } while (not digitalRead(DB[B_RYTHM]));
+  EEPROM.update(E_VOLUME, volume);
+  setMidiControl(MIDI_VOLUME, volume, 0);
+}
 
 void loopB_Instr_Transpose(){
   int p1, p2;
@@ -134,33 +162,39 @@ void loopB_Instr_Transpose(){
   } while (not digitalRead(DB[B_TRANSP]));
 }
 
-void loopB_Volume(){
+void loopB_Loop(){ //Loop & tune
+  myLooper.stopRecording();//1st thing: stop recording
+  myLooper.displayStatus();
+  delay(100); //debounce
   do {
-    if (not digitalRead(DB[B_PLUS]) and volume<110){
-      volume+=5;
-      delay(100);
-      do {} while (not(digitalRead(DB[B_PLUS])));
+    for (byte i=0; i<NB_AB; i++){
+      if (AB::readVel(i)){ //one key was pressed
+        unsigned long t=millis(); 
+        delay(100);//debounce
+        do {
+          delay(10); //wait
+        } while (AB::readVel(i) and not digitalRead(DB[B_LOOP]) and millis()-t <1000);//until one of the keys is depressed or time has run out
+        if (digitalRead(DB[B_LOOP])){//Loop key released
+          SR_blank();
+          return;
+        } else if (millis()-t < 1000){//short press
+          myLooper.togglePlay(i);
+          myLooper.displayStatus();
+        } else { //long press
+          if (myLooper.isRecorded(i)){
+            myLooper.deleteRecord(i);
+          } else {
+            myLooper.startRecording(i);
+          }
+        myLooper.displayStatus();
+        do {} while (AB::readVel(i)); //Wait for AB key release
+        }
+      }
     }
-    if (not digitalRead(DB[B_MINUS]) and volume>10){
-      volume-=5;
-      delay(100);
-      do {} while (not(digitalRead(DB[B_MINUS])));
-    }
-    if (not digitalRead(DB[B_ZERO])){
-      volume = 60;
-      delay(100);
-      do {} while (not(digitalRead(DB[B_ZERO])));
-    }
-    if (not digitalRead(DB[B_INSTR]) and not digitalRead(DB[B_LOOP])){
-      digitalWrite(LED_BUILTIN, HIGH);
-      do {delay(100);} while ((not digitalRead(DB[B_INSTR])) or (not digitalRead(DB[B_LOOP]))or (not digitalRead(DB[B_VOL])));//wait till all 3 keys are released
-      AB::calibrate();
-      digitalWrite(LED_BUILTIN, LOW);
-    }
-  } while (not digitalRead(DB[B_RYTHM]));
-  EEPROM.update(E_VOLUME, volume);
-  setMidiControl(MIDI_VOLUME, volume, 0);
+  } while (not digitalRead(DB[B_LOOP]));
+  SR_blank();
 }
+
 
 void loopB_Rythm(){
 }
@@ -274,6 +308,8 @@ void loopB(){ //Play music based on button presses
   }  
   if (not digitalRead(DB[B_RYTHM])) {
     //loopB_Rythm();
+  } else if (not digitalRead(DB[B_LOOP])){
+    loopB_Loop();
   } else if (not digitalRead(DB[B_VOL])){
     loopB_Volume();
   } else if (not digitalRead(DB[B_MELODY])){

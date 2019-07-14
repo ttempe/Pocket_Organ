@@ -23,30 +23,38 @@ void Looper::displayStatus(){
   //Green: recorded
   //Orange: playing (assumes recorded)
   //Red: recording
-  unsigned char recording = currentlyRecording?1 <<(currentlyRecording-1):0;
-  unsigned char red = playing | recording;
-  unsigned char green = recorded & (~recording);
+  byte recording = (-1<currentlyRecording)?1 <<currentlyRecording:0;
+  byte red = playing | recording;
+  byte green = recorded & (~recording);
   SR_map(green, red);
 }
 
 void Looper::startRecording(char channel){
-  Serial.print("Start recording channel "); Serial.println(channel);
+  if (currentlyRecording != -1){//don't record two tracks at once
+    return ;
+  }
+  Serial.print("Start recording channel "); Serial.println((byte)channel);
   deleteRecord(channel);
   currentlyRecording = channel;
   recordingStartedTime = 0; //will set the t=0 when playing the 1st button
 }
 
 void Looper::stopRecording(){
-  Serial.print("Start recording channel "); Serial.print(currentlyRecording);  Serial.print(" (");Serial.print(finish[currentlyRecording]);Serial.println(" bytes written)");
-  //TODO: save to EEPROM storage
+  if (currentlyRecording == -1){ //check we were actually recording something
+    return;
+  }
+  Serial.print("Stop recording channel "); Serial.print((byte)currentlyRecording);  Serial.print(" (");Serial.print(finish[currentlyRecording]);Serial.println(" bytes written)");
+  recorded += 1<<currentlyRecording;
+  EEPROM.update(E_LOOP_STATUS, recorded);
+  EEPROM.update(E_LOOP_LENGTHS+2*currentlyRecording, finish[currentlyRecording]);
+  EEPROM.update(E_LOOP_INSTRUMENTS+currentlyRecording, instruments[currentlyRecording]);
   currentlyRecording = -1;
 }
 
-void Looper::deleteRecord(char channel){
-  if (playing>>channel&0x1){
-    togglePlay(channel);
-  }
-  finish[channel] = start[channel];
+void Looper::deleteRecord(byte channel){
+  playing = playing & ~(1<<channel);
+  recorded = recorded & ~(1<<channel);
+  EEPROM.update(E_LOOP_STATUS, recorded);
 }
 
 void Looper::recordNote(char note, char vel){
@@ -61,5 +69,15 @@ void Looper::recordNote(char note, char vel){
   if (finish[currentlyRecording]+5<MEMORY_PER_LOOP){
     ST_write5(start[currentlyRecording]+finish[currentlyRecording], ((millis()-recordingStartedTime)>>3)&0xFFFF, 0x90|currentlyRecording, note, vel);
     finish[currentlyRecording]+=5;
+  }
+}
+
+bool Looper::isRecorded(byte i){
+  return recorded & (1<<i);
+}
+
+void Looper::togglePlay(byte i){
+  if (isRecorded(i)){
+    playing = playing ^ (1 << i);
   }
 }
