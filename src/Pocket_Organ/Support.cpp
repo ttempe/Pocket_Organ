@@ -170,11 +170,12 @@ void AB::init(){
 char AB::get_keypad_press(bool sharp){
   //obtain a single keypress from the analog buttons keypad (incl. B_SHARP)
   //Return -1 if no press
+  //Backlight feedback on the key pressed
 
   //read analog buttons
   char m = not(digitalRead(DB[B_MIN]))*8*sharp;
   for (int i=0; i<7;i++){ 
-    if (readVel(i)){//one key was being pressed
+    if (readVel(i)){//one key was pressed
       SR_one(i);//backlight that key
       delay(100);//wait past rebound
       do {} while (readVel(i));//wait for key release

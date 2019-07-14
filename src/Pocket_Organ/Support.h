@@ -23,7 +23,7 @@ void ST_write1(unsigned long int addr, byte data);
 void ST_write2(unsigned long int addr, int data);
 void ST_write5(unsigned long int addr, int data1, byte data2, byte data3, byte data4);
 byte ST_read1(unsigned long int addr);
-int ST_read2(unsigned long int addr);
+int  ST_read2(unsigned long int addr);
 void ST_read5(unsigned long int addr, int* data1, byte* data2, byte* data3, byte* data4);
 
 void noteOn(char pitch, char vel, char channel);
