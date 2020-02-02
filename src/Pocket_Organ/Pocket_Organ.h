@@ -2,6 +2,9 @@
 #ifndef HEADER_POCKET_ORGAN
   #define HEADER_POCKET_ORGAN
 
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
 #define MIDI_SERIAL Serial1
 
@@ -53,6 +56,11 @@
 #define MIDI_VIBRATO_DEPTH 0x4D
 #define MIDI_PITCH_BEND 0xE0
 
+
+/////////////////
+//Global variables
+extern Adafruit_SSD1306 display;
+extern byte current_instrument;
 
 /////////////////
 //Digital buttons

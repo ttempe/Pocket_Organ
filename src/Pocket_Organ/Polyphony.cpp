@@ -2,9 +2,14 @@
 #include "Polyphony.h"
 #include "piano.h"
 #include "Support.h"
+#include "Looper.h"
 
 ///////////////////////////////////////////////
 //Chords playing
+
+Polyphony::Polyphony(Looper* l){
+  myLooper = l;
+}
 
 void Polyphony::playNote(char pitch){
   notesQueue[queueToPlayI] = pitch;
@@ -18,6 +23,7 @@ void Polyphony::chordStop(){
   queuePlaying=0;
   queueToPlayI=0;
   queuePlayedI=0;
+  myLooper->recordNote(0xB0, 0x7B, 0x00);
 }
 
 void Polyphony::chordUpdate(char vel){
@@ -27,6 +33,7 @@ void Polyphony::chordUpdate(char vel){
   if (queuePlaying){
     if (queuePlayedI!=queueToPlayI and t>=velSpeedUp*(not playingFast)+timeToPlay){
       noteOn(notesQueue[queuePlayedI], playingFast?92:64,0);
+      myLooper->recordNoteOn(notesQueue[queuePlayedI], playingFast?92:64);
       queuePlayedI++;
       queuePlayedI%=QUEUE;
       timeToPlay = t+15000+10000*(not playingFast);
@@ -38,4 +45,6 @@ void Polyphony::chordUpdate(char vel){
 
 void Polyphony::noteStop(char pitch){
   noteOff(pitch, 0);
+  myLooper->recordNoteOff(pitch);
+  
 }

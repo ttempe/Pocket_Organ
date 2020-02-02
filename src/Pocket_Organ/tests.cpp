@@ -3,9 +3,84 @@
 #include "piano.h"
 #include "Pocket_Organ.h"
 #include "support.h"
+#include <Wire.h>
 
 ///////////////////////////////////////////////
 //Test loops
+
+
+void loop14(){//test reading and writing the same info to ST storage memory
+  unsigned long int nextTime = 12345;
+  byte data1=13, data2=27, data3=37;
+  delay(1000);
+    Serial.print("Writing:  ");
+    Serial.print("time: ");Serial.print(nextTime, HEX);
+    Serial.print("; data: ");Serial.print(data1, HEX);
+    Serial.print(" ");Serial.print(data2, HEX);
+    Serial.print(" ");Serial.print(data3, HEX);
+    Serial.println("");
+  ST_write5(0, nextTime, data1, data2, data3);
+  ST_read5(0, &nextTime, &data1, &data2, &data3);
+    Serial.print("Reading:  ");
+    Serial.print("; time: ");Serial.print(nextTime, HEX);
+    Serial.print("; data: ");Serial.print(data1, HEX);
+    Serial.print(" ");Serial.print(data2, HEX);
+    Serial.print(" ");Serial.print(data3, HEX);
+    Serial.println("\n");
+  delay(20000);
+}
+
+void loop13(){ //display the contents of ST storage memory 
+  unsigned long int nextTime;
+  byte data1, data2, data3;
+  delay(1000);
+  for (byte l=0; l<16 /*DEBGUG: NB_LOOPS*/; l++){
+    ST_read5(l*5, &nextTime, &data1, &data2, &data3);
+    Serial.print("Read from ST pos ");Serial.print(l);
+    Serial.print("; next time: ");Serial.print((float)nextTime/1000);
+    Serial.print("s; data: ");Serial.print(data1, HEX);
+    Serial.print(" ");Serial.print(data2, HEX);
+    Serial.print(" ");Serial.print(data3, HEX);
+    Serial.println("");
+  }
+  Serial.println("");
+  delay(20000);
+}
+
+void loop12(){//display the contents of ST storage memory
+  delay(1000);
+  unsigned long int address;
+  unsigned long int nextTime;
+  byte data1, data2, data3;
+  address=0;    
+  for (byte i; i<10; i++){
+    ST_read5(address*5, &nextTime, &data1, &data2, &data3);
+    Serial.print(address);
+    Serial.print(": ");
+      Wire.beginTransmission(0x50);
+      Wire.write(address*5 >> 8);
+      Wire.write(address*5 & 0xFF);
+      Wire.endTransmission();
+      Wire.beginTransmission(0x50);
+      Wire.requestFrom(0x50, 5);
+      for (byte j=0;j<5; j++){
+        Serial.print(Wire.read(), HEX);
+        Serial.print(" "); 
+      }  
+      Wire.endTransmission();
+
+    Serial.print(((float)nextTime)/1000);
+    Serial.print("s, ");
+    Serial.print(data1,HEX);
+    Serial.print(" ");
+    Serial.print(data2);
+    Serial.print(" ");
+    Serial.print(data3,HEX);
+    Serial.print("\n");
+    address++;
+  }
+  delay(20000);
+}
 
 void loop11(){//test the SR_map feature for displaying any combination of color on the analog buttons backlight
   SR_map(0, 0);

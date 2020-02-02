@@ -1,13 +1,21 @@
 /////////////////
 //This version goes on:
-// * v7 & V8 & V9 boards (2019-05)
+// * v7 & V8 & V9 & V10 boards (2019-05) (Remember to set/disable the voltage reference pin in setup() depending on your HW revision)
 
 /*TODO:
+ * Store in flash memory wheter to use the ARef voltage reference 
+ * Display something
+ * Looping
+ * Can't play melody (except with Melody Lock) while recording a loop
+ * Remove the legacy "guitar" code
+ * Fix calibration key sequence
+ * The 7th is higher if added after the end of the chord
+ * When pressing a 2nd AB, check if I was briefly lifting the 1st one, and if so, consider it as a new note->make
  * Implement key selection
  * Change the 7th based on the selected key
  * Change the degree of the fundamental based on the selected key (eg: minor keys...)
  * Tune
- * enable Midi output
+ * enable USB Midi output, cleanup the code following the addition of the looper
  * more expression channels
  * use one of the expression channels to add more notes from that chord (lower/higher octaves)
  * bend only the top key in that loop?
@@ -17,6 +25,10 @@
  * Add display
  * Rythm box
  * Calculate (and display on startup) the time spent playing since you got the instrument
+ * Vol+/- faster while holding the Minor key
+ * Monitor battery voltage
+ * Add a beautiful splash screen
+ * Add a way to use the percussions bank
  */
 
 
@@ -25,6 +37,8 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 #include <EEPROM.h>
 #include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 #ifdef OUT_USB
 #include "MIDIUSB.h"
 #endif
@@ -47,10 +61,11 @@ const char keybExpression[7][2] = //Expression1, Expression2
 
 char volume = 60;
 char transpose = 60;
-Polyphony P;
-Piano myPiano(&P);
 Looper myLooper;
-
+Polyphony P(&myLooper);
+Piano myPiano(&P);
+Adafruit_SSD1306 display(128, 64, &Wire, -1);
+byte current_instrument = 22; //1=Piano; 22=accordion; 25=nylon guitar
 
 void chordPlayGuitar(char degree){
   //Determine which chord shape the user wants to play, based on the digital buttons in use
@@ -92,26 +107,56 @@ void setup() {
   
   //setMidiControl(MIDI_RELEASE, 127);
   //setMidiControl(MIDI_EXPRESSION, 127);//Max keyboard xpression, for debugging
-  setMidiInstr(22, 0); //1=Piano; 22=accordion; 25=nylon guitar
+  setMidiInstr(current_instrument, 0); 
+
+  //OLED display
+  Serial.println("initializing display");
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) { // Address 0x3D for 128x64
+  Serial.println(F("SSD1306 failed"));
+  //  for(;;); // Don't proceed, loop forever
+  }
+  display.clearDisplay();
+  display.setTextSize(7);
+  display.setRotation(2);
+  display.setTextColor(WHITE);
+  display.setCursor(0, 0); 
+  display.cp437(true);
+
+  display.print("Hi!");
+  display.display();
 }
 
 ///////////////////////////////////////////////
 //Loop
 
+void vol_display(){
+  display.clearDisplay();
+  display.setTextSize(3);
+  display.setCursor(0, 0); 
+  display.print("Volume");
+  display.drawRect(2,40, 124, 16, WHITE);
+  display.fillRect(2,40, volume, 15, WHITE);
+  display.display();
+}
+
 void loopB_Volume(){
+  vol_display();
   do {
-    if (not digitalRead(DB[B_PLUS]) and volume<110){
+    if (not digitalRead(DB[B_PLUS]) and volume<125){
       volume+=5;
+      vol_display();
       delay(100);
       do {} while (not(digitalRead(DB[B_PLUS])));
     }
-    if (not digitalRead(DB[B_MINUS]) and volume>10){
+    if (not digitalRead(DB[B_MINUS]) and volume>0){
       volume-=5;
+      vol_display();
       delay(100);
       do {} while (not(digitalRead(DB[B_MINUS])));
     }
     if (not digitalRead(DB[B_ZERO])){
       volume = 60;
+      vol_display();
       delay(100);
       do {} while (not(digitalRead(DB[B_ZERO])));
     }
@@ -124,6 +169,7 @@ void loopB_Volume(){
   } while (not digitalRead(DB[B_RYTHM]));
   EEPROM.update(E_VOLUME, volume);
   setMidiControl(MIDI_VOLUME, volume, 0);
+  display.clearDisplay();
 }
 
 void loopB_Instr_Transpose(){
@@ -135,12 +181,14 @@ void loopB_Instr_Transpose(){
     if (p1>-1){
       do {
         if (digitalRead(DB[B_TRANSP])){
-          setMidiInstr(p1*8, 0);
+          current_instrument = p1*8;
+          setMidiInstr(current_instrument, 0);
           return;
         }
         p2 = AB::get_keypad_press(false);
       } while (p2 == -1);
-      setMidiInstr(p1*8+p2, 0);
+      current_instrument = p1*8+p2;
+      setMidiInstr(current_instrument, 0);
     }
     
     //Transposition
@@ -163,8 +211,9 @@ void loopB_Instr_Transpose(){
 }
 
 void loopB_Loop(){ //Loop & tune
+  P.chordStop(); //Stop the chord before stopping recording
   myLooper.stopRecording();//1st thing: stop recording
-  myLooper.displayStatus();
+  myLooper.displayStatus();//update the key backlight
   delay(100); //debounce
   do {
     for (byte i=0; i<NB_AB; i++){
@@ -218,9 +267,11 @@ void loopB_Melody(){
         playing = i;
         playingNote = transpose+(not digitalRead(DB[B_SHARP]))+AB::degree(playing)+(not digitalRead(DB[B_PLUS]))*12-(not digitalRead(DB[B_MINUS]))*12;
         noteOn(playingNote, 96,0);
+        myLooper.recordNoteOn(playingNote, 96);
         SR_one(i);
       } else if (not v and playing == i) { //stop playing that note
         noteOff(playingNote, 0); 
+        myLooper.recordNoteOff(playingNote);
         playing = -1;
         SR_blank();   
       }
@@ -250,6 +301,8 @@ void loopB_Melody(){
   digitalWrite(LED_BUILTIN, LOW);
   if (playing != -1){
     noteOff(playingNote, 0);
+    myLooper.recordNoteOff(playingNote);
+
   }
 }
 
@@ -257,7 +310,6 @@ void loopB_Chord(int b, int velocity){
   static int effect1, effect1_old, effect2, effect2_old, velocity_old;
 
   //collect initial values, and start playing immediately
-  //chordPlayGuitar(b);
   myPiano.chordPlay(b, transpose);
   SR_one(b);
 
@@ -303,6 +355,7 @@ void loopB(){ //Play music based on button presses
       Serial.print("Chord ");Serial.println(i);
       loopB_Chord(i, v);
       Serial.println("Chord finished");
+      
       break;
     }  
   }  
@@ -320,11 +373,15 @@ void loopB(){ //Play music based on button presses
 #ifdef OUT_USB
     MidiUSB.flush();
 #endif
+  myLooper.playbackLoop();
   delay(10);
 }
 
 ///////////////////////////////////////////////
 ///////////////////////////////////////////////
 void loop() {
-  loopB();
+  //loop2(); //Test the analog buttons. Display on Serial Plotter
+  //loop13(); //display the contents of ST storage memory 
+  //loop14();//test reading and writing the same info to ST storage memory
+  loopB(); //Normal mode, play music
 }

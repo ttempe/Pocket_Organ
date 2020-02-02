@@ -3,7 +3,9 @@
 #ifndef HEADER_TESTS
   #define HEADER_TESTS
 
-
+void loop14();//test reading and writing the same info to ST storage memory
+void loop13(); //display the contents of ST storage memory using the Support.cpp routines
+void loop12();//display the contents of ST storage memory
 void loop11();
 void loop10();
 void loop9();

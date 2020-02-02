@@ -57,16 +57,18 @@ void ST_write1(unsigned long int addr, byte data){
   Wire.endTransmission();
 }
 
-void ST_write5(unsigned long int addr, int data1, byte data2, byte data3, byte data4){
+void ST_write5(unsigned long int addr, unsigned long int timestamp, byte data1, byte data2, byte data3){
+  //Serial.print("Writing to ");Serial.println(addr);
   Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
-  Wire.write(data1 >> 8);
-  Wire.write(data1 & 0xFF);
+  Wire.write(((timestamp >>11)&255)); //record ~100th of seconds over 16 bits, so max duration is ~50 minutes
+  Wire.write(((timestamp >> 3)&255));
+  Wire.write(data1);
   Wire.write(data2);
   Wire.write(data3);
-  Wire.write(data4);
   Wire.endTransmission();
+  delay(4);
 }
 
 void ST_write2(unsigned long int addr, int data){
@@ -104,17 +106,17 @@ int ST_read2(unsigned long int addr){
   return rdata;
 }
 
-void ST_read5(unsigned long int addr, int* data1, byte* data2, byte* data3, byte* data4){
+void ST_read5(unsigned long int addr, unsigned long int* timestamp, byte* data1, byte* data2, byte* data3){
   Wire.beginTransmission(0x50);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.endTransmission();
   Wire.beginTransmission(0x50);
   Wire.requestFrom(0x50, 5);
-  *data1 = (int)Wire.read()*256+Wire.read();
+  *timestamp = ((unsigned long int)Wire.read()<<11)+((unsigned long int)Wire.read()<<3);
+  *data1 = Wire.read();
   *data2 = Wire.read();
   *data3 = Wire.read();
-  *data4 = Wire.read();
   Wire.endTransmission();
 }
 
@@ -146,7 +148,7 @@ unsigned char AB::readVel(char i){
   //Read the velocity of analog key i
   //i is the key index (0~6), not the analog input's address
   //returns a pressure level between 0 (not pressed) and 126.
-  const float thres=0.05;
+  const float thres=0.01;
   unsigned int r = analogRead(AB_cal[i][0]);
   r = max(AB_cal[i][1], min(r, AB_cal[i][2]));
   r = r - AB_cal[i][1];
@@ -224,6 +226,14 @@ void AB::calibrate(){
 //Support functions
 
 int countN;//DEBUG: nb of notes playing at any given time
+
+void sendMidi(byte a, byte b, byte c){ //is used by the looper to send events
+#ifdef OUT_SERIAL
+  MIDI_SERIAL.write(a);
+  MIDI_SERIAL.write(b);
+  MIDI_SERIAL.write(c);
+#endif
+}
 
 void noteOn(char pitch, char vel, char channel) {
 #ifdef OUT_USB

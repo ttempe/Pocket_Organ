@@ -1,5 +1,7 @@
 ///////////////////////////////////////////////
 //Management of multiple notes in parallel, on the main channel
+#include "Looper.h"
+
 
 #ifndef HEADER_POLYPHONY
   #define HEADER_POLYPHONY
@@ -10,8 +12,10 @@ class Polyphony {
   private:
     unsigned long timeToPlay;
     char notesQueue[QUEUE], queuePlayedI, queueToPlayI, queuePlaying, playingFast;
+    Looper* myLooper;
 
   public:
+    Polyphony(Looper* l);
     void playNote(char pitch);
     void chordStop();
     void chordUpdate(char vel);
