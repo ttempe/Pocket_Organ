@@ -32,7 +32,7 @@ void Piano::playChordNotes(){
 }
 
 void Piano::chordPlay(char degree, char transpose){
-  //read the kets
+  //read the keys
   readModifierKeys();
 
   //Process key combinations
@@ -54,9 +54,7 @@ void Piano::chordPlay(char degree, char transpose){
 }
 
 
-void Piano::chordRefresh(){
-
-  //read the keys and check for changes
+void Piano::chordRefresh(){  //read the keys and check for changes
   char b_sharp_old = b_sharp;
   char b_minor_old  = b_minor;
   char b_seventh_old = b_seventh;

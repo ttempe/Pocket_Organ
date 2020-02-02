@@ -26,7 +26,7 @@ void Polyphony::chordStop(){
   myLooper->recordNote(0xB0, 0x7B, 0x00);
 }
 
-void Polyphony::chordUpdate(char vel){
+void Polyphony::chordUpdate(char vel){//play scheduled notes; should be called regularly
   static long lastT, velSpeedUp=0;
   unsigned long int t=micros();
   velSpeedUp += min((t-lastT)*(127-vel)/96,1000);
