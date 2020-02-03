@@ -18,7 +18,7 @@ class Looper {
     long unsigned int start[NB_LOOPS]; //Start address, in memory, of each loop
     long unsigned int finish[NB_LOOPS];//End address, in memory, of the recorded contents fro each loop
     long unsigned int readingCursor[NB_LOOPS];
-    byte instruments[NB_LOOPS]; //selected MIDI instruments
+    long unsigned int duration[NB_LOOPS];
 
     byte recorded; //one bit per channel, 0=not recorded; 1=recorded. 1=Do, 2=Re, 4=Mi...
     byte playing;  //one bit per channel, 0=not playing; l=playing. 1=Do, 2=Re, 4=Mi...

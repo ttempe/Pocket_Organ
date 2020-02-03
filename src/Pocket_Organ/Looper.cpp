@@ -2,7 +2,7 @@
 //Looper: record midi events into flash memory, then replay them
 
 /* TODO:
-    record instrument selection
+    change non-loop channel to something else
     record expression
     blink the key while recording a loop?
     Change the "playing" status only when releasing the "loop" button
@@ -11,6 +11,8 @@
     Round off user timing errors 
     Handle the case where the player changes the instrument while recording a loop
     Playback now stops when entering melody mode
+    Set MaxLoopDuration according to the longest loop currently playing
+    When enabling a loop while another was playing, check that the playing of all past events doesn't make sound
 */
 
 
@@ -22,10 +24,12 @@
 ///////////////////////////////////////////////
 //Constructor
 Looper::Looper() {
+  maxLoopDuration = 0;
   for (byte i = 0; i < NB_LOOPS; i++) {
     start[i] = MEMORY_PER_LOOP * i;
-    EEPROM.get(E_LOOP_LENGTHS + 2 * i, finish[i]);
-    EEPROM.get(E_LOOP_INSTRUMENTS + i, instruments[i]);
+    EEPROM.get(E_LOOP_LENGTHS   + 2 * i, finish[i]);
+    EEPROM.get(E_LOOP_DURATIONS + 4 * i, duration[i]);
+    maxLoopDuration=max(maxLoopDuration, duration[i]);
   }
   EEPROM.get(E_LOOP_STATUS, recorded);
 };
@@ -64,10 +68,14 @@ void Looper::stopRecording() {
   Serial.print("Stop recording channel "); Serial.print((byte)currentlyRecording);  Serial.print(" ("); Serial.print(finish[currentlyRecording]); Serial.println(" bytes written)");
   recorded += 1 << currentlyRecording;
   EEPROM.update(E_LOOP_STATUS, recorded);
-  EEPROM.update(E_LOOP_LENGTHS + 2 * currentlyRecording, finish[currentlyRecording]);
-  EEPROM.update(E_LOOP_INSTRUMENTS + currentlyRecording, instruments[currentlyRecording]);
+  EEPROM.update(E_LOOP_LENGTHS   + 2 * currentlyRecording, finish[currentlyRecording]);
+  EEPROM.update(E_LOOP_DURATIONS + 4 * currentlyRecording, duration[currentlyRecording]);
   currentlyRecording = -1;
-  maxLoopDuration = millis() - recordingStartedTime;
+
+  maxLoopDuration=0;
+  for (byte i=0; i<NB_LOOPS; i++){
+    maxLoopDuration=max(maxLoopDuration, duration[i]);
+  }
 }
 
 void Looper::deleteRecord(byte channel) {
@@ -148,27 +156,28 @@ void Looper::togglePlay(byte i) {
 }
 
 void Looper::playbackLoop() {
-  //Each call takes 9~11ms on an 8MHz ATMega (V8)
+  //Each call takes <12ms on an 8MHz ATMega (V8)
   unsigned long int nextTime;
   byte data1, data2, data3;
 
-  if ((millis() - loopStartTime)>maxLoopDuration){ //loop at the end of the longest recording
+  if (playing and (millis() - loopStartTime)>maxLoopDuration){ //loop at the end of the longest recording
     loopStartTime += maxLoopDuration;
+    Serial.print("Looping! maxLoopDuration = ");Serial.println(maxLoopDuration);
     for (char i=0; i<NB_LOOPS; i++){
-      readingCursor[i]=start[i];
+      readingCursor[i]=0;
     }
   }
   for (byte l = 0; l < NB_LOOPS; l++) {
-    ST_read5((readingCursor[l] + start[l]), &nextTime, &data1, &data2, &data3);
 
     if (playing & (1 << l)) {
+      ST_read5((readingCursor[l] + start[l]), &nextTime, &data1, &data2, &data3);
       /*Serial.print("Read from ST pos ");Serial.print((readingCursor[l] + start[l])*5);
       Serial.print("; next time: ");Serial.print((float)nextTime/1000);
       Serial.print("s; data: ");Serial.print(data1, HEX);
       Serial.print(" ");Serial.print(data2, HEX);
       Serial.print(" ");Serial.print(data3, HEX);
       Serial.println("");*/
-/*
+
       Serial.print("PlaybackLoop: ");
       Serial.print("Pos="); Serial.print(readingCursor[l] + start[l]);
       Serial.print("; Now?="); Serial.print(nextTime <= (millis() - loopStartTime) % maxLoopDuration);
@@ -177,21 +186,22 @@ void Looper::playbackLoop() {
       Serial.print("; Maxloop duration="); Serial.print(maxLoopDuration);
       Serial.print("; Track continuing?="); Serial.println(readingCursor[l] < (start[l] + finish[l]));
       //    char buf[256];sprintf(buf, "(%d) readingCurstor: %d<%d+%d", l, readingCursor[l], start[l], finish[l]);Serial.println(buf);
-  */    
-    }
+     
     if (nextTime <= (millis() - loopStartTime) % maxLoopDuration and readingCursor[l] < start[l] + finish[l] ) { //Time for this one
-      readingCursor[l] += 5;
       /*if (readingCursor[l]<start[l]+finish[l]){ //play in loop; TODO: only for short loops; and add time to the timestamp 
         //divide the duration of this loop by the longest loop; round to the closest integer; add the corresponding fraction of the longest loop to the timestamp
         readingCursor[l] = start[l];
       }*/
-      if (playing & (1 << l)) { //this loop is playing
-        Serial.print("Playing loop "); Serial.print(l); 
-        Serial.print(", "); Serial.print(data1, HEX);
-        Serial.print(", "); Serial.print(data2, HEX);
-        Serial.print(", "); Serial.println(data3, HEX);
-        sendMidi(data1, data2, data3);
-        //TODO: Manage loops that are shorter than others?
+      Serial.print("Playing loop "); Serial.print(l); 
+      Serial.print(",pos="); Serial.print(readingCursor[l] + start[l]);
+      Serial.print("; Current time="); Serial.print((millis() - loopStartTime) % maxLoopDuration);
+      Serial.print("; Target time="); Serial.print(nextTime );
+      Serial.print(",data: "); Serial.print(data1, HEX);
+      Serial.print(", "); Serial.print(data2, HEX);
+      Serial.print(", "); Serial.println(data3, HEX);
+      readingCursor[l] += 5;
+      sendMidi(data1, data2, data3);
+      //TODO: Manage loops that are shorter than others?
       }
     }
   }

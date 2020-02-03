@@ -75,7 +75,7 @@ static char DB[NB_DB] = {6, 12, 0, 10, 8, 7, 17, 16, 11, 5};
 #define E_AB_CALIBRATION 1    //28 octets
 #define E_LOOP_STATUS 30      //1 octet; which loops were recorded
 #define E_LOOP_LENGTHS 32     //16 octets
-#define E_LOOP_INSTRUMENTS 48 //8 octets
+#define E_LOOP_DURATIONS 48   //32 octets
 
 
 /////////////////

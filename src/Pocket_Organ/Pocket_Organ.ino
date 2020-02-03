@@ -86,7 +86,8 @@ void chordPlayGuitar(char degree){
 //Setup
 void setup() {
   Serial.begin(115200);
-  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip. TODO: test with the display
+  Serial.println("Pocket Organ. Copyright Thomas TEMPE, 2020");
+  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip and display
   for (char i=0; i<NB_DB; i++){
     pinMode( DB[i], INPUT_PULLUP); //Mode switch
   }
@@ -112,8 +113,8 @@ void setup() {
   //OLED display
   Serial.println("initializing display");
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) { // Address 0x3D for 128x64
-  Serial.println(F("SSD1306 failed"));
-  //  for(;;); // Don't proceed, loop forever
+    Serial.println(F("SSD1306 failed"));
+    //  for(;;); // Don't proceed, loop forever
   }
   display.clearDisplay();
   display.setTextSize(7);
@@ -124,6 +125,8 @@ void setup() {
 
   display.print("Hi!");
   display.display();
+
+  Serial.println("Setup complete");
 }
 
 ///////////////////////////////////////////////
@@ -297,6 +300,8 @@ void loopB_Melody(){
       was_locked = 0;
     }
 
+    myLooper.playbackLoop();
+
   } while (not b_melody or locked);
   digitalWrite(LED_BUILTIN, LOW);
   if (playing != -1){
@@ -330,6 +335,7 @@ void loopB_Chord(int b, int velocity){
     } 
     velocity=AB::readVel(b);
     P.chordUpdate(velocity);
+    
     if (abs(velocity-velocity_old)>20){
       velocity_old = velocity;
     }
@@ -337,10 +343,9 @@ void loopB_Chord(int b, int velocity){
       loopB_Melody();
     }
     
-    //Chord shape change
-    myPiano.chordRefresh();
- 
-    delay(10);
+    myPiano.chordRefresh();    //Chord shape change
+    myLooper.playbackLoop();
+
   } while(velocity>0 or effect1 >0 or effect2 > 0);
   P.chordStop();
   SR_blank();
@@ -383,5 +388,8 @@ void loop() {
   //loop2(); //Test the analog buttons. Display on Serial Plotter
   //loop13(); //display the contents of ST storage memory 
   //loop14();//test reading and writing the same info to ST storage memory
+  //reset_EEPROM();
+
+  Serial.println("Hello world!");
   loopB(); //Normal mode, play music
 }

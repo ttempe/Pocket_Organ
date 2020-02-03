@@ -4,10 +4,20 @@
 #include "Pocket_Organ.h"
 #include "support.h"
 #include <Wire.h>
+#include <EEPROM.h>
 
 ///////////////////////////////////////////////
 //Test loops
 
+void reset_EEPROM(){
+  delay(5000);
+  Serial.print("Resetting memory...");
+  for (int i=0; i<128; i++){
+    EEPROM.write(i, 0);
+  }
+  Serial.println("Done");
+  do{}while(1); 
+}
 
 void loop14(){//test reading and writing the same info to ST storage memory
   unsigned long int nextTime = 12345;
