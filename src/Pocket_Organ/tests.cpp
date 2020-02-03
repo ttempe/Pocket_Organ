@@ -174,18 +174,6 @@ void loop7(){ //chenillard (shift registers): run through all buttons, alternati
   }while(1);
 }
 
-void loop6(){ //Play chords
-  digitalWrite(13, HIGH);
-  for (byte i=0; i<8; i++){
-    chordPlayGuitar(i);
-    for (int j=0; j<1000; j++){
-      chordUpdate(120);
-      delay(1);
-    }
-    chordStop();
-  }
-}
-
 void loop5(){//play MIDI notes
   for (byte i=40; i<70; i++){
     noteOn(i, 127,0);
@@ -193,7 +181,6 @@ void loop5(){//play MIDI notes
     noteOff(i,0);
   }
 }
-
 
 void loop4(){ //Display the pressure level of each key, after application of the response curve
   char i, vel;

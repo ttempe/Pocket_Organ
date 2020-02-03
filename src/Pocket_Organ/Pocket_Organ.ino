@@ -7,7 +7,6 @@
  * Display something
  * Looping
  * Can't play melody (except with Melody Lock) while recording a loop
- * Remove the legacy "guitar" code
  * Fix calibration key sequence
  * The 7th is higher if added after the end of the chord
  * When pressing a 2nd AB, check if I was briefly lifting the 1st one, and if so, consider it as a new note->make
@@ -66,21 +65,6 @@ Polyphony P(&myLooper);
 Piano myPiano(&P);
 Adafruit_SSD1306 display(128, 64, &Wire, -1);
 byte current_instrument = 22; //1=Piano; 22=accordion; 25=nylon guitar
-
-void chordPlayGuitar(char degree){
-  //Determine which chord shape the user wants to play, based on the digital buttons in use
-  char scale, n; //M, m, 7, m7, 9, sus4, sus2
-  char transp;
-  scale = (not digitalRead(DB[B_MIN])) + 2*(not digitalRead(DB[B_7]));
-  //Memo: static char guitarChords[7][7][6] = //scale, degree*7, string*6
-  transp = not digitalRead(DB[B_SHARP]);
-  for (char s=0; s<6; s++){
-    n = guitarChords[scale][degree][5-s];
-    if (n>-1 and n<64){
-      P.playNote(n+transpose+transp+guitarStrings[s]-60);
-    }
-  }
-}
 
 ///////////////////////////////////////////////
 //Setup

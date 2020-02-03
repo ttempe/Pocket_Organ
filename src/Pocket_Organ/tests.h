@@ -11,7 +11,6 @@ void loop10();
 void loop9();
 void loop8();
 void loop7();
-void loop6();
 void loop5();
 void loop4();
 void loop3();
