@@ -177,7 +177,8 @@ void loop7(){ //chenillard (shift registers): run through all buttons, alternati
 void loop5(){//play MIDI notes
   for (byte i=40; i<70; i++){
     noteOn(i, 127,0);
-    delay(1000);
+    Serial.print(".");
+    delay(500);
     noteOff(i,0);
   }
 }
@@ -231,7 +232,7 @@ void loop2() { //Test the analog buttons. Display on Serial Plotter
     Serial.print(AB::readVal(i));
     Serial.print(",");
   }
-  Serial.print("0,1023\n");
+  Serial.print("0,1024\n");
 }
 
 

@@ -136,15 +136,16 @@ unsigned int AB_cal[7][3] = {
 
 const char AB_degrees[NB_AB] = { 0, 2, 4, 5, 7, 9, 11};//Do, Re, Mi, Fa, Sol, La, Si
 
-char AB::degree(char d){
+char AB::degree(byte d){
   return AB_degrees[d];
 }
 
-int AB::readVal(char i){
+int AB::readVal(byte i){
   return analogRead(AB_cal[i][0]);
 }
 
-unsigned char AB::readVel(char i){
+/* //Normal code, that uses the calibration stored in EEPROM
+unsigned char AB::readVel(byte i){
   //Read the velocity of analog key i
   //i is the key index (0~6), not the analog input's address
   //returns a pressure level between 0 (not pressed) and 126.
@@ -157,7 +158,24 @@ unsigned char AB::readVel(char i){
   unsigned char v = (unsigned char)(p*126);
   //if (v>126){v=0;}
   return v;
+}*/
+
+//quick and dirty code with hard-wired calibration, for board V10 with the pull-down resistors removed
+//the readings are very consistent, so I'm removing the calibration
+unsigned char AB::readVel(byte i){
+  //Read the velocity of analog key i
+  //i is the key index (0~6), not the analog input's address
+  //returns a pressure level between 0 (not pressed) and 126.
+  const float thres=0.01;
+  unsigned int r = analogRead(AB_cal[i][0]);
+  if (r>1018){
+    return 0;
+  }
+  else {
+    return min((1018-r)/4,126);
+  }
 }
+
 
 void AB::init(){
   //Restore analog buttons calibration from EEPROM

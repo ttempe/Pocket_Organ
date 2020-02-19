@@ -39,11 +39,11 @@ class AB {
   public:
     static const char NB = 7;
     static void init();
-    static char degree(char d);
+    static char degree(byte d);
     static char get_keypad_press(bool sharp);
     static void calibrate();
-    static unsigned char readVel(char i);
-    static int readVal(char i);
+    static unsigned char readVel(byte i);
+    static int readVal(byte i);
 };
 
 #endif// HEADER_SUPPORT
