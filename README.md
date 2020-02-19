@@ -6,7 +6,7 @@ Most instruments we play today are designed around the manufacturing constrains 
 Newer instruments are often electronic versions, with the same or similar user interface.
 
 Really novel instruments are either:
-1. excellent, but really exensive brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch, the Hang steel drum, EWI electronic woodwind...)
+1. excellent, but exensive brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch, the Hang steel drum, the Sylphyo electronic woodwind, Artiphon Instrument 1, Jamstik ...)
 2. cheap, but not good enough for a musician, lacking in depth and/or playability (eg: the roll-up keyboards, stylophone, Otamatone...)
 
 It doesn't have to be that way, though.
