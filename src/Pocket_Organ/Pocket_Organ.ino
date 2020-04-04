@@ -1,11 +1,26 @@
 /////////////////
 //This version goes on:
-// * v7 & V8 & V9 & V10 boards (2019-05) (Remember to set/disable the voltage reference pin in setup() depending on your HW revision)
+// * v7 & V8 & V9 & V10 boards (2019-05)
+
+/*TODO V11 board support:
+ * Heart transplant:
+  * redo all I/O
+  * review all variable sizes
+  * Configure all unused I/Os to output push-pull low (or tie to ground)
+ * Drive the VBUS_ON and RST pins, to turn on the peripherals
+ * Drive the SR-OE pin to remove the blinking of the AB backlight pins
+ * Add self-power off
+ * EEprom: switch to SPI. Remember to set the FLASH-CS pin to high-impedence during power-on and power-off, so that it follows VBUS
+ * Measure the MOSFET voltage drop, decide whether to keep it
+ * 
+ */
 
 /*TODO:
  * Store in flash memory wheter to use the ARef voltage reference 
+ * Review AB::readVel(byte)
  * Display something
  * Looping
+ * The display is not stable (HW issue). Understand why and fix it.
  * Can't play melody (except with Melody Lock) while recording a loop
  * Fix calibration key sequence
  * The 7th is higher if added after the end of the chord
@@ -28,6 +43,7 @@
  * Monitor battery voltage
  * Add a beautiful splash screen
  * Add a way to use the percussions bank
+ * When displaying the chord name, also list the notes being played
  */
 
 
@@ -69,8 +85,8 @@ byte current_instrument = 22; //1=Piano; 22=accordion; 25=nylon guitar
 ///////////////////////////////////////////////
 //Setup
 void setup() {
-  Serial.begin(115200);
-  Serial.println("Pocket Organ. Copyright Thomas TEMPE, 2020");
+  Serial.begin(9600);
+
   Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip and display
   for (char i=0; i<NB_DB; i++){
     pinMode( DB[i], INPUT_PULLUP); //Mode switch
@@ -78,7 +94,10 @@ void setup() {
   pinMode( SR_DATA, OUTPUT);
   pinMode( SR_CLK, OUTPUT);
   SR_blank();
-  //analogReference(EXTERNAL);
+  //analogReference(EXTERNAL); //voltage divider //DEFAULT V8; INTERNAL or EXTERNAL for V10
+  analogReference(DEFAULT);//5V 
+  //analogReference(INTERNAL); //1V1 or 2V56
+  
 #ifdef OUT_SERIAL
   delay(500);
   MIDI_SERIAL.begin(31250);
@@ -99,22 +118,23 @@ void setup() {
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) { // Address 0x3D for 128x64
     Serial.println(F("SSD1306 failed"));
     //  for(;;); // Don't proceed, loop forever
+  } else {
+    display.clearDisplay();
+    display.setTextSize(3);
+    display.setRotation(2);
+    display.setTextColor(WHITE);
+    display.setCursor(0, 0); 
+    display.cp437(true);
+  
+    display.print("Hello\n hello");
+    display.display();
   }
-  display.clearDisplay();
-  display.setTextSize(7);
-  display.setRotation(2);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0); 
-  display.cp437(true);
-
-  display.print("Hi!");
-  display.display();
-
-  Serial.println("Setup complete");
+  delay(100);//let the analog pins settle
 }
 
 ///////////////////////////////////////////////
-//Loop
+//User actions finite-state automaton
+
 
 void vol_display(){
   display.clearDisplay();
@@ -367,13 +387,19 @@ void loopB(){ //Play music based on button presses
 }
 
 ///////////////////////////////////////////////
-///////////////////////////////////////////////
+//Loop
+
 void loop() {
+  static int i;
+  //Serial.println("Loop!");
+  //delay(100);
+  //loop1(); //Test the digital buttons
   //loop2(); //Test the analog buttons. Display on Serial Plotter
-  //loop13(); //display the contents of ST storage memory 
+  //loop4(); //Display the pressure level of each key, after application of the response curve
+  //loop5(); //play MIDI notes
+  //loop7(); //chenillard (shift registers): run through all buttons, alternating between green and red.
+  //loop13();//display the contents of ST storage memory 
   //loop14();//test reading and writing the same info to ST storage memory
   //reset_EEPROM();
-
-  Serial.println("Hello world!");
-  loopB(); //Normal mode, play music
+  loopB(); //Normal loop, play music
 }

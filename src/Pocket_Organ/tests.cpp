@@ -156,6 +156,8 @@ void loop7(){ //chenillard (shift registers): run through all buttons, alternati
     digitalWrite(SR_DATA, 1);
     digitalWrite(SR_CLK, 1);
     digitalWrite(SR_CLK, 0);
+    digitalWrite(SR_CLK, 1);
+    digitalWrite(SR_CLK, 0);
     digitalWrite(SR_DATA, 0);
     if (a){
       digitalWrite(SR_CLK, 1);
@@ -252,9 +254,4 @@ void loop1() { //Test the digital buttons
     Serial.println();
   }
   prevTotal = total;
-}
-
-void loop0(){
-  AB::readVel(0);
-  delay(2000);
 }
