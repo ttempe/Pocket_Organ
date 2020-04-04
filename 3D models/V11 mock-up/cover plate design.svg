@@ -13,7 +13,10 @@
    version="1.1"
    id="svg380"
    sodipodi:docname="cover plate design.svg"
-   inkscape:version="0.92.3 (2405546, 2018-03-11)">
+   inkscape:version="0.92.3 (2405546, 2018-03-11)"
+   inkscape:export-filename="T:\Data\Dev\Pocket_Organ\3D models\V11\cover plate design.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96">
   <metadata
      id="metadata384">
     <rdf:RDF>
@@ -39,13 +42,13 @@
      inkscape:window-height="1017"
      id="namedview382"
      showgrid="true"
-     inkscape:zoom="1.0683582"
-     inkscape:cx="489.76772"
-     inkscape:cy="847.76337"
+     inkscape:zoom="2.1367165"
+     inkscape:cx="414.40978"
+     inkscape:cy="746.18041"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="g378"
+     inkscape:current-layer="layer2"
      inkscape:pagecheckerboard="true"
      showguides="false" />
   <desc
@@ -717,7 +720,7 @@
          x="214.77455"
          y="314.71585">Key</tspan></text>
     <circle
-       style="display:inline;fill:#ff0000;fill-opacity:0;stroke:#ff0000;stroke-width:1.83095646;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       style="display:inline;fill:#ff0000;fill-opacity:0;stroke:#ff0000;stroke-width:4;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path5370"
        cx="211.10001"
        cy="470.22772"
@@ -909,21 +912,23 @@
    id="tspan5528-2-7-5-5">Strings <tspan
    id="tspan5532-5-42-6-6"
    style="fill:#0000ff">Ethnic</tspan></tspan></textPath></text>
-    <circle
-       style="display:inline;opacity:1;fill:#008000;fill-opacity:0;stroke:#1b1bff;stroke-width:2.49778223;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+    <ellipse
+       style="display:inline;opacity:1;fill:#008000;fill-opacity:0;stroke:#1b1bff;stroke-width:3.58912611;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path2915"
-       cx="256.47189"
-       cy="458.93994"
-       r="24.074575" />
-    <circle
-       style="display:inline;opacity:1;fill:#008000;fill-opacity:0;stroke:#1b1bff;stroke-width:2.49799991;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       cx="255.97464"
+       cy="458.82294"
+       rx="24.527271"
+       ry="24.849024" />
+    <ellipse
+       style="display:inline;opacity:1;fill:#008000;fill-opacity:0;stroke:#1b1bff;stroke-width:3.57303572;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        id="path2915-2"
-       cx="324.31287"
-       cy="459.01236"
-       r="24.074575" />
+       cx="324.81009"
+       cy="458.80759"
+       rx="24.530275"
+       ry="24.822779" />
     <path
-       style="display:inline;fill:#0000ff;stroke:#1b1bff;stroke-width:2.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="m 255.47912,482.99452 69.33015,0.0827"
+       style="display:inline;fill:#0000ff;stroke:#1b1bff;stroke-width:3.5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 255.31365,483.61502 69.33015,0.0827"
        id="path3024"
        inkscape:connector-curvature="0" />
     <text
@@ -956,7 +961,7 @@
      inkscape:groupmode="layer"
      inkscape:label="备注"
      id="g378"
-     style="display:inline">
+     style="display:none">
     <path
        style="fill:none;stroke:#ff0000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow1Mend)"
        d="m 256.5208,226.6746 c 13.48168,59.06397 58.84514,89.50534 58.84514,89.50534"
