@@ -6,7 +6,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-#define MIDI_SERIAL Serial1
+#define MIDI_SERIAL Serial2
+#define CONSOLE Serial1
 
 /////////////////
 //Choose output
@@ -64,9 +65,12 @@ extern byte current_instrument;
 
 /////////////////
 //Digital buttons
-#define NB_DB 10
-static char DB[NB_DB] = {6, 12, 0, 10, 8, 7, 17, 16, 11, 5};
+#define NB_DB 4
+static char DB[NB_DB] = {PB0, PC4, PA3, PA0};
 
+/////////////////
+//Digital buttons
+#define LED_BUILTIN PC13
 
 /////////////////
 //EEPROM addresses

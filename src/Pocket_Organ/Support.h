@@ -9,8 +9,9 @@
 
 /////////////////
 //Shift register configuration (for backlight)
-#define SR_DATA 14
-#define SR_CLK 15
+#define SR_DATA PB9
+#define SR_CLK PC14
+#define SR_OE PC15
 
 /////////////////
 //Prototypes

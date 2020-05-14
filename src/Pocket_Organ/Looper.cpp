@@ -27,11 +27,11 @@ Looper::Looper() {
   maxLoopDuration = 0;
   for (byte i = 0; i < NB_LOOPS; i++) {
     start[i] = MEMORY_PER_LOOP * i;
-    EEPROM.get(E_LOOP_LENGTHS   + 2 * i, finish[i]);
-    EEPROM.get(E_LOOP_DURATIONS + 4 * i, duration[i]);
+    //EEPROM.get(E_LOOP_LENGTHS   + 2 * i, finish[i]);
+    //EEPROM.get(E_LOOP_DURATIONS + 4 * i, duration[i]);
     maxLoopDuration=max(maxLoopDuration, duration[i]);
   }
-  EEPROM.get(E_LOOP_STATUS, recorded);
+  //EEPROM.get(E_LOOP_STATUS, recorded);
 };
 
 ///////////////////////////////////////////////
@@ -51,7 +51,7 @@ void Looper::startRecording(char channel) {
   if (currentlyRecording != -1) { //don't record two tracks at once
     return ;
   }
-  Serial.print("Start recording channel "); Serial.println((byte)channel);
+  CONSOLE.print("Start recording channel "); CONSOLE.println((byte)channel);
 
   currentlyRecording = channel;
   recordingStartedTime = 0; //will set the t=0 when playing the 1st button
@@ -65,7 +65,7 @@ void Looper::stopRecording() {
   if (currentlyRecording == -1) { //check we were actually recording something
     return;
   }
-  Serial.print("Stop recording channel "); Serial.print((byte)currentlyRecording);  Serial.print(" ("); Serial.print(finish[currentlyRecording]); Serial.println(" bytes written)");
+  CONSOLE.print("Stop recording channel "); CONSOLE.print((byte)currentlyRecording);  CONSOLE.print(" ("); CONSOLE.print(finish[currentlyRecording]); CONSOLE.println(" bytes written)");
   recorded += 1 << currentlyRecording;
   EEPROM.update(E_LOOP_STATUS, recorded);
   EEPROM.update(E_LOOP_LENGTHS   + 2 * currentlyRecording, finish[currentlyRecording]);
@@ -79,7 +79,7 @@ void Looper::stopRecording() {
 }
 
 void Looper::deleteRecord(byte channel) {
-  Serial.print("Deleting record "); Serial.println(channel);
+  CONSOLE.print("Deleting record "); CONSOLE.println(channel);
   playing = playing & ~(1 << channel);
   recorded = recorded & ~(1 << channel);
   finish[channel] = 0;
@@ -105,10 +105,10 @@ void Looper::recordNote(byte control, byte note, byte vel) {
   if (not recordingStartedTime) {
     //TODO: In case we have other loops playing already, set the start of play
     if (playing){
-      Serial.println("reusing previous start");
+      CONSOLE.println("reusing previous start");
       recordingStartedTime = loopStartTime;
     } else {
-      Serial.println("recording anew");
+      CONSOLE.println("recording anew");
       recordingStartedTime = now;
     }
   } /*else if ((now - recordingStartedTime) & 0xFFF80000) { //Manage timer overrun TODO: review
@@ -116,15 +116,15 @@ void Looper::recordNote(byte control, byte note, byte vel) {
     return;
   }*/
   if (finish[currentlyRecording] + 5 < MEMORY_PER_LOOP) {
-    Serial.print("Loop "); Serial.print((byte)currentlyRecording); 
+    CONSOLE.print("Loop "); CONSOLE.print((byte)currentlyRecording); 
     if(control==0x90){
-      Serial.print(" recording note on "); 
+      CONSOLE.print(" recording note on "); 
     } else if (control==0x80){
-      Serial.print(" recording note off "); 
+      CONSOLE.print(" recording note off "); 
     } else {
-      Serial.print(" recording control "); 
+      CONSOLE.print(" recording control "); 
     }
-    Serial.print((byte)note); Serial.print(" at "); Serial.print(((float)((millis() - recordingStartedTime))) / 1000); Serial.print("s, (addr: "); Serial.print(start[currentlyRecording]); Serial.print("+"); Serial.print(finish[currentlyRecording]); Serial.print("); finish[i] = ");Serial.print(finish[currentlyRecording]);Serial.print("\n");
+    CONSOLE.print((byte)note); CONSOLE.print(" at "); CONSOLE.print(((float)((millis() - recordingStartedTime))) / 1000); CONSOLE.print("s, (addr: "); CONSOLE.print(start[currentlyRecording]); CONSOLE.print("+"); CONSOLE.print(finish[currentlyRecording]); CONSOLE.print("); finish[i] = ");CONSOLE.print(finish[currentlyRecording]);CONSOLE.print("\n");
 
     ST_write5(  start[currentlyRecording] + finish[currentlyRecording], 
                 now - recordingStartedTime, 
@@ -132,7 +132,7 @@ void Looper::recordNote(byte control, byte note, byte vel) {
     finish[currentlyRecording] += 5;
     
   } else {
-    Serial.println("memory overrun");
+    CONSOLE.println("memory overrun");
   }
 }
 
@@ -162,7 +162,7 @@ void Looper::playbackLoop() {
 
   if (playing and (millis() - loopStartTime)>maxLoopDuration){ //loop at the end of the longest recording
     loopStartTime += maxLoopDuration;
-    Serial.print("Looping! maxLoopDuration = ");Serial.println(maxLoopDuration);
+    CONSOLE.print("Looping! maxLoopDuration = ");CONSOLE.println(maxLoopDuration);
     for (char i=0; i<NB_LOOPS; i++){
       readingCursor[i]=0;
     }
@@ -171,34 +171,34 @@ void Looper::playbackLoop() {
 
     if (playing & (1 << l)) {
       ST_read5((readingCursor[l] + start[l]), &nextTime, &data1, &data2, &data3);
-      /*Serial.print("Read from ST pos ");Serial.print((readingCursor[l] + start[l])*5);
-      Serial.print("; next time: ");Serial.print((float)nextTime/1000);
-      Serial.print("s; data: ");Serial.print(data1, HEX);
-      Serial.print(" ");Serial.print(data2, HEX);
-      Serial.print(" ");Serial.print(data3, HEX);
-      Serial.println("");*/
+      /*CONSOLE.print("Read from ST pos ");CONSOLE.print((readingCursor[l] + start[l])*5);
+      CONSOLE.print("; next time: ");CONSOLE.print((float)nextTime/1000);
+      CONSOLE.print("s; data: ");CONSOLE.print(data1, HEX);
+      CONSOLE.print(" ");CONSOLE.print(data2, HEX);
+      CONSOLE.print(" ");CONSOLE.print(data3, HEX);
+      CONSOLE.println("");*/
 
-      Serial.print("PlaybackLoop: ");
-      Serial.print("Pos="); Serial.print(readingCursor[l] + start[l]);
-      Serial.print("; Now?="); Serial.print(nextTime <= (millis() - loopStartTime) % maxLoopDuration);
-      Serial.print("; Current time="); Serial.print((millis() - loopStartTime) % maxLoopDuration);
-      Serial.print("; Target time="); Serial.print(nextTime );
-      Serial.print("; Maxloop duration="); Serial.print(maxLoopDuration);
-      Serial.print("; Track continuing?="); Serial.println(readingCursor[l] < (start[l] + finish[l]));
-      //    char buf[256];sprintf(buf, "(%d) readingCurstor: %d<%d+%d", l, readingCursor[l], start[l], finish[l]);Serial.println(buf);
+      CONSOLE.print("PlaybackLoop: ");
+      CONSOLE.print("Pos="); CONSOLE.print(readingCursor[l] + start[l]);
+      CONSOLE.print("; Now?="); CONSOLE.print(nextTime <= (millis() - loopStartTime) % maxLoopDuration);
+      CONSOLE.print("; Current time="); CONSOLE.print((millis() - loopStartTime) % maxLoopDuration);
+      CONSOLE.print("; Target time="); CONSOLE.print(nextTime );
+      CONSOLE.print("; Maxloop duration="); CONSOLE.print(maxLoopDuration);
+      CONSOLE.print("; Track continuing?="); CONSOLE.println(readingCursor[l] < (start[l] + finish[l]));
+      //    char buf[256];sprintf(buf, "(%d) readingCurstor: %d<%d+%d", l, readingCursor[l], start[l], finish[l]);CONSOLE.println(buf);
      
     if (nextTime <= (millis() - loopStartTime) % maxLoopDuration and readingCursor[l] < start[l] + finish[l] ) { //Time for this one
       /*if (readingCursor[l]<start[l]+finish[l]){ //play in loop; TODO: only for short loops; and add time to the timestamp 
         //divide the duration of this loop by the longest loop; round to the closest integer; add the corresponding fraction of the longest loop to the timestamp
         readingCursor[l] = start[l];
       }*/
-      Serial.print("Playing loop "); Serial.print(l); 
-      Serial.print(",pos="); Serial.print(readingCursor[l] + start[l]);
-      Serial.print("; Current time="); Serial.print((millis() - loopStartTime) % maxLoopDuration);
-      Serial.print("; Target time="); Serial.print(nextTime );
-      Serial.print(",data: "); Serial.print(data1, HEX);
-      Serial.print(", "); Serial.print(data2, HEX);
-      Serial.print(", "); Serial.println(data3, HEX);
+      CONSOLE.print("Playing loop "); CONSOLE.print(l); 
+      CONSOLE.print(",pos="); CONSOLE.print(readingCursor[l] + start[l]);
+      CONSOLE.print("; Current time="); CONSOLE.print((millis() - loopStartTime) % maxLoopDuration);
+      CONSOLE.print("; Target time="); CONSOLE.print(nextTime );
+      CONSOLE.print(",data: "); CONSOLE.print(data1, HEX);
+      CONSOLE.print(", "); CONSOLE.print(data2, HEX);
+      CONSOLE.print(", "); CONSOLE.println(data3, HEX);
       readingCursor[l] += 5;
       sendMidi(data1, data2, data3);
       //TODO: Manage loops that are shorter than others?

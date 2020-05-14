@@ -50,16 +50,16 @@ void SR_map(unsigned char green, unsigned char red){
 //EEPROM storage (on i2c bus)
 
 void ST_write1(unsigned long int addr, byte data){
-  Wire.beginTransmission(ADDR_EEPROM);
+  /*Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.write(data);
   Wire.endTransmission();
-}
+*/}
 
 void ST_write5(unsigned long int addr, unsigned long int timestamp, byte data1, byte data2, byte data3){
-  //Serial.print("Writing to ");Serial.println(addr);
-  Wire.beginTransmission(ADDR_EEPROM);
+  //CONSOLE.print("Writing to ");CONSOLE.println(addr);
+ /* Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.write(((timestamp >>11)&255)); //record ~100th of seconds over 16 bits, so max duration is ~50 minutes
@@ -67,47 +67,47 @@ void ST_write5(unsigned long int addr, unsigned long int timestamp, byte data1, 
   Wire.write(data1);
   Wire.write(data2);
   Wire.write(data3);
-  Wire.endTransmission();
+  Wire.endTransmission();*/
   delay(4);
 }
 
 void ST_write2(unsigned long int addr, int data){
-  Wire.beginTransmission(ADDR_EEPROM);
+  /*Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.write(data >> 8);
   Wire.write(data & 0xFF);
-  Wire.endTransmission();
+  Wire.endTransmission();*/
 }
 
 byte ST_read1(unsigned long int addr){
   char rdata;
-  Wire.beginTransmission(ADDR_EEPROM);
+ /* Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.endTransmission();
   Wire.beginTransmission(ADDR_EEPROM);
   Wire.requestFrom(0x50, 1);
   rdata = Wire.read();
-  Wire.endTransmission();
+  Wire.endTransmission();*/
   return rdata;
 }
 
 int ST_read2(unsigned long int addr){
   int rdata;
-  Wire.beginTransmission(ADDR_EEPROM);
+/*  Wire.beginTransmission(ADDR_EEPROM);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.endTransmission();
   Wire.beginTransmission(ADDR_EEPROM);
   Wire.requestFrom(0x50, 2);
   rdata = (int)Wire.read()*256+Wire.read();
-  Wire.endTransmission();
+  Wire.endTransmission();*/
   return rdata;
 }
 
 void ST_read5(unsigned long int addr, unsigned long int* timestamp, byte* data1, byte* data2, byte* data3){
-  Wire.beginTransmission(0x50);
+ /* Wire.beginTransmission(0x50);
   Wire.write(addr >> 8);
   Wire.write(addr & 0xFF);
   Wire.endTransmission();
@@ -117,7 +117,7 @@ void ST_read5(unsigned long int addr, unsigned long int* timestamp, byte* data1,
   *data1 = Wire.read();
   *data2 = Wire.read();
   *data3 = Wire.read();
-  Wire.endTransmission();
+  Wire.endTransmission();*/
 }
 
 ///////////////////////////////////////////////
@@ -180,8 +180,8 @@ unsigned char AB::readVel(byte i){
 void AB::init(){
   //Restore analog buttons calibration from EEPROM
   for (char i=0; i<NB_AB; i++){
-    EEPROM.get(E_AB_CALIBRATION+i*4, AB_cal[i][1]);
-    EEPROM.get(E_AB_CALIBRATION+i*4+2, AB_cal[i][2]);
+    //EEPROM.get(E_AB_CALIBRATION+i*4, AB_cal[i][1]);
+    //EEPROM.get(E_AB_CALIBRATION+i*4+2, AB_cal[i][2]);
     AB_cal[i][2]=max(AB_cal[i][2], AB_cal[i][1]+10);
   } 
 }
@@ -234,8 +234,8 @@ void AB::calibrate(){
 
   //save to EEROM
   for (char i=0; i<NB_AB; i++){
-    EEPROM.put(E_AB_CALIBRATION+i*4, AB_cal[i][1]);
-    EEPROM.put(E_AB_CALIBRATION+i*4+2, AB_cal[i][2]);
+    //EEPROM.put(E_AB_CALIBRATION+i*4, AB_cal[i][1]);
+    //EEPROM.put(E_AB_CALIBRATION+i*4+2, AB_cal[i][2]);
   }
 }
 
@@ -263,8 +263,8 @@ void noteOn(char pitch, char vel, char channel) {
   MIDI_SERIAL.write(pitch);
   MIDI_SERIAL.write(vel);
 #endif
-  //Serial.print("On: ");Serial.println((int)pitch);
-  //countN++; Serial.println(countN);
+  //CONSOLE.print("On: ");CONSOLE.println((int)pitch);
+  //countN++; CONSOLE.println(countN);
 }
 
 void noteOff(char pitch, char channel) {
@@ -277,8 +277,8 @@ void noteOff(char pitch, char channel) {
   MIDI_SERIAL.write(pitch);
   MIDI_SERIAL.write((byte)0);
 #endif
-  //Serial.print("Off: ");Serial.println((int)pitch);
-  //countN--; Serial.println(countN);
+  //CONSOLE.print("Off: ");CONSOLE.println((int)pitch);
+  //countN--; CONSOLE.println(countN);
 } 
 
 void setMidiControl(char m, char v, char channel){

@@ -1,6 +1,6 @@
 /////////////////
 //This version goes on:
-// * v7 & V8 & V9 & V10 boards (2019-05)
+// * v11/v12 (March 2020, STM32 MCU and capacitive touch keys)
 
 /*TODO V11 board support:
  * Heart transplant:
@@ -11,12 +11,13 @@
  * Drive the SR-OE pin to remove the blinking of the AB backlight pins
  * Add self-power off
  * EEprom: switch to SPI. Remember to set the FLASH-CS pin to high-impedence during power-on and power-off, so that it follows VBUS
+ * EEPROM.get()/put(): review all calls
+ * Wire.write(): review all calls
  * Measure the MOSFET voltage drop, decide whether to keep it
  * 
  */
 
 /*TODO:
- * Store in flash memory wheter to use the ARef voltage reference 
  * Review AB::readVel(byte)
  * Display something
  * Looping
@@ -85,38 +86,40 @@ byte current_instrument = 22; //1=Piano; 22=accordion; 25=nylon guitar
 ///////////////////////////////////////////////
 //Setup
 void setup() {
-  Serial.begin(9600);
+  //CONSOLE.begin(115200);
 
-  Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip and display
-  for (char i=0; i<NB_DB; i++){
-    pinMode( DB[i], INPUT_PULLUP); //Mode switch
-  }
+  //Wire.setClock(3400000); //I2C high speed mode. Tested with the memory chip and display
+  //for (char i=0; i<NB_DB; i++){
+  //  pinMode( DB[i], INPUT_PULLUP); //Mode switch
+  //}
   pinMode( SR_DATA, OUTPUT);
   pinMode( SR_CLK, OUTPUT);
-  SR_blank();
+  pinMode( SR_OE, OUTPUT);
+  //SR_blank();
   //analogReference(EXTERNAL); //voltage divider //DEFAULT V8; INTERNAL or EXTERNAL for V10
-  analogReference(DEFAULT);//5V 
+  //analogReference(DEFAULT);//5V 
   //analogReference(INTERNAL); //1V1 or 2V56
   
 #ifdef OUT_SERIAL
   delay(500);
-  MIDI_SERIAL.begin(31250);
+  //MIDI_SERIAL.begin(31250);
 #endif
-  char v = EEPROM.read(E_VOLUME);
+  //char v = EEPROM.read(E_VOLUME);
   if (v){
     volume = v;
   }
-  setMidiControl(MIDI_VOLUME, volume, 0);
+  //setMidiControl(MIDI_VOLUME, volume, 0);
 
   
-  //setMidiControl(MIDI_RELEASE, 127);
-  //setMidiControl(MIDI_EXPRESSION, 127);//Max keyboard xpression, for debugging
-  setMidiInstr(current_instrument, 0); 
+  // //setMidiControl(MIDI_RELEASE, 127);
+  // //setMidiControl(MIDI_EXPRESSION, 127);//Max keyboard xpression, for debugging
+  //setMidiInstr(current_instrument, 0); 
 
   //OLED display
-  Serial.println("initializing display");
+  /*
+  CONSOLE.println("initializing display");
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3D)) { // Address 0x3D for 128x64
-    Serial.println(F("SSD1306 failed"));
+    CONSOLE.println(F("SSD1306 failed"));
     //  for(;;); // Don't proceed, loop forever
   } else {
     display.clearDisplay();
@@ -128,6 +131,7 @@ void setup() {
   
     display.print("Hello\n hello");
     display.display();
+    */
   }
   delay(100);//let the analog pins settle
 }
@@ -251,7 +255,6 @@ void loopB_Loop(){ //Loop & tune
   SR_blank();
 }
 
-
 void loopB_Rythm(){
 }
 
@@ -328,12 +331,12 @@ void loopB_Chord(int b, int velocity){
     effect1 = AB::readVel(keybExpression[b][0]);
     effect2 = AB::readVel(keybExpression[b][1]);
     if (abs(effect1-effect1_old)>5){
-      Serial.print("Effect1: ");Serial.println(effect1);
+      CONSOLE.print("Effect1: ");CONSOLE.println(effect1);
       setMidiControl(MIDI_EXPRESSION, 127-effect1*3/5, 0);
       effect1_old = effect1;
     }
     if (abs(effect2-effect2_old)>5){
-      Serial.print("Effect2: ");Serial.println(effect2);
+      CONSOLE.print("Effect2: ");CONSOLE.println(effect2);
       setMidiControl(MIDI_PITCH_BEND, 0, (64-(effect2)/2), 0);
       effect2_old = effect2;
     } 
@@ -361,9 +364,9 @@ void loopB(){ //Play music based on button presses
   for (int i=0; i<NB_AB; i++){
     int v = AB::readVel(i);
     if (v){
-      Serial.print("Chord ");Serial.println(i);
+      CONSOLE.print("Chord ");CONSOLE.println(i);
       loopB_Chord(i, v);
-      Serial.println("Chord finished");
+      CONSOLE.println("Chord finished");
       
       break;
     }  
@@ -391,15 +394,15 @@ void loopB(){ //Play music based on button presses
 
 void loop() {
   static int i;
-  //Serial.println("Loop!");
-  //delay(100);
+  CONSOLE.println("Loop!");
+  delay(1000);
   //loop1(); //Test the digital buttons
   //loop2(); //Test the analog buttons. Display on Serial Plotter
   //loop4(); //Display the pressure level of each key, after application of the response curve
   //loop5(); //play MIDI notes
-  //loop7(); //chenillard (shift registers): run through all buttons, alternating between green and red.
+  loop7(); //chenillard (shift registers): run through all buttons, alternating between green and red.
   //loop13();//display the contents of ST storage memory 
   //loop14();//test reading and writing the same info to ST storage memory
   //reset_EEPROM();
-  loopB(); //Normal loop, play music
+  //loopB(); //Normal loop, play music
 }

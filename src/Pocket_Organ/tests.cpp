@@ -11,11 +11,11 @@
 
 void reset_EEPROM(){
   delay(5000);
-  Serial.print("Resetting memory...");
+  CONSOLE.print("Resetting memory...");
   for (int i=0; i<128; i++){
     EEPROM.write(i, 0);
   }
-  Serial.println("Done");
+  CONSOLE.println("Done");
   do{}while(1); 
 }
 
@@ -23,20 +23,20 @@ void loop14(){//test reading and writing the same info to ST storage memory
   unsigned long int nextTime = 12345;
   byte data1=13, data2=27, data3=37;
   delay(1000);
-    Serial.print("Writing:  ");
-    Serial.print("time: ");Serial.print(nextTime, HEX);
-    Serial.print("; data: ");Serial.print(data1, HEX);
-    Serial.print(" ");Serial.print(data2, HEX);
-    Serial.print(" ");Serial.print(data3, HEX);
-    Serial.println("");
+    CONSOLE.print("Writing:  ");
+    CONSOLE.print("time: ");CONSOLE.print(nextTime, HEX);
+    CONSOLE.print("; data: ");CONSOLE.print(data1, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data2, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data3, HEX);
+    CONSOLE.println("");
   ST_write5(0, nextTime, data1, data2, data3);
   ST_read5(0, &nextTime, &data1, &data2, &data3);
-    Serial.print("Reading:  ");
-    Serial.print("; time: ");Serial.print(nextTime, HEX);
-    Serial.print("; data: ");Serial.print(data1, HEX);
-    Serial.print(" ");Serial.print(data2, HEX);
-    Serial.print(" ");Serial.print(data3, HEX);
-    Serial.println("\n");
+    CONSOLE.print("Reading:  ");
+    CONSOLE.print("; time: ");CONSOLE.print(nextTime, HEX);
+    CONSOLE.print("; data: ");CONSOLE.print(data1, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data2, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data3, HEX);
+    CONSOLE.println("\n");
   delay(20000);
 }
 
@@ -46,14 +46,14 @@ void loop13(){ //display the contents of ST storage memory
   delay(1000);
   for (byte l=0; l<16 /*DEBGUG: NB_LOOPS*/; l++){
     ST_read5(l*5, &nextTime, &data1, &data2, &data3);
-    Serial.print("Read from ST pos ");Serial.print(l);
-    Serial.print("; next time: ");Serial.print((float)nextTime/1000);
-    Serial.print("s; data: ");Serial.print(data1, HEX);
-    Serial.print(" ");Serial.print(data2, HEX);
-    Serial.print(" ");Serial.print(data3, HEX);
-    Serial.println("");
+    CONSOLE.print("Read from ST pos ");CONSOLE.print(l);
+    CONSOLE.print("; next time: ");CONSOLE.print((float)nextTime/1000);
+    CONSOLE.print("s; data: ");CONSOLE.print(data1, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data2, HEX);
+    CONSOLE.print(" ");CONSOLE.print(data3, HEX);
+    CONSOLE.println("");
   }
-  Serial.println("");
+  CONSOLE.println("");
   delay(20000);
 }
 
@@ -65,28 +65,28 @@ void loop12(){//display the contents of ST storage memory
   address=0;    
   for (byte i; i<10; i++){
     ST_read5(address*5, &nextTime, &data1, &data2, &data3);
-    Serial.print(address);
-    Serial.print(": ");
-      Wire.beginTransmission(0x50);
+    CONSOLE.print(address);
+    CONSOLE.print(": ");
+  /*    Wire.beginTransmission(0x50);
       Wire.write(address*5 >> 8);
       Wire.write(address*5 & 0xFF);
       Wire.endTransmission();
       Wire.beginTransmission(0x50);
       Wire.requestFrom(0x50, 5);
       for (byte j=0;j<5; j++){
-        Serial.print(Wire.read(), HEX);
-        Serial.print(" "); 
+        CONSOLE.print(Wire.read(), HEX);
+        CONSOLE.print(" "); 
       }  
-      Wire.endTransmission();
+      Wire.endTransmission();*/
 
-    Serial.print(((float)nextTime)/1000);
-    Serial.print("s, ");
-    Serial.print(data1,HEX);
-    Serial.print(" ");
-    Serial.print(data2);
-    Serial.print(" ");
-    Serial.print(data3,HEX);
-    Serial.print("\n");
+    CONSOLE.print(((float)nextTime)/1000);
+    CONSOLE.print("s, ");
+    CONSOLE.print(data1,HEX);
+    CONSOLE.print(" ");
+    CONSOLE.print(data2);
+    CONSOLE.print(" ");
+    CONSOLE.print(data3,HEX);
+    CONSOLE.print("\n");
     address++;
   }
   delay(20000);
@@ -137,13 +137,13 @@ void loop8(){ //manually control the backlight shift registers by pressing butto
     dSwitch = !dSwitch;
     digitalWrite(SR_DATA, dSwitch);
     digitalWrite(13, dSwitch);
-    Serial.print("Data: ");
-    Serial.println((int)dSwitch);
+    CONSOLE.print("Data: ");
+    CONSOLE.println((int)dSwitch);
     do{delay(100);} while (not(digitalRead(B_DATA)));
   }
   if (not(digitalRead(B_CLK))){
     digitalWrite(SR_CLK, 1);
-    Serial.println("Clock pulse");
+    CONSOLE.println("Clock pulse");
     delay(100);
     digitalWrite(SR_CLK, 0);
     do{delay(100);} while (not(digitalRead(B_CLK)));
@@ -153,6 +153,7 @@ void loop8(){ //manually control the backlight shift registers by pressing butto
 void loop7(){ //chenillard (shift registers): run through all buttons, alternating between green and red.
   char a;
   do {   
+    digitalWrite(SR_OE, 0);
     digitalWrite(SR_DATA, 1);
     digitalWrite(SR_CLK, 1);
     digitalWrite(SR_CLK, 0);
@@ -179,7 +180,7 @@ void loop7(){ //chenillard (shift registers): run through all buttons, alternati
 void loop5(){//play MIDI notes
   for (byte i=40; i<70; i++){
     noteOn(i, 127,0);
-    Serial.print(".");
+    CONSOLE.print(".");
     delay(500);
     noteOff(i,0);
   }
@@ -190,10 +191,10 @@ void loop4(){ //Display the pressure level of each key, after application of the
   int r;
   for (i=0; i<NB_AB; i++){ //iterate over keys 
     vel = AB::readVel(i);
-    Serial.print((int)vel);
-    Serial.print(",");
+    CONSOLE.print((int)vel);
+    CONSOLE.print(",");
   }
-  Serial.print("0,126\n");
+  CONSOLE.print("0,126\n");
 }
 /*
 void loop3(){ 
@@ -214,16 +215,16 @@ unsigned int kk[7][2] =
   }
   
   do{
-    Serial.print("\n{");
+    CONSOLE.print("\n{");
     for (int i=0; i<NB_AB; i++){
       a=analogRead( AB_cal[i][0]);
       kk[i][1]=max(a, kk[i][1]); 
-      Serial.print(AB_cal[i][0]);
-      Serial.print(",");
-      Serial.print(kk[i][0]);
-      Serial.print(",");
-      Serial.print(kk[i][1]);
-      Serial.print("},\n{");
+      CONSOLE.print(AB_cal[i][0]);
+      CONSOLE.print(",");
+      CONSOLE.print(kk[i][0]);
+      CONSOLE.print(",");
+      CONSOLE.print(kk[i][1]);
+      CONSOLE.print("},\n{");
     }    
   } while (1);
 }
@@ -231,10 +232,10 @@ unsigned int kk[7][2] =
 
 void loop2() { //Test the analog buttons. Display on Serial Plotter
   for (int i=0; i<NB_AB; i++){
-    Serial.print(AB::readVal(i));
-    Serial.print(",");
+    CONSOLE.print(AB::readVal(i));
+    CONSOLE.print(",");
   }
-  Serial.print("0,1024\n");
+  CONSOLE.print("0,1024\n");
 }
 
 
@@ -247,11 +248,11 @@ void loop1() { //Test the digital buttons
     }
   }
   if (prevTotal != total){
-    //Serial.println((int)total);
+    //CONSOLE.println((int)total);
     for (char i=0; i<NB_DB; i++){
-      Serial.print(digitalRead(DB[i])?"1,":"0,");
+      CONSOLE.print(digitalRead(DB[i])?"1,":"0,");
     }
-    Serial.println();
+    CONSOLE.println();
   }
   prevTotal = total;
 }
