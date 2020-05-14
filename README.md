@@ -15,7 +15,7 @@ The aim of this project is to develop a real musical instrument that:
 * is easier to learn and play than most instruments out there
 * is so affordable that aspiring musicians would consider it
 * has enough depth and expessivity that experienced musicians might appreciate it
-* is convenient and versatile, fitting in your pocket and playable over a headphone or a MIDI toolchain.
+* is convenient and versatile, fitting in your pocket and playable over a headphone or a MIDI DAW.
 * is widely available, ideally from multiple manufacturers, under the generic term "pocket organ".
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
