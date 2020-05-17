@@ -35,7 +35,7 @@ This branch of the project culminated in functional prototypes.
 The analog keys use a sheet of Velostat (a pressure-sensitive, conductive plastic) and a silicone keypad.
 
 * The device is built around a micro-controller (currently AtMEGA 32u4) and single-chip MIDI synth (SAM2695).
-* code is written in C++, for the Arduino IDE
+* code is written in C++, for the Arduino IDE. See the "src" directory.
 * It is smaller but thicker than a smartphone (12.5*6*1.5cm)
 * The device uses a silicone keypad for all push buttons
  * You can find a 3D model together with the enclosure, and 3D-print it, then use it to cast silicone
@@ -52,7 +52,7 @@ I've decided to move away from this principle, after:
 I've basically restarted from scratch at the beginning of 2020. This branch has:
 * capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
 * a STM32F405 MCU
-* I'm re-writing the whole code in Micropython.
+* I'm re-writing the whole code in Micropython. See the "Py" directory
 
 ![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V12/V12_assembled.jpg)
 
