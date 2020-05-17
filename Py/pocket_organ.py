@@ -1,5 +1,12 @@
 import keyboard
 import midi
+import time
+
+
+#Todo:
+# * read the keyboard interrupt; then set the threshold one step lower and measure the time to get an
+# interrupt again. Are the readings consistant enough to estimate key velocity?
+
 
 class PocketOrgan:
     def __init__(self):
@@ -10,6 +17,57 @@ class PocketOrgan:
 #            self.k.c1.set_threshold(i, 10)
         for i, v in enumerate([6, 6, 6, 12, 12, 12, 8, 8, 8]):
             self.k.c1.set_threshold(i, v)
+    
+    def loop_volume(self):
+        while self.k.volume_command():
+            #TODO
+            #
+            #
+            self.k.read()
+
+    def loop_key(self):
+        #TODO
+        pass
+
+    def loop_instr(self):
+        """Let the user select an instrument from the MIDI bank for the current channel.
+        Either one press on a note key (choose the 1st instrument of the family)
+        or 2 successive presses (choose an instrument within this family).
+        """
+        instr = 0 #output
+        k1 = k1_shift = k2 = 0 #these are the successive keys pressed for instrument
+        while not(self.k.instr_pin()):
+            #TODO display "instrument setting"
+            #print("instr");time.sleep_ms(200);
+            #TODO: display whether the shift key is being pressed
+            p, k1 = self.k.note_key()
+            if p: #1st key pressed
+                #TODO:display
+                print("Selected family: {}".format(midi.instrument_families[k1]))
+                k1_shift = self.k.shift
+                while p and not(self.k.instr_pin()):
+                    self.k.read()
+                    p, k0 = self.k.note_key()
+                #1st key released
+                instr = (k1 + (k1_shift<<4))<<3
+                if self.k.instr_pin(): #instr key released
+                    break
+                while not p and not(self.k.instr_pin()):
+                    #wait for 2nd key press
+                    self.k.read()
+                    p, k2 = self.k.note_key()
+                if p:
+                    instr += k2
+                print("Selected instrument: {}".format(midi.instrument_names[instr]))
+
+            self.k.read()
+
+    def loop_waiting(self):
+        "starting loop, waiting for 1st keypress"
+        while 1:
+            self.k.read()
+            if not(self.k.instr_pin()) and not(self.k.shift): #MIDI instrument selection loop
+                self.loop_instr()
     
     def play_notes(self):
         while 1:
@@ -22,4 +80,6 @@ class PocketOrgan:
                     #stop playing i
                     self.midi.note_off(0, self.scale[i])
 
-o = PocketOrgan()
+o = PocketOrgan()
+#o.play_notes()
+o.loop_waiting()
