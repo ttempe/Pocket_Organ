@@ -66,20 +66,41 @@ class PocketOrgan:
         "starting loop, waiting for 1st keypress"
         while 1:
             self.k.read()
-            if not(self.k.instr_pin()) and not(self.k.shift): #MIDI instrument selection loop
-                self.loop_instr()
-    
-    def play_notes(self):
-        while 1:
-            self.k.read()
-            for i in range(0,3):
+
+            if self.k.shift:
+                #Enter the melody mode. If a chord was playing, it keeps going in the background
+                #TODO: dispatch melody mode to a separate channel
+                self.loop_shift()
+                #TODO: stop the running chord as you leave melody mode
+
+            #Note keys
+            for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     #start playing i
                     self.midi.note_on(0, self.scale[i])
+                    #print("On: {}".format(i));time.sleep_us(200)#
                 elif self.k.notes_old[i] and not self.k.notes[i]:
                     #stop playing i
                     self.midi.note_off(0, self.scale[i])
+                    #print("Off: {}".format(i));time.sleep_us(200)#
 
-o = PocketOrgan()
+            #MIDI instrument selection loop
+            if not(self.k.instr_pin()): 
+                self.loop_instr()
+    
+    def loop_shift(self):
+        while self.k.shift:
+            for i in range(0,8):
+                if self.k.notes[i] and not self.k.notes_old[i]:
+                    #start playing i
+                    self.midi.note_on(0, self.scale[i])
+                    #print("On: {}".format(i));time.sleep_us(200)#
+                elif self.k.notes_old[i] and not self.k.notes[i]:
+                    #stop playing i
+                    self.midi.note_off(0, self.scale[i])
+                    #print("Off: {}".format(i));time.sleep_us(200)#
+            self.k.read()
+
+o = PocketOrgan() 
 #o.play_notes()
 o.loop_waiting()
