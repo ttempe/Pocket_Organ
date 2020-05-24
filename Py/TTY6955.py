@@ -62,7 +62,7 @@ class TTY6955:
         Lets you set custom thresholds for each pad, for use
         with dynamic_threshold=False.
         sensitivity is a 12-bit integer.
-        The lower the value, the less sensitive the pad.
+        The lower the value, the more sensitive the pad.
         The datasheet recommends defaulting to 0x010, going no lower
         than 0x008. If sensitivity is still not sufficient with 0x008,
         it recommends increasing the CS capacitor (while keeping it under
