@@ -192,4 +192,5 @@ instrument_names = [
     "Melodic Tom",
     "Synth Drum",
     "Reverse Cymbal",
-    "Guitar Fr
+    "Guitar Fr"
+    ]
