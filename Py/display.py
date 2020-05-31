@@ -23,15 +23,25 @@ class Display:
                            external_vcc=False)
 
         self.disp.contrast(50)
-        self.disp.rotate180()
+        #self.disp.rotate180()
+        self.disp.write_cmd(0xc8)
+        self.disp.write_cmd(0xb0)
         self.disp.framebuf.blit(load_image("img/logo.pbm")[0],0,0)
         self.disp.show()
 
 
-    def disp_image(self):
-        self.disp.framebuf.blit(load_image("img/logo.pbm"), 0, 0)
-        #self.disp.blit(fbuf, 0, 0)
+    def disp_image(self, img):
+        self.disp.framebuf.blit(load_image(img), 0, 0)
         self.disp.show()
 
     def disp_chord(self, text):
-        """Displays tex
+        """Displays text using the large font"""
+        x = 0
+        self.disp.fill(0)
+        for c in text:
+            img, width, height = load_image("img/"+c+".pbm") 
+            self.disp.framebuf.blit(img, x, 0)
+            x += width
+        self.disp.show()
+            
+#end
