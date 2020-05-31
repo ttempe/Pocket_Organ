@@ -14,27 +14,28 @@ import midi
 
 
 class Polyphony:
-    def __init__(self):
+    def __init__(self, keyboard):
         self.pending = []   #list of notes scheduled for playing in the future
-                            #format of each note: (channel, note, velocity, ticks_ms)
+                            #format of each note: (note, velocity, ticks_ms)
         self.midi = midi.Midi()
+        self.chord_channel = 0
+        self.melody_channel = 1
+        self.k = keyboard
+        self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
         
-    def play_chord(self, channel, notes, velocity, timing): #timing = number of ms between successive notes
+    def start_chord(self):
+        root = self.scale[self.k.current_note_key] #current_note_key should not be None
+        self.play_chord([root,
+                         root + 4 - bool(self.k.minor),
+                         root + 7
+                         ], 64, 40)
+    
+    def play_chord(self, notes, velocity, timing): #timing = number of ms between successive notes
         """Starts playing a list of notes.
         The 1st one is played immediately, the following ones are spaced by timing (in milliseconds).
         """
-        self.midi.note_on(channel, notes[0], velocity) 
-        for i, n in enumerate(notes, start=1):
-            self.pending.append((channel, n, velocity, time.ticks_ms()+timing*i))
+        self.midi.note_on(self.chord_channel, notes[0], velocity) 
+        for i, n in enumerate(notes[1:], start=1):
+            self.pending.append((n, velocity, time.ticks_ms()+timing*i))
     
-    def stop_chord(self, channel):
-        self.pending = []
-        #TODO: send a midi signal to kill all notes from this channel
-    
-    def loop(self):
-        #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
-        next = self.pending[0][3]
-        if next <= time.ticks_ms():
-            n = self.pending.pop(0)
-            self.midi.note_on(n[0], n[1], n[2])
-        
+   

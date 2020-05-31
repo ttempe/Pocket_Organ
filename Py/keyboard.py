@@ -50,19 +50,10 @@ class Keyboard:
                                10, 1, 1,          #Shift, N/C, N/C,
                                10, 10, 10, 10]):  #7th, 5th, 3rd, minor
             self.c4.set_threshold(i, p)
-        self.read()
-            
-    def note_key(self):
-        """is one note key being pressed? Returns:
-        * whether a key was pressed
-        * its index
-        """
-        for i, n in enumerate(self.notes):
-            if n:
-                return True, i
-        return False, False
-    
-    def read(self):
+        
+        self.loop()
+                
+    def loop(self):
         self.notes_old = self.notes[:]
         self.note_sliders_old = self.note_sliders[:]
         t=c=0
@@ -110,4 +101,10 @@ class Keyboard:
         self.slider_vol_pressed, self.sl_vol_val = self.c4.slider(2)
         self.slider2_pressed, self.slider2_val = self.c4.slider(1)
         self.slider3_pressed, self.slider3_val = self.c2.slider(3)
-        
+
+        #is there a key being pressed right now?
+        self.current_note_key = None
+        for i, n in enumerate(self.notes):
+            if n:
+                self.current_note_key = i
+                break
