@@ -24,11 +24,14 @@ class Polyphony:
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
         
     def start_chord(self):
-        root = self.scale[self.k.current_note_key] #current_note_key should not be None
-        self.play_chord([root,
+        root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
+        chord = [root,
                          root + 4 - bool(self.k.minor),
                          root + 7
-                         ], 64, 40)
+                         ]
+        if self.k.seventh:
+            chord.append(root+10)
+        self.play_chord(chord, 64, 40)
     
     def play_chord(self, notes, velocity, timing): #timing = number of ms between successive notes
         """Starts playing a list of notes.
@@ -38,4 +41,17 @@ class Polyphony:
         for i, n in enumerate(notes[1:], start=1):
             self.pending.append((n, velocity, time.ticks_ms()+timing*i))
     
-   
+    def stop_chord(self):
+        self.pending = []
+        self.midi.all_off(self.chord_channel)
+    
+    def loop(self):
+        #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
+        if len(self.pending):
+            next = self.pending[0][2]
+            if next <= time.ticks_ms():
+                n = self.pending.pop(0)
+                self.midi.note_on(self.chord_channel, n[0], n[1])
+
+#end
+                
