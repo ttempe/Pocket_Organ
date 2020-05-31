@@ -11,6 +11,7 @@
 
 
 import errno
+import time
 
 class TTY6955:
     def __init__(self, i2c, addr=0x50,
@@ -126,8 +127,18 @@ class TTY6955:
         * the next 2 octets indicate the bit-by-bit status of all touch keys
         * the last 3 octets are the analog reading of the finger position on the 3 sliders
 
-        Call read() before using!
         """
-        for c in self.buf:
-            print("{:08b} ".format(c), end="")
-        print()
+        while 1:
+            self.read()
+            if self.buf[0]&0x80:
+                print("({:02b}) OK; ".format(self.buf[0]>>6), end="")#Status
+                print("Buttons: {:08b} {:08b} ; Sliders: ".format(self.buf[1], self.buf[2]), end="")
+                #print("Sliders: {} {} {} ".format(self.buf[0]&1, (self.buf[0]>>1)&1, (self.buf[0]>>2)&1), end="")
+                for v, t in zip(self.buf[2:5], [(self.buf[0]>>2)&1, self.buf[0]&1, (self.buf[0]>>1)&1] ):
+                    print("  |{}{}{}|".format("-"*((v*10)//255), t, "-"*(10-(v*10)//255),v), end="")
+                print()
+            else:
+                print("({}{}) NOK. Wait for calibration to finish?".format(bool(self.buf[0]&0x80), bool(self.buf[0]&0x40)))#Status
+            time.sleep_ms(100)
+
+#end
