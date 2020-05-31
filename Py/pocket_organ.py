@@ -103,4 +103,11 @@ class PocketOrgan:
                     #start playing i
                     self.midi.note_on(0, self.scale[i])
                     #print("On: {}".format(i));time.sleep_us(200)#
-                elif self.k.notes_old[i] and not self.k.notes[i]:
+                elif self.k.notes_old[i] and not self.k.notes[i]:
+                    #stop playing i
+                    self.midi.note_off(0, self.scale[i])
+                    #print("Off: {}".format(i));time.sleep_us(200)#
+            self.k.loop()
+
+o = PocketOrgan() 
+o.loop_waiting()
