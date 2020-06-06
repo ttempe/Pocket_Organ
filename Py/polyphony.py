@@ -14,14 +14,16 @@ import midi
 
 
 class Polyphony:
-    def __init__(self, keyboard):
+    def __init__(self, keyboard, display):
         self.pending = []   #list of notes scheduled for playing in the future
                             #format of each note: (note, velocity, ticks_ms)
         self.midi = midi.Midi()
         self.chord_channel = 0
         self.melody_channel = 1
         self.k = keyboard
+        self.d = display
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
+        self.chord_names = ["C", "D", "E", "F", "G", "A", "B", "C"]
         
     def start_chord(self):
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
@@ -32,6 +34,13 @@ class Polyphony:
         if self.k.seventh:
             chord.append(root+10)
         self.play_chord(chord, 64, 40)
+        self.d.disp_chord(
+        #print(
+             self.chord_names[self.k.current_note_key] +
+             ("#" if self.k.sharp else "") +
+             ("m" if self.k.minor else "") +
+             ("7" if self.k.seventh else "")
+             )
     
     def play_chord(self, notes, velocity, timing): #timing = number of ms between successive notes
         """Starts playing a list of notes.
@@ -42,9 +51,14 @@ class Polyphony:
             self.pending.append((n, velocity, time.ticks_ms()+timing*i))
     
     def stop_chord(self):
-        self.pending = []
         self.midi.all_off(self.chord_channel)
+        self.pending = []
+        self.d.clear()
     
+    def set_instr(self, instr):
+        self.midi.set_instr(self.chord_channel,  instr)
+        self.midi.set_instr(self.melody_channel, instr)
+
     def loop(self):
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
         if len(self.pending):
@@ -52,6 +66,6 @@ class Polyphony:
             if next <= time.ticks_ms():
                 n = self.pending.pop(0)
                 self.midi.note_on(self.chord_channel, n[0], n[1])
-
+                
 #end
                 

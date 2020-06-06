@@ -2,7 +2,8 @@ import keyboard
 import polyphony
 import midi
 import time
-
+import display
+import instr_names
 
 #Todo:
 # * read the keyboard interrupt; then set the threshold one step lower and measure the time to get an
@@ -11,8 +12,9 @@ import time
 
 class PocketOrgan:
     def __init__(self):
+        self.d = display.Display()
         self.k = keyboard.Keyboard()
-        self.p = polyphony.Polyphony(self.k)
+        self.p = polyphony.Polyphony(self.k, self.d)
         self.midi = midi.Midi()
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
 #        for i in range(0, 9):
@@ -36,35 +38,34 @@ class PocketOrgan:
         Either one press on a note key (choose the 1st instrument of the family)
         or 2 successive presses (choose an instrument within this family).
         """
-        instr = 0 #output
+        instr = None #output
         k1 = k1_shift = k2 = 0 #these are the successive keys pressed for instrument
-        while not(self.k.instr_pin()):
-            #TODO display "instrument setting"
-            #print("instr");time.sleep_ms(200);
+        self.d.text("Choose instrument", duration=1)
+        while self.k.instr:
             #TODO: display whether the shift key is being pressed
             
             if self.k.current_note_key != None: #1st key pressed
-                print("Selected family: {}".format(midi.instrument_families[self.k.current_note_key]))
-                k1 = self.k.current_note_key
-                k1_shift = self.k.shift
+                self.d.text(instr_names.instrument_families[self.k.current_note_key], duration=2000)
                 instr = (self.k.current_note_key + (self.k.shift<<4))<<3
-                while self.k.current_note_key != None and not(self.k.instr_pin()):
+                while self.k.current_note_key != None and self.k.instr:
                     self.k.loop()
-
+                    #Not updating the display
                 #1st key released
-                while self.k.current_note_key == None and not(self.k.instr_pin()):
+                while self.k.current_note_key == None and self.k.instr:
                     #wait for 2nd key press, or Instr key release
                     self.k.loop()
+                    #Not updating the display
                 if self.k.current_note_key != None:
                     #2nd note key pressed
+                    #print("press2");time.sleep_ms(100)
                     instr += self.k.current_note_key
-                print("Selected instrument: {}".format(midi.instrument_names[instr]))
+                self.d.text(instr_names.instrument_names[instr], 1, 2000)
+                self.p.set_instr(instr)
                 
                 #Wait for release of the note key
                 while self.k.current_note_key != None:
                     self.k.loop()
-
-
+                    #Not updating the display
             self.k.loop()
 
     def loop_chord(self):
@@ -73,6 +74,7 @@ class PocketOrgan:
         while self.k.notes[root]:
             self.k.loop()
             self.p.loop()
+            self.d.loop()
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
@@ -81,22 +83,20 @@ class PocketOrgan:
         "starting loop, waiting for 1st keypress"
         while 1:
             self.k.loop()
-            
-            #Melody mode.
+            self.d.loop()
             if self.k.shift:
+                #Melody mode.
                 self.loop_shift()
-
-            #Note keys: play chords
             elif self.k.current_note_key != None:
+                #Note keys: play chords
                 print("On: {} chord".format(self.k.current_note_key));time.sleep_us(50)
                 self.loop_chord() #returns when the chord is released
                 print("Chord off");time.sleep_us(50)
-
-            #MIDI instrument selection loop
-            elif not(self.k.instr_pin()): 
+            elif self.k.instr:
+                #MIDI instrument selection loop
                 self.loop_instr()
     
-    def loop_shift(self):
+    def loop_shift(self): #TODO
         while self.k.shift:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
@@ -108,6 +108,16 @@ class PocketOrgan:
                     self.midi.note_off(0, self.scale[i])
                     #print("Off: {}".format(i));time.sleep_us(200)#
             self.k.loop()
+            self.d.loop()
 
-o = PocketOrgan() 
+# while 1:
+#     try:
+#         o = PocketOrgan() 
+#         o.loop_waiting()
+#     except ENODEV:
+#          pass
+o = PocketOrgan()
 o.loop_waiting()
+
+
+#end
