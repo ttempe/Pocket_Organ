@@ -37,7 +37,8 @@ class Midi:
         self.buf3[0] = 0xC0 | (channel & 0x0F)
         self.buf3[1] = 0
         self.buf3[2] = instr & 0x7F
-
+        self.uart.write(self.buf3)
+        
     def test2(self):
         while 1 :
             self.note_on(0, 60)
