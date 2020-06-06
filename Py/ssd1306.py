@@ -13,9 +13,11 @@ SET_MEM_ADDR        = const(0x20)
 SET_COL_ADDR        = const(0x21)
 SET_PAGE_ADDR       = const(0x22)
 SET_DISP_START_LINE = const(0x40)
-SET_SEG_REMAP       = const(0xa0)
+SET_SEG_REMAP_MIRROR= const(0xa0)
+SET_SEG_REMAP       = const(0xa1)
 SET_MUX_RATIO       = const(0xa8)
-SET_COM_OUT_DIR     = const(0xc0)
+SET_COM_OUT_DIR_MIRROR = const(0xc0)
+SET_COM_OUT_DIR     = const(0xc8)
 SET_DISP_OFFSET     = const(0xd3)
 SET_COM_PIN_CFG     = const(0xda)
 SET_DISP_CLK_DIV    = const(0xd5)
@@ -25,7 +27,7 @@ SET_CHARGE_PUMP     = const(0x8d)
 
 
 class SSD1306:
-    def __init__(self, width, height, external_vcc):
+    def __init__(self, width, height, external_vcc, mirror_v=False, mirror_h=False):
         self.width = width
         self.height = height
         self.external_vcc = external_vcc
@@ -34,18 +36,19 @@ class SSD1306:
         # This is necessary because the underlying data buffer is different
         # between I2C and SPI implementations (I2C needs an extra byte).
         self.poweron()
-        self.init_display()
+        self.init_display(mirror_v, mirror_h)
 
-    def init_display(self):
+    def init_display(self, mirror_v=False, mirror_h=False):
         for cmd in (
             SET_DISP | 0x00, # off
             # address setting
             SET_MEM_ADDR, 0x00, # horizontal
             # resolution and layout
             SET_DISP_START_LINE | 0x00,
-            SET_SEG_REMAP | 0x01, # column addr 127 mapped to SEG0
+            #SET_SEG_REMAP, # column addr 127 mapped to SEG0
+            SET_SEG_REMAP_MIRROR if mirror_h else SET_SEG_REMAP, # column addr 127 mapped to SEG0?
             SET_MUX_RATIO, self.height - 1,
-            SET_COM_OUT_DIR | 0x08, # scan from COM[N] to COM0
+            SET_COM_OUT_DIR_MIRROR if mirror_v else SET_COM_OUT_DIR, # scan from COM[N] to COM0?
             SET_DISP_OFFSET, 0x00,
             SET_COM_PIN_CFG, 0x02 if self.height == 32 else 0x12,
             # timing and driving scheme
@@ -62,7 +65,7 @@ class SSD1306:
             self.write_cmd(cmd)
         self.fill(0)
         self.show()
-
+        
     def poweroff(self):
         self.write_cmd(SET_DISP | 0x00)
 
@@ -102,7 +105,7 @@ class SSD1306:
 
 
 class SSD1306_I2C(SSD1306):
-    def __init__(self, width, height, i2c, addr=0x3c, external_vcc=False):
+    def __init__(self, width, height, i2c, addr=0x3c, external_vcc=False, mirror_v=False, mirror_h=False):
         self.i2c = i2c
         self.addr = addr
         self.temp = bytearray(2)
@@ -114,7 +117,7 @@ class SSD1306_I2C(SSD1306):
         self.buffer = bytearray(((height // 8) * width) + 1)
         self.buffer[0] = 0x40  # Set first byte of data buffer to Co=0, D/C=1
         self.framebuf = framebuf.FrameBuffer1(memoryview(self.buffer)[1:], width, height)
-        super().__init__(width, height, external_vcc)
+        super().__init__(width, height, external_vcc, mirror_v, mirror_h)
 
     def write_cmd(self, cmd):
         self.temp[0] = 0x80 # Co=1, D/C#=0
@@ -131,7 +134,7 @@ class SSD1306_I2C(SSD1306):
 
 
 class SSD1306_SPI(SSD1306):
-    def __init__(self, width, height, spi, dc, res, cs, external_vcc=False):
+    def __init__(self, width, height, spi, dc, res, cs, external_vcc=False, mirror_v=False, mirror_h=False):
         self.rate = 10 * 1024 * 1024
         dc.init(dc.OUT, value=0)
         res.init(res.OUT, value=0)
@@ -142,7 +145,7 @@ class SSD1306_SPI(SSD1306):
         self.cs = cs
         self.buffer = bytearray((height // 8) * width)
         self.framebuf = framebuf.FrameBuffer1(self.buffer, width, height)
-        super().__init__(width, height, external_vcc)
+        super().__init__(width, height, external_vcc, mirror_v, mirror_h)
 
     def write_cmd(self, cmd):
         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
