@@ -5,17 +5,11 @@ import time
 import display
 import instr_names
 
-#Todo:
-# * read the keyboard interrupt; then set the threshold one step lower and measure the time to get an
-# interrupt again. Are the readings consistant enough to estimate key velocity?
-
-
 class PocketOrgan:
     def __init__(self):
         self.d = display.Display()
         self.k = keyboard.Keyboard()
         self.p = polyphony.Polyphony(self.k, self.d)
-        self.midi = midi.Midi()
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
 #        for i in range(0, 9):
 #            self.k.c1.set_threshold(i, 10)
@@ -75,6 +69,8 @@ class PocketOrgan:
             self.k.loop()
             self.p.loop()
             self.d.loop()
+            if self.k.shift:
+                self.loop_shift()
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
@@ -97,27 +93,22 @@ class PocketOrgan:
                 self.loop_instr()
     
     def loop_shift(self): #TODO
-        while self.k.shift:
+        self.d.text("Melody mode")
+        while self.k.shift or self.k.current_note_key != None:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     #start playing i
-                    self.midi.note_on(0, self.scale[i])
-                    #print("On: {}".format(i));time.sleep_us(200)#
+                    self.p.start_note(i)
                 elif self.k.notes_old[i] and not self.k.notes[i]:
                     #stop playing i
-                    self.midi.note_off(0, self.scale[i])
-                    #print("Off: {}".format(i));time.sleep_us(200)#
+                    self.p.stop_note(i)
             self.k.loop()
             self.d.loop()
+            self.p.loop()
+        self.p.stop_all_notes()
+        self.d.clear()
 
-# while 1:
-#     try:
-#         o = PocketOrgan() 
-#         o.loop_waiting()
-#     except ENODEV:
-#          pass
 o = PocketOrgan()
 o.loop_waiting()
-
 
 #end

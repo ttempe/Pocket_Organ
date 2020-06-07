@@ -26,20 +26,25 @@ class Keyboard:
                      key_acknowledge_times=4, dynamic_threshold=False)
         self.c3 = TTY6955.TTY6955(self.i2c, addr=0x52, slider1_pads = 0, slider2_pads=0, slider3_pads=0,
                      key_acknowledge_times=4, dynamic_threshold=False)
-        #self.c4 = TTY6955.TTY6955(self.i2c, addr=0x53, slider1_pads = 3, slider2_pads=3, slider3_pads=3,
-        self.c4 = TTY6955.TTY6955(self.i2c, addr=0x53, slider1_pads = 3, slider2_pads=3, slider3_pads=3,
-                     dynamic_threshold=False)
+        self.c4 = TTY6955.TTY6955(self.i2c, addr=0x53, slider1_pads = 3, slider2_pads=3, dynamic_threshold=False)
+        #self.c4 = TTY6955.TTY6955(self.i2c, addr=0x53, dynamic_threshold=False)
+
 
         time.sleep(1) #give time to complete auto-calibration
         self.volume_pin = Pin("B0", Pin.IN, Pin.PULL_UP)
         self.instr_pin = Pin("C4", Pin.IN, Pin.PULL_UP)
-        self.loop_pin = Pin("A7", Pin.IN, Pin.PULL_UP)
+        self.looper_pin = Pin("A7", Pin.IN, Pin.PULL_UP)
         self.drum_pin = Pin("A6", Pin.IN, Pin.PULL_UP)
+        self.melody_led = Pin("A0", Pin.OUT)
+
         self.note_sliders = bytearray(8)
         self.notes = bytearray(8)
         self.note_sliders_old = bytearray(8)
         self.notes_old = bytearray(8)
+        
         time.sleep_ms(100)
+
+
 
         for i, p in enumerate([20, 10, 20,     20, 10, 99,     15, 10, 99]): #Do, Re, Mi
             self.c3.set_threshold(i, p)
@@ -47,8 +52,8 @@ class Keyboard:
             self.c1.set_threshold(i, p)
         for i, p in enumerate([50, 20, 55,     40, 4, 20,      10, 10, 10,    10]): #Si, Ut, Slider_volume, Sharp
             self.c2.set_threshold(i, p)        
-        for i, p in enumerate([10, 10, 10,     1, 1, 1,        10, 10, 10,   #Slider_2, N/C, Slider_3,
-                               10, 1, 1,          #Shift, N/C, N/C,
+        for i, p in enumerate([20, 20, 20,     100, 100, 100,        7, 15, 7,   #Slider_2, N/C, Slider_3,
+                               40, 1, 1,          #Shift, N/C, N/C,
                                50, 50, 50, 100]):  #7th, 5th, 3rd, minor
             self.c4.set_threshold(i, p)
         
@@ -71,18 +76,18 @@ class Keyboard:
         if c>2:
             print("Touch sensors: {} trials".format(c))
             
-        #self.volume = self.volume_pin.value()
-        #self.instr = self.instr_pin.value()
-        #self.loop = self.loop_pin.value()
-        #self.drum = self.drum_pin.value()
-        self.seventh = self.c4.button(0)
-        self.fifth = self.c4.button(1)
-        self.third = self.c4.button(2)
-        self.minor = self.c4.button(3)
-        self.shift = self.c1.button(0)
-        self.sharp = self.c2.button(9)
+        self.volume = not(self.volume_pin.value())
+        self.instr = not(self.instr_pin.value())
+        self.looper = not(self.looper_pin.value())
+        self.drum = not(self.drum_pin.value())
         
-        self.instr = not(self.instr_pin())
+        self.seventh = self.c4.button(4)
+        self.fifth = self.c4.button(5)
+        self.third = self.c4.button(6)
+        self.minor = self.c4.button(7)
+        self.shift = self.c4.button(1)
+        self.sharp = self.c2.button(9)
+
 #         self.notes[0], self.note_sliders[0] = self.c3.slider(1) #Do
 #         self.notes[1], self.note_sliders[1] = self.c3.slider(2) #Re
 #         self.notes[2], self.note_sliders[2] = self.c3.slider(3) #Mi
@@ -112,4 +117,8 @@ class Keyboard:
                 self.current_note_key = i
                 break
 
+        #TODO: implement melody lock
+        self.melody_led(self.shift)
+            
 #end
+            
