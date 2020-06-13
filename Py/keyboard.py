@@ -9,6 +9,9 @@ class Keyboard:
     including key mapping.
     """
     def __init__(self):
+        self.melody_led = Pin("A0", Pin.OUT)
+        self.melody_led(1)
+
         self.i2c = I2C(scl="B6", sda="B7", freq=100000)
         
 #         self.c1 = TTY6955.TTY6955(self.i2c, addr=0x50, slider1_pads = 3, slider2_pads=3, slider3_pads=3,
@@ -35,7 +38,6 @@ class Keyboard:
         self.instr_pin = Pin("C4", Pin.IN, Pin.PULL_UP)
         self.looper_pin = Pin("A7", Pin.IN, Pin.PULL_UP)
         self.drum_pin = Pin("A6", Pin.IN, Pin.PULL_UP)
-        self.melody_led = Pin("A0", Pin.OUT)
 
         self.note_sliders = bytearray(8)
         self.notes = bytearray(8)
@@ -58,6 +60,8 @@ class Keyboard:
             self.c4.set_threshold(i, p)
         
         self.loop()
+        self.melody_led(0)
+
                 
     def loop(self):
         self.notes_old = self.notes[:]

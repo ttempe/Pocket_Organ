@@ -1,4 +1,5 @@
 import display
+import backlight
 import keyboard
 import looper
 import polyphony
@@ -9,8 +10,9 @@ import time
 class PocketOrgan:
     def __init__(self):
         self.d = display.Display()
+        self.b = backlight.Backlight()
         self.k = keyboard.Keyboard()
-        self.l = looper.Looper()
+        self.l = looper.Looper(self.b)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
 #        for i, v in enumerate([6, 6, 6, 12, 12, 12, 8, 8, 8]):
 #            self.k.c1.set_threshold(i, v)
@@ -70,6 +72,7 @@ class PocketOrgan:
     def loop_chord(self):
         root = self.k.current_note_key
         self.p.start_chord()
+        self.b.light_one(root)
         while self.k.notes[root]:
             self.k.loop()
             self.p.loop()
@@ -79,6 +82,7 @@ class PocketOrgan:
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
+        self.b.off()
 
     def loop_waiting(self):
         "starting loop, waiting for 1st keypress"
