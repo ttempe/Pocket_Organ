@@ -1,15 +1,17 @@
-import keyboard
-import polyphony
-import midi
-import time
 import display
+import keyboard
+import looper
+import polyphony
 import instr_names
+
+import time
 
 class PocketOrgan:
     def __init__(self):
         self.d = display.Display()
         self.k = keyboard.Keyboard()
-        self.p = polyphony.Polyphony(self.k, self.d)
+        self.l = looper.Looper()
+        self.p = polyphony.Polyphony(self.k, self.d, self.l)
 #        for i, v in enumerate([6, 6, 6, 12, 12, 12, 8, 8, 8]):
 #            self.k.c1.set_threshold(i, v)
         self.volume = 63
