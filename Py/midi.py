@@ -6,6 +6,7 @@ import time
 class Midi:
     def __init__(self, looper):
         self.l = looper
+        self.l.m = self
         self.uart = UART(3, 31250)
         self.buf3 = bytearray(3)
         self.rst = Pin("A15", Pin.OUT)
@@ -14,12 +15,9 @@ class Midi:
         self.rst(1)
         time.sleep_ms(200)
         
-
-#     def note_on(self, channel, note, vel=64):
-#          self.buf3[0] = 0x90 | (channel & 0x0F)
-#          self.buf3[1] = note & 0x7F
-#          self.buf3[2] = vel & 0x7F
-#          self.uart.write(self.buf3)
+    def inject(self, midi_code):
+        "For use by the looper"
+        self.uart.write(midi_code)
 
     def note_on(self, channel, note, vel=64):
         n = bytearray([0x90| (channel & 0x0F),
