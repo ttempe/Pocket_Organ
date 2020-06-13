@@ -72,6 +72,11 @@ class Polyphony:
     def set_instr(self, instr):
         self.midi.set_instr(self.chord_channel,  instr)
         self.midi.set_instr(self.melody_channel, instr)
+        
+    def set_volume(self, vol):
+        print(vol)
+        self.midi.set_controller(self.chord_channel, 7, vol)
+        self.midi.set_controller(self.melody_channel, 7, vol)
 
     def loop(self):
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.

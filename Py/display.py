@@ -53,7 +53,20 @@ class Display:
         self.disp.show()
         if duration:
             self.erase_time = time.ticks_ms() + duration
-    
+
+    def disp_volume(self, volume, text = "Volume"):
+        self.disp.fill(0)
+        self.disp.text(text, 0, 0, 1)
+        self.disp.framebuf.rect(0, 20, 127, 40, 1)
+        self.disp.framebuf.fill_rect(0, 21, volume, 38, 1)
+        if volume<64:
+            self.disp.text("{}%".format(volume*100//128), 64, 26, 1)
+        else:
+            self.disp.text("{}%".format(volume*100//128), 40, 26, 0)
+
+        self.disp.show()
+        self.erase_time = time.ticks_ms() + 2000 #auto-erase after 2 seconds
+
     def clear(self):
         self.disp.fill(0)
         self.disp.show()

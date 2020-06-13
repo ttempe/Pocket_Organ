@@ -106,7 +106,7 @@ class Keyboard:
         self.notes[6] = self.c2.button(1)
         self.notes[7] = self.c2.button(3) or self.c2.button(5)
 
-        self.slider_vol_pressed, self.sl_vol_val = self.c4.slider(2)
+        self.slider_vol_pressed, self.slider_vol_val = self.c4.slider(2)
         self.slider2_pressed, self.slider2_val = self.c4.slider(1)
         self.slider3_pressed, self.slider3_val = self.c2.slider(3)
 

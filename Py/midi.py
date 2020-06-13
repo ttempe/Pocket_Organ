@@ -38,7 +38,14 @@ class Midi:
         self.buf3[1] = 0
         self.buf3[2] = instr & 0x7F
         self.uart.write(self.buf3)
+    
+    def set_controller(self, channel, controller, value):
+        self.buf3[0] = 0xB0 | (channel & 0x0F)
+        self.buf3[1] = (controller & 0x7F)
+        self.buf3[2] = (value & 0x7F)
+        self.uart.write(self.buf3)
         
+    
     def test2(self):
         while 1 :
             self.note_on(0, 60)

@@ -10,17 +10,20 @@ class PocketOrgan:
         self.d = display.Display()
         self.k = keyboard.Keyboard()
         self.p = polyphony.Polyphony(self.k, self.d)
-        self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
-#        for i in range(0, 9):
-#            self.k.c1.set_threshold(i, 10)
-        for i, v in enumerate([6, 6, 6, 12, 12, 12, 8, 8, 8]):
-            self.k.c1.set_threshold(i, v)
+#        for i, v in enumerate([6, 6, 6, 12, 12, 12, 8, 8, 8]):
+#            self.k.c1.set_threshold(i, v)
+        self.volume = 63
     
     def loop_volume(self):
-        while self.k.volume_command():
-            #TODO
-            #
-            #
+        #TODO: set the master and channel volumes separately
+        self.d.disp_volume(self.volume)
+        while self.k.volume:
+            if self.volume != self.k.slider_vol_val//2:
+                self.volume = self.k.slider_vol_val//2
+                self.d.disp_volume(self.volume)
+                self.p.set_volume(self.volume)
+            #don't call d.loop()->freezez the display
+            self.p.loop()
             self.k.loop()
 
     def loop_key(self):
@@ -91,6 +94,8 @@ class PocketOrgan:
             elif self.k.instr:
                 #MIDI instrument selection loop
                 self.loop_instr()
+            elif self.k.volume:
+                self.loop_volume()
     
     def loop_shift(self): #TODO
         self.d.text("Melody mode")
