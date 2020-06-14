@@ -53,6 +53,7 @@ class Display:
         self.disp.show()
         if duration:
             self.erase_time = time.ticks_ms() + duration
+        print(text)
 
     def disp_volume(self, volume, text = "Volume"):
         self.disp.fill(0)
