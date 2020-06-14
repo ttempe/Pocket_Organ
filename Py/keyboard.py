@@ -36,7 +36,7 @@ class Keyboard:
         time.sleep(1) #give time to complete auto-calibration
         self.volume_pin = Pin("B0", Pin.IN, Pin.PULL_UP)
         self.instr_pin = Pin("C4", Pin.IN, Pin.PULL_UP)
-        self.looper_pin = Pin("A7", Pin.IN, Pin.PULL_UP)
+        self.looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
         self.drum_pin = Pin("A6", Pin.IN, Pin.PULL_UP)
 
         self.note_sliders = bytearray(8)
