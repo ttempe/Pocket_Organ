@@ -22,16 +22,21 @@ class Backlight:
         self.clk_pin(1)
         self.clk_pin(0)
     
-    def push(self, r, g):
-        r = ~r
-        g = ~g
+    def display(self, red, green):
+        """
+        Set the note key backlight LEDS, and turns the display on.
+        Takes around 600 us on Version 14B
+        """
+        red = ~red
+        green = ~green
+        self.off()
         for i in range(0, 8):
-            self.push_bit( (g >> self.LED[i])& 1)
-            self.push_bit( (r >> self.LED[i])& 1)
+            self.push_bit( (green >> self.LED[i])& 1)
+            self.push_bit( (red >> self.LED[i])& 1)
         self.push_bit(0)
+        self.on()
         
     def light_one(self, k):
-        self.push(0, 1<<k)
-        self.on()
+        self.display(0, 1<<k)
 
 #End
