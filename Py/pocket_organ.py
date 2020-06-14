@@ -30,9 +30,68 @@ class PocketOrgan:
             self.p.loop()
             self.k.loop()
 
-    def loop_key(self):
-        #TODO
-        pass
+    def loop_looper(self):
+        #TODO: Give keys human names (C:B insteady of 0:6)
+        if None != self.l.recording: #We were already recording. Stop
+            l = self.l.recording
+            self.l.stop_recording()
+            self.d.text("Finish recording\nloop {}".format(l), 2000)
+        else:
+            self.d.text("Looper", 0)
+        
+        self.l.display()
+        stop_playing = []
+        while self.k.looper:
+            key = self.k.current_note_key
+            if key != None:
+                #keypress
+                if self.l.recorded & (1<<key):
+                    #loop was recorded. Toggle play.
+                    if (self.l.playing ^ self.l.toggle_play_waitlist) & (1<<key):
+                        #loop was playing. Stop it.
+                        self.d.text("Stop playing\nloop {}\n".format(key), 2000)
+                    else:
+                        #Loop was not playing. Start it.
+                        self.d.text("Start playing\nloop {}\n".format(key), 2000)
+                    if not(self.l.playing & (1<<key)):
+                        #loop was really not playing. Offer to delete
+                        self.d.text("Hold to delete", 7, 2000)
+                    self.l.toggle_play_waitlist ^= 1<<key
+                    self.l.display()
+                    #Capture the UI until the key is released
+                    t = time.ticks_ms()
+                    while self.k.notes[key]:
+                        #While key is not released:
+                        
+                        if (time.ticks_ms()-t)>2000 and not(self.l.playing & (1<<key)):
+                            #Long press. Delete track
+                            self.l.delete_track(key)
+                            self.l.toggle_play_waitlist &= ~(1<<key)
+                            self.l.display()
+                            self.d.text("Loop {}\ndeleted".format(key))
+                            
+                        #don't call d.loop()->freeze the display
+                        self.p.loop()
+                        self.k.loop()
+                elif self.l.recording == None:
+                    #Loop was not recorded. Start recording.
+                    if 7 == key:
+                        self.d.text("Can't record\na loop on this key", 2000)
+                    else:
+                        self.d.text("Start recording\nloop {}".format(key), 2000)
+                        self.l.start_recording(key)
+                        self.l.display()
+                    
+                    #Capture the UI until the key and the "loop" button are both released
+                    #No further action is possible
+                    while self.k.notes[key] or self.k.looper:
+                        self.p.loop()
+                        self.d.loop()
+                        self.k.loop()
+
+        self.l.apply_ui()       
+        self.l.off()
+        print("Exit looper")
 
     def loop_instr(self):
         """Let the user select an instrument from the MIDI bank for the current channel.
@@ -102,6 +161,8 @@ class PocketOrgan:
                 self.loop_instr()
             elif self.k.volume:
                 self.loop_volume()
+            elif self.k.looper:
+                self.loop_looper()
     
     def loop_shift(self): #TODO
         self.d.text("Melody mode")
