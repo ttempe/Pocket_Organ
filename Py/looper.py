@@ -7,11 +7,12 @@ def bits(n):
             yield i
 
 class Looper:
-    def __init__(self, backlight):
+    def __init__(self, backlight, display):
         self.chord_channel = 14
         self.melody_channel = 15
         self.m = None #Midi;  Assigned by Midi itself, upon initialization
         self.b = backlight
+        self.d = display
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number
@@ -30,26 +31,62 @@ class Looper:
             self.records[channel>>1].append([time.ticks_ms()-self.recording_start_timestamp, event])
     
     def display(self):
+        #As seen from the player:
         #red = recording
         #orange = recorded and paused
         #green = recorded and playing
-        playing = self.playing
-        rec = (1 << self.recording) if self.recording else 0
-        red =  (self.recorded & ~self.playing) | rec
-        green = self.recorded & self.playing & ( ~rec) 
+        
+        #This translates to:
+        #Green = (recorded or playing) and not recording
+        #Red = recording or (recorded and not playing)
+        playing = self.playing ^ self.toggle_play_waitlist
+        recording = (1 << self.recording) if (self.recording!=None) else 0
+        green = (self.recorded | playing) & ~recording
+        red =  recording | (self.recorded & ~playing)
         self.b.display( red, green)
     
     def playback(self):
         pass
 
+    def loop_exists(self, n):
+        "was that loop recorded already?"
+        return self.recorded & (1<<n)
+
     def delete_track(self, n):
         self.records[n]=[]
         self.recorded &= ~(1<<n)
         self.playing &= ~(1<<n)
+        self.toggle_play_waitlist &= ~(1<<n)
+        self.display()
+        self.d.text("Loop {}\ndeleted".format(n))
 
     def start_recording(self, n):
+        if 7 == n:
+            self.d.text("Can't record\na loop on this\nkey", 2000)
         self.recording = n
         self.recording_start_timestamp = None
+        self.display()
+        self.d.text("Start recording\nloop {}".format(n), 2000)
+
+    def stop_recording(self):
+        "Returns whether a track was being recorded"
+        if self.recording != None:
+            self.d.text("Finish recording\nloop {}".format(self.recording), 2000)
+            self.recorded |= 1<<self.recording
+            self.recording = None
+
+    def toggle_play(self, key):
+        if (self.playing ^ self.toggle_play_waitlist) & (1<<key):
+            #loop was playing. Stop it.
+            self.d.text("Stop playing\nloop {}\n".format(key), 2000)
+        else:
+            #Loop was not playing. Start it.
+            self.d.text("Start playing\nloop {}\n".format(key), 2000)
+        self.toggle_play_waitlist ^= 1<<key
+        if not(self.playing & (1<<key)):
+            #loop was really not playing.
+            self.d.text("Hold to delete", 7, 2000)
+        self.display()
 
     def apply_ui(self):
         """
@@ -57,7 +94,7 @@ class Looper:
         Called when the user releases the "loop" button.
         """
         if self.playing == 0 and self.toggle_play_waitlist != 0: #No loop was playing
-            self.loop_start_timestamp = time.tick_ms()
+            self.loop_start_timestamp = time.ticks_ms()
         else: #Some loops were playing
             for i in bits(self.toggle_play_waitlist & (~self.playing)):
                 print("Now start playing loop {}".format(i))
@@ -69,5 +106,6 @@ class Looper:
                 #TODO: reset the cursor? Just ignore?
         self.playing ^= self.toggle_play_waitlist
         self.toggle_play_waitlist = 0
+        self.b.off()
 
 #End
