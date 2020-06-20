@@ -10,7 +10,8 @@ class Looper:
     def __init__(self, backlight, display):
         self.chord_channel = 14
         self.melody_channel = 15
-        self.m = None #Midi;  Assigned by Midi itself, upon initialization
+        #self.metronome_channel = 9 #This is imposed by General MIDI
+        self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display
         self.recorded = 0     #bit map 
@@ -20,15 +21,21 @@ class Looper:
         self.records = [[],[],[],[],[],[],[], []] 
         self.loop_start_timestamp = 0
         self.toggle_play_waitlist = 0 #bit map
+        self.loop_names = ["C", "D", "E", "F", "G", "A"]
    
     def append(self, event):
         if self.recording:
             if not self.recording_start_timestamp:
                 #Set the start of the recording loop
                 #TODO: align it to the last metronome beat or start of loop playback
-                self.recording_start_timestamp = time.ticks_ms()
+                self.recording_start_timestamp = self.p.metronome.timestamp
+                t = 0
+            else:
+                t = self.p.metronome.quantize(time.ticks_ms()-self.recording_start_timestamp)
             channel = event[0]&0x0F
-            self.records[channel>>1].append([time.ticks_ms()-self.recording_start_timestamp, event])
+            track = channel>>1
+            self.records[track].append([t, event])
+            print(len(self.records[track]));time.sleep_ms(30)
     
     def display(self):
         #As seen from the player:
@@ -44,9 +51,6 @@ class Looper:
         green = (self.recorded | playing) & ~recording
         red =  recording | (self.recorded & ~playing)
         self.b.display( red, green)
-    
-    def playback(self):
-        pass
 
     def loop_exists(self, n):
         "was that loop recorded already?"
@@ -58,30 +62,37 @@ class Looper:
         self.playing &= ~(1<<n)
         self.toggle_play_waitlist &= ~(1<<n)
         self.display()
-        self.d.text("Loop {}\ndeleted".format(n))
+        self.d.text("Loop {}\ndeleted".format(self.loop_names[n]))
 
     def start_recording(self, n):
-        if 7 == n:
+        if 6 <= n:
             self.d.text("Can't record\na loop on this\nkey", 2000)
-        self.recording = n
-        self.recording_start_timestamp = None
-        self.display()
-        self.d.text("Start recording\nloop {}".format(n), 2000)
+        else:
+            self.recording = n
+            self.recording_start_timestamp = None
+            self.display()
+            self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
+            self.p.metronome.on()
 
     def stop_recording(self):
         "Returns whether a track was being recorded"
         if self.recording != None:
-            self.d.text("Finish recording\nloop {}".format(self.recording), 2000)
+            self.d.text("Finish recording\nloop {}".format(self.loop_names[self.recording]), 2000)
             self.recorded |= 1<<self.recording
             self.recording = None
+            self.p.metronome.off()
+            return True
+        else:
+            return False
+
 
     def toggle_play(self, key):
         if (self.playing ^ self.toggle_play_waitlist) & (1<<key):
             #loop was playing. Stop it.
-            self.d.text("Stop playing\nloop {}\n".format(key), 2000)
+            self.d.text("Stop playing\nloop {}\n".format(self.loop_names[key]), 2000)
         else:
             #Loop was not playing. Start it.
-            self.d.text("Start playing\nloop {}\n".format(key), 2000)
+            self.d.text("Start playing\nloop {}\n".format(self.loop_names[key]), 2000)
         self.toggle_play_waitlist ^= 1<<key
         if not(self.playing & (1<<key)):
             #loop was really not playing.
@@ -107,5 +118,7 @@ class Looper:
         self.playing ^= self.toggle_play_waitlist
         self.toggle_play_waitlist = 0
         self.b.off()
+
+    
 
 #End

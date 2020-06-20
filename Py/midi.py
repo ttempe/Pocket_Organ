@@ -2,13 +2,13 @@ from machine import Pin, UART
 #from pyb import UART
 import time
 
-  
+#controllers
+bank_select_MSB = const(0x00)
+bank_select_LSB = const(0x20)
+
 class Midi:
-    def __init__(self, looper):
-        self.l = looper
-        self.l.m = self
+    def __init__(self):
         self.uart = UART(3, 31250)
-        self.buf3 = bytearray(3)
         self.rst = Pin("A15", Pin.OUT)
         self.rst(0)
         time.sleep_ms(200)
@@ -24,7 +24,7 @@ class Midi:
                        note & 0x7F,
                        vel & 0x7F])
         self.uart.write(n)
-        self.l.append(n)
+        return n
 
         
     def note_off(self, channel, note, vel=64):
@@ -32,29 +32,29 @@ class Midi:
                        note & 0x7F,
                        vel & 0x7F])
         self.uart.write(n)
-        self.l.append(n)
+        return n
  
     def all_off(self, channel):
         n = bytearray([0xB0| (channel & 0x0F),
                        123,
                        0])
         self.uart.write(n)
-        self.l.append(n)
+        return n
 
     def set_instr(self, channel, instr):
         n = bytearray([0xC0| (channel & 0x0F),
                        0,
                        instr & 0x7F])
         self.uart.write(n)
-        self.l.append(n)
+        return n
     
     def set_controller(self, channel, controller, value):
         n = bytearray([0xB0| (channel & 0x0F),
                        controller & 0x7F,
                        value & 0x7F])
         self.uart.write(n)
-        self.l.append(n)        
-    
+        return n
+
     def test2(self):
         while 1 :
             self.note_on(0, 60)
