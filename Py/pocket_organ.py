@@ -15,10 +15,9 @@ class PocketOrgan:
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
-        self.volume = 64
-        self.p.set_volume(self.volume)
 
     def loop(self, freeze_display=False):
+        self.l.loop()
         self.p.loop()
         if not freeze_display:
             self.d.loop()
@@ -27,12 +26,12 @@ class PocketOrgan:
     
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
-        self.d.disp_volume(self.volume)
+        self.d.disp_volume(self.p.volume)
         while self.k.volume:
-            if self.volume != self.k.slider_vol_val//2:
-                self.volume = self.k.slider_vol_val//2
-                self.d.disp_volume(self.volume)
-                self.p.set_volume(self.volume)
+            if self.p.volume != self.k.slider_vol_val//2:
+                self.p.volume = self.k.slider_vol_val//2
+                self.d.disp_volume(self.p.volume)
+                self.p.set_volume(self.p.volume)
             self.loop(freeze_display=True)
 
     def loop_looper(self):
@@ -52,8 +51,12 @@ class PocketOrgan:
                         #While key is not released:
                         if (time.ticks_ms()-t)>2000 and not(self.l.playing & (1<<key)):
                             #Long press
-                            self.l.delete_track(key)                            
-                        self.loop(freeze_display=True)
+                            self.l.delete_track(key)
+                            while self.k.notes[key]:
+                                #Delete once, then capture the UI
+                                self.loop(freeze_display=True)
+                        else:
+                            self.loop(freeze_display=True)
                 elif self.l.recording == None:
                     #Not in recording mode yet
                     self.l.start_recording(key)                    

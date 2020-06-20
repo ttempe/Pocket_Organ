@@ -19,8 +19,10 @@ class Polyphony:
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
         self.chord_names = ["C", "D", "E", "F", "G", "A", "B", "C"]
         self.melody_keys_transpose = bytearray(8) #for keeping track of how which key was played
-
-        self.set_instr(22)
+        self.instr = 22
+        self.set_instr(self.instr)
+        self.volume = 64
+        self.set_volume(self.volume)
         
     def start_chord(self):
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
