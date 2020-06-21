@@ -7,7 +7,7 @@ class Metronome:
         self.bpm = 110
         self.beat_duration = 60000//self.bpm
         self.enable = False
-        
+        #TODO: toggle NoteOff slightly after each beat
         
     def set_bpm(self, bpm):
         self.bpm = bpm
@@ -29,7 +29,7 @@ class Metronome:
                 self.timestamp = t - (t % self.beat_duration)
 
     def quantize(self, time):
-        #TODO
-        return time
+        "Round a timestamp to the nearest beat"
+        return round(time/self.beat_duration)*self.beat_duration
         
 #End

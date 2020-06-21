@@ -8,6 +8,10 @@ import instr_names
 import time
 import gc #Garbage collector
 
+#TODO:
+# * what should happen if I change to a different instrument while recording a loop?
+# * what should happen if I change teh volume while recording a loop?
+
 class PocketOrgan:
     def __init__(self):
         self.d = display.Display()

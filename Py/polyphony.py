@@ -70,6 +70,7 @@ class Polyphony:
         self.l.append(self.midi.set_instr(self.l.melody_channel, instr))
         
     def set_volume(self, vol):
+        #TODO: if changing in quick succession, only append every 0.1s (requires making a queue of volume changes)
         self.l.append(self.midi.set_controller(self.l.chord_channel, 7, vol))
         self.l.append(self.midi.set_controller(self.l.melody_channel, 7, vol))
 
