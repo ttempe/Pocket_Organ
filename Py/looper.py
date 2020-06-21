@@ -24,7 +24,6 @@ class Looper:
         self.cursors = [0, 0, 0, 0, 0, 0, 0, 0]
         self.durations = [0, 0, 0, 0, 0, 0, 0, 0]
         self.durations_max = 0
-        self.loop_start_timestamp = 0 #TODO: remove
         self.loop_start = [0,0,0,0,0,0,0,0] #Timestamps
         self.toggle_play_waitlist = 0 #bit map
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
@@ -33,11 +32,16 @@ class Looper:
         if None != self.recording:
             if not self.recording_start_timestamp:
                 #Set the start of the recording loop
-                self.recording_start_timestamp = self.p.metronome.quantize(self.p.metronome.timestamp)
-                t = 0
-            else:
-                #normal recording in the middle of a loop
-                t = time.ticks_ms()-self.recording_start_timestamp
+                if self.playing:
+                    #Align the starting point with the shortest loop
+                    self.recording_start_timestamp = max(self.loop_start)
+                else:
+                    #Align with the nearest beat
+                    self.recording_start_timestamp = self.p.metronome.quantize(self.p.metronome.timestamp)
+                self.p.set_instr(self.p.instr)
+                self.p.set_volume(self.p.volume)
+            t = time.ticks_ms()-self.recording_start_timestamp
+            print (t);time.sleep_ms(10) 
             self.records[self.recording].append([t, event])
     
     def display(self):
@@ -75,11 +79,14 @@ class Looper:
             self.recording = n
             self.recording_start_timestamp = None
             self.chord_channel, self.melody_channel = self.record_channels[n]
-            self.p.set_instr(self.p.instr)
-            self.p.set_volume(self.p.volume)
             self.display()
             self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
             self.p.metronome.on()
+            #TODO: make sure this gets recorded somewhere in Flash 
+            #for c in self.record_channels[n]:
+            #    self.p.midi.set_instr(c, self.p.instr)
+            #    self.p.midi.set_controller(c, 7, self.p.volume)#Set volume
+        
 
     def stop_recording(self):
         "Returns whether a track was being recorded"
@@ -94,6 +101,7 @@ class Looper:
                     self.p.metronome.beat_duration) #Make sure no recording is shorter than one beat
                 self.durations_max = max(self.durations)
                 #TODO: Start playing immediately
+                self._start_playing(self.recording)
             else:
                 self.d.text("Nothing recorded", 2000)
             self.recording = None
@@ -115,6 +123,18 @@ class Looper:
             self.d.text("Hold to delete", 7, 2000)
         self.display()
 
+    def _start_playing(self, i):
+        print(hex(self.playing))
+        self.playing |= 1<<i
+        print(hex(self.playing))
+        self.cursors[i]=0
+        self.loop_start[i] = self.p.metronome.quantize(time.ticks_ms())
+
+    def _stop_playing(self, i):
+        self.playing &= ~(1<<i)
+        for c in self.record_channels[i]:
+            self.p.midi.all_off(c)
+            
     def apply_ui(self):
         """
         Executes all the pending play toggle actions.
@@ -123,16 +143,14 @@ class Looper:
         for i in bits(self.toggle_play_waitlist & (~self.playing)):
             #loops to start playing now
             print("Now starting playing loop {}".format(i))
-            self.cursors[i]=0
-            self.loop_start[i] = self.p.metronome.quantize(time.ticks_ms())
+            self._start_playing(i)
+            self.toggle_play_waitlist &= ~(1<<i)
             print("Loop", i, "will be starting at", self.loop_start[i])
         for i in bits(self.toggle_play_waitlist & self.playing):
             #loops to stop playing now
             print("Now stopping playing loop {}".format(i))
             #send an "all notes off" midi command
-            for c in self.record_channels[i]:
-                self.p.midi.all_off(c)
-        self.playing ^= self.toggle_play_waitlist
+            self._stop_playing(i)
         self.toggle_play_waitlist = 0
         self.b.off()
 
@@ -141,9 +159,9 @@ class Looper:
         c = self.cursors[loop]
         ret = []
         t, msg = self.records[loop][c]
-        print("loop", loop, "start: ", t, "Now: ", now, "(", ticks, self.loop_start[loop], ")");time.sleep_ms(50)
+        #print("loop", loop, "start: ", t, "Now: ", now, "(", ticks, self.loop_start[loop], ")");time.sleep_ms(50)
         while t<= now:
-            print(c, t, msg)
+            #print(c, t, msg)
             self.p.midi.inject(msg)
             c+=1
             if c>=len(self.records[loop]):

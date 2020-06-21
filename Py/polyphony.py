@@ -66,6 +66,7 @@ class Polyphony:
         self.l.append(self.midi.all_off(self.l.melody_channel))
 
     def set_instr(self, instr):
+        self.instr = instr
         self.l.append(self.midi.set_instr(self.l.chord_channel,  instr))
         self.l.append(self.midi.set_instr(self.l.melody_channel, instr))
         
