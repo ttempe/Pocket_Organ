@@ -2,6 +2,8 @@
 
 A modern musical instrument instrument that fits in your pocket
 
+https://www.facebook.com/Thomass-pocket-organ-109581037453852
+
 Most instruments we play today are designed around the manufacturing constrains of hundreds of years ago.
 Newer instruments are often electronic versions, with the same or similar user interface.
 
