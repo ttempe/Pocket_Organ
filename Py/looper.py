@@ -12,7 +12,7 @@ class Looper:
     def __init__(self, backlight, display):
         self.record_channels = [(2,3), (4,5), (6,7), (8,10), (11,12), (13, 14), (0, 1)]
         self.chord_channel, self.melody_channel = self.record_channels[-1]
-        #self.drum_channel = 9 #This is imposed by General MIDI
+        self.drum_channel = 9 #This is imposed by General MIDI
         self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display

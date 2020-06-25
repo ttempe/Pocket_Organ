@@ -37,7 +37,7 @@ class Keyboard:
         self.volume_pin = Pin("B0", Pin.IN, Pin.PULL_UP)
         self.instr_pin = Pin("C4", Pin.IN, Pin.PULL_UP)
         self.looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
-        self.drum_pin = Pin("A6", Pin.IN, Pin.PULL_UP)
+        self.drum_pin = Pin("A3", Pin.IN, Pin.PULL_UP)
 
         self.note_sliders = bytearray(8)
         self.notes = bytearray(8)

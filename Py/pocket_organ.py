@@ -116,6 +116,14 @@ class PocketOrgan:
         self.p.stop_chord()
         self.b.off()
 
+    def loop_drum(self):
+        while self.k.drum:
+            for i in range(0,8):
+                if self.k.notes[i] and not self.k.notes_old[i]:
+                    self.p.play_drum(i)
+                    print("Drum", i);time.sleep_ms(10)
+            self.loop()
+
     def loop_waiting(self):
         "starting loop, waiting for 1st keypress"
         while 1:
@@ -135,7 +143,9 @@ class PocketOrgan:
                 self.loop_volume()
             elif self.k.looper:
                 self.loop_looper()
-    
+            elif self.k.drum:
+                self.loop_drum()
+
     def loop_shift(self): #TODO
         self.d.text("Melody mode")
         while self.k.shift or self.k.current_note_key != None:

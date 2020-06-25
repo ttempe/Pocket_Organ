@@ -64,6 +64,9 @@ class Polyphony:
 
     def stop_all_notes(self):
         self.l.append(self.midi.all_off(self.l.melody_channel))
+        
+    def play_drum(self, note):
+        self.l.append(self.midi.note_on(self.l.drum_channel, note+60, 64))
 
     def set_instr(self, instr):
         self.instr = instr
