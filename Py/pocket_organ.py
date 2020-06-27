@@ -9,8 +9,10 @@ import time
 import gc #Garbage collector
 
 #TODO:
+# * add a shortcut to quit and return to the REPL, for ease of debugging
 # * what should happen if I change to a different instrument while recording a loop?
 # * what should happen if I change teh volume while recording a loop?
+# * use const() where appropriate
 
 class PocketOrgan:
     def __init__(self):
@@ -39,7 +41,7 @@ class PocketOrgan:
             self.loop(freeze_display=True)
 
     def loop_looper(self):
-        #TODO: Give human names to loops when dispaying on the LCD (C:B insteady of 0:6)
+        #TODO: Allow to delete a track even while it's playing.
         if not self.l.stop_recording():
             self.d.text("Looper", 0)
         self.l.display()
@@ -160,7 +162,13 @@ class PocketOrgan:
         self.p.stop_all_notes()
         self.d.clear()
 
-o = PocketOrgan()
+o = None
+while not o:
+    try:
+        o = PocketOrgan()
+    except OSError:
+        time.sleep(1)
+
 o.loop_waiting()
 
 #end
