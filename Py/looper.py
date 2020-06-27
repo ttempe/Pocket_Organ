@@ -1,12 +1,14 @@
 import time
 
+#TODO:
+# * allocate the channels to the loops dynamically, only use the ones you need -> extra flexibility
+# * alternately, set some channels to percussion only and/or melody only.
+
 def bits(n):
     "8-bit bit map iterator"
     for i in range(0, 8):
         if n&(1<<i):
             yield i
-#TODO:
-# * record timestamps in nb of beats (fixed-point) instead of nb of millisecond, to allow tempo tricks
 
 class Looper:
     def __init__(self, backlight, display):
@@ -23,6 +25,7 @@ class Looper:
         self.records = [[],[],[],[],[],[],[],[]]
         self.cursors = [0, 0, 0, 0, 0, 0, 0, 0]
         self.durations = [0, 0, 0, 0, 0, 0, 0, 0]
+        self.delta = [0,0,0,0,0,0,0,0] #Time deltas between respective loops, used to ensure they are aligned to each other
         self.durations_max = 0
         self.loop_start = [0,0,0,0,0,0,0,0] #Timestamps
         self.toggle_play_waitlist = 0 #bit map
@@ -31,17 +34,25 @@ class Looper:
     def append(self, event):
         if None != self.recording:
             if not self.recording_start_timestamp:
-                #Set the start of the recording loop
+                #This is where "start recording" really happens
                 if self.playing:
-                    #Align the starting point with the shortest loop
+                    #Set the delta from any playing loop
+                    if self.playing:
+                        #TODO: fix the delta calculation. Should not just use the same delta as someone else
+                        self.delta[self.recording] = self.delta[next(bits(self.playing))]
+                    else:
+                        self.delta[self.recording] = 0
+                    print("Delta set to", self.delta[self.recording])
+                    
+                    #Align the starting point with the most recent loop start
                     self.recording_start_timestamp = max(self.loop_start)
                 else:
                     #Align with the nearest beat
-                    self.recording_start_timestamp = self.p.metronome.quantize(self.p.metronome.timestamp)
+                    self.recording_start_timestamp = self.p.metronome.now
                 self.p.set_instr(self.p.instr)
                 self.p.set_volume(self.p.volume)
-            t = time.ticks_ms()-self.recording_start_timestamp
-            print (t);time.sleep_ms(10) 
+            t = self.p.metronome.now - self.recording_start_timestamp
+            #print ("Note time: ", self.p.metronome.now, "-", self.recording_start_timestamp, "=", t/self.p.metronome.beat_divider);time.sleep_ms(10) 
             self.records[self.recording].append([t, event])
     
     def display(self):
@@ -73,6 +84,8 @@ class Looper:
         self.d.text("Loop {}\ndeleted".format(self.loop_names[n]))
 
     def start_recording(self, n):
+        #This only sets the stage.
+        #The start of recording really happens in self.append()
         if 6 <= n:
             self.d.text("Can't record\na loop on this\nkey", 2000)
         else:
@@ -89,18 +102,27 @@ class Looper:
         
 
     def stop_recording(self):
-        "Returns whether a track was being recorded"
+        "Returns whether a track was successfully recorded"
         if self.recording != None:
             if len(self.records[self.recording])>4:
                 #Loop was actually recorded
                 self.d.text("Finish recording\nloop {}".format(self.loop_names[self.recording]), 2000)
                 self.recorded |= 1<<self.recording
                 self.chord_channel, self.melody_channel = self.record_channels[-1]
-                self.durations[self.recording] = max(
-                    self.p.metronome.quantize(time.ticks_ms())-self.recording_start_timestamp,
-                    self.p.metronome.beat_duration) #Make sure no recording is shorter than one beat
+                
+                #Set new loop duration
+                d = self.p.metronome.start_of_beat - self.recording_start_timestamp
+                if self.playing:
+                    #round to a multiple of the shortest duration
+                    #TODO: Handle the case where I stopped playing the shortest loop before recording. Record the reference "min duration" for each loop?
+                    min_duration = min([ self.durations[i] for i in bits(self.playing)])
+                    #TODO: accept half of mid_duration, in case it's a whole number of beats
+                    self.durations[self.recording] = round(d/min_duration)*min_duration
+                    print("Duration: ", d, ", rounded to", self.durations[self.recording])
+                else:
+                    #Make sure no recording is shorter than one metronome beat
+                    self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
                 self.durations_max = max(self.durations)
-                #TODO: Start playing immediately
                 self._start_playing(self.recording)
             else:
                 self.d.text("Nothing recorded", 2000)
@@ -128,7 +150,7 @@ class Looper:
         self.playing |= 1<<i
         print(hex(self.playing))
         self.cursors[i]=0
-        self.loop_start[i] = self.p.metronome.quantize(time.ticks_ms())
+        self.loop_start[i] = self.p.metronome.start_of_beat 
 
     def _stop_playing(self, i):
         self.playing &= ~(1<<i)
@@ -154,17 +176,20 @@ class Looper:
         self.toggle_play_waitlist = 0
         self.b.off()
 
-    def pop_notes(self, loop, ticks):
-        now = ticks-self.loop_start[loop]
+    def pop_notes(self, loop):
+        now = self.p.metronome.now - self.loop_start[loop] - self.delta[loop]
         c = self.cursors[loop]
         ret = []
         t, msg = self.records[loop][c]
         #print("loop", loop, "start: ", t, "Now: ", now, "(", ticks, self.loop_start[loop], ")");time.sleep_ms(50)
-        while t<= now:
-            #print(c, t, msg)
-            self.p.midi.inject(msg)
+        while t <= now:
+            if self.playing & (1<<loop):
+                #actually play the note
+                print("Playing note n.", c, "time: ", t, "now: ", now)
+                self.p.midi.inject(msg)
             c+=1
             if c>=len(self.records[loop]):
+                #loop
                 c=0
                 self.loop_start[loop] += self.durations[loop]
                 break 
@@ -173,10 +198,8 @@ class Looper:
     
     def loop(self):
         #Play active loops
-        ticks = time.ticks_ms()
-        for i in range(0,6):
-            if self.playing & (1<<i):
-                self.pop_notes(i, ticks)
+        for i in range(0,8):
+            self.pop_notes(i)
 
 
 #End
