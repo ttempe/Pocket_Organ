@@ -3,6 +3,7 @@ import time
 #TODO:
 # * allocate the channels to the loops dynamically, only use the ones you need -> extra flexibility
 # * alternately, set some channels to percussion only and/or melody only.
+# * refuse to record if some loops are recorded but none is playing?
 
 def bits(n):
     "8-bit bit map iterator"
@@ -25,32 +26,15 @@ class Looper:
         self.records = [[],[],[],[],[],[],[],[]]
         self.cursors = [0, 0, 0, 0, 0, 0, 0, 0]
         self.durations = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.delta = [0,0,0,0,0,0,0,0] #Time deltas between respective loops, used to ensure they are aligned to each other
-        self.durations_max = 0
         self.loop_start = [0,0,0,0,0,0,0,0] #Timestamps
         self.toggle_play_waitlist = 0 #bit map
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
-   
+    
     def append(self, event):
         if None != self.recording:
             if not self.recording_start_timestamp:
-                #This is where "start recording" really happens
-                if self.playing:
-                    #Set the delta from any playing loop
-                    if self.playing:
-                        #TODO: fix the delta calculation. Should not just use the same delta as someone else
-                        self.delta[self.recording] = self.delta[next(bits(self.playing))]
-                    else:
-                        self.delta[self.recording] = 0
-                    print("Delta set to", self.delta[self.recording])
-                    
-                    #Align the starting point with the most recent loop start
-                    self.recording_start_timestamp = max(self.loop_start)
-                else:
-                    #Align with the nearest beat
-                    self.recording_start_timestamp = self.p.metronome.now
-                self.p.set_instr(self.p.instr)
-                self.p.set_volume(self.p.volume)
+                #recording starts here!
+                self.recording_start_timestamp = self.p.metronome.now
             t = self.p.metronome.now - self.recording_start_timestamp
             #print ("Note time: ", self.p.metronome.now, "-", self.recording_start_timestamp, "=", t/self.p.metronome.beat_divider);time.sleep_ms(10) 
             self.records[self.recording].append([t, event])
@@ -92,40 +76,48 @@ class Looper:
             self.recording = n
             self.recording_start_timestamp = None
             self.chord_channel, self.melody_channel = self.record_channels[n]
+            self.p.set_instr(self.p.instr)
+            self.p.set_volume(self.p.volume)
+
             self.display()
             self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
             self.p.metronome.on()
             #TODO: make sure this gets recorded somewhere in Flash 
-            #for c in self.record_channels[n]:
-            #    self.p.midi.set_instr(c, self.p.instr)
-            #    self.p.midi.set_controller(c, 7, self.p.volume)#Set volume
-        
 
     def stop_recording(self):
         "Returns whether a track was successfully recorded"
         if self.recording != None:
-            if len(self.records[self.recording])>4:
+            if len(self.records[self.recording])>0:
+                now = self.p.metronome.now
                 #Loop was actually recorded
                 self.d.text("Finish recording\nloop {}".format(self.loop_names[self.recording]), 2000)
                 self.recorded |= 1<<self.recording
                 self.chord_channel, self.melody_channel = self.record_channels[-1]
-                
+                #Add a final event with a duration long into the future, to simplify the code in self.pop_note()
+                self.records[self.recording].append((self.p.metronome.now+1000, None))
                 #Set new loop duration
-                d = self.p.metronome.start_of_beat - self.recording_start_timestamp
+                d = now - self.recording_start_timestamp
+                print("Raw duration: ", d/48, "=", now/48, "-", self.recording_start_timestamp/48)
+                d = self.p.metronome.round_to_beats(d)
                 if self.playing:
                     #round to a multiple of the shortest duration
                     #TODO: Handle the case where I stopped playing the shortest loop before recording. Record the reference "min duration" for each loop?
                     min_duration = min([ self.durations[i] for i in bits(self.playing)])
-                    #TODO: accept half of mid_duration, in case it's a whole number of beats
+                    #divide by 2 if possible
+                    if min_duration%(self.p.metronome.beat_divider*2):
+                        min_duration /= 2
                     self.durations[self.recording] = round(d/min_duration)*min_duration
-                    print("Duration: ", d, ", rounded to", self.durations[self.recording])
+                    print("Duration: ", d/48, ", rounded to", self.durations[self.recording]/48)
                 else:
                     #Make sure no recording is shorter than one metronome beat
+                    print("Duration: ", d/48, "(minimun: ", self.p.metronome.beat_divider/48, ")")
                     self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
-                self.durations_max = max(self.durations)
+                    
+                self.loop_start[self.recording] = now
                 self._start_playing(self.recording)
             else:
                 self.d.text("Nothing recorded", 2000)
+            print("Recorded: ", self.records[self.recording])
             self.recording = None
             self.p.metronome.off()
             return True
@@ -146,12 +138,8 @@ class Looper:
         self.display()
 
     def _start_playing(self, i):
-        print(hex(self.playing))
         self.playing |= 1<<i
-        print(hex(self.playing))
-        self.cursors[i]=0
-        self.loop_start[i] = self.p.metronome.start_of_beat 
-
+       
     def _stop_playing(self, i):
         self.playing &= ~(1<<i)
         for c in self.record_channels[i]:
@@ -177,29 +165,35 @@ class Looper:
         self.b.off()
 
     def pop_notes(self, loop):
-        now = self.p.metronome.now - self.loop_start[loop] - self.delta[loop]
+        now = self.p.metronome.now - self.loop_start[loop]
         c = self.cursors[loop]
-        ret = []
+        if now > self.durations[loop]:
+            #jump back to the start of the loop
+            print("Restarting loop", loop, "now: ", now, "index: ", c, "ticks:", self.p.metronome.now/48)
+            c=0
+            self.loop_start[loop] += self.durations[loop]
+            now = self.p.metronome.now - self.loop_start[loop]
+            #Stop all playing notes, just in case
+            for c in self.record_channels[loop]:
+                self.p.midi.all_off(c)
+
         t, msg = self.records[loop][c]
         #print("loop", loop, "start: ", t, "Now: ", now, "(", ticks, self.loop_start[loop], ")");time.sleep_ms(50)
         while t <= now:
             if self.playing & (1<<loop):
                 #actually play the note
-                print("Playing note n.", c, "time: ", t, "now: ", now)
+                print("Playing note n.", c, "now: ", now/48, "recorded time: ", t/48, "ticks:", self.p.metronome.now/48)
                 self.p.midi.inject(msg)
             c+=1
-            if c>=len(self.records[loop]):
-                #loop
-                c=0
-                self.loop_start[loop] += self.durations[loop]
-                break 
             t, msg = self.records[loop][c]
         self.cursors[loop]=c
     
     def loop(self):
         #Play active loops
         for i in range(0,8):
-            self.pop_notes(i)
+            if self.recorded & (1<<i):
+                #Walk through all recorded loops
+                self.pop_notes(i)
 
 
 #End

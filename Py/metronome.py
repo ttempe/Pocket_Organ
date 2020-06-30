@@ -6,10 +6,10 @@ class Metronome:
         self.bpm = 110
         self.beat_duration = 60000//self.bpm #in ms
         self.enable = False
-        self.last_beat = time.ticks_ms()
-        self.beats = 0 #nb of beats since device was turned on
+        self.last_beat = time.ticks_ms()     #in ms
+        self.beats = 0         #nb of beats since device was turned on (fixed-point)
+        self.now = 0           #nb beats (fixed-point)
         self.beat_divider = 48 #the smallest unit of time is beat_duration/beat_divider
-        self.now = 0 #ticks, expressed in beats
         
     def set_bpm(self, bpm):
         self.bpm = bpm
@@ -26,17 +26,17 @@ class Metronome:
         d = (t - self.last_beat)//self.beat_duration
         if d:
             self.last_beat += d * self.beat_duration
-            self.beats += d
-            self.start_of_beat = self.beats * self.beat_divider
+            self.beats += d * self.beat_divider
+            self.start_of_beat = self.beats
             if self.enable:
                 self.midi.note_on(9, 76, 64)
         #TODO: toggle NoteOff slightly after each beat?
-        self.now = self.beats*self.beat_divider + (t-self.last_beat)//self.beat_divider
+        self.now = self.beats + (t-self.last_beat)//self.beat_divider
 
-    def quantize(self, time):
-        "Round a timestamp to the nearest beat"
-        return round(time/self.beat_duration)*self.beat_duration
-    
+    def round_to_beats(self, d):
+        "Round a fixed-point duration to the nearest number of beats"
+        return round(d/self.beat_divider)*self.beat_divider
+        
     def time_to_beats(self, t):
         return (t*self.beat_divider)//self.beat_duration
             
