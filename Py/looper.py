@@ -36,7 +36,7 @@ class Looper:
                 #recording starts here!
                 self.recording_start_timestamp = self.p.metronome.now
             t = self.p.metronome.now - self.recording_start_timestamp
-            #print ("Note time: ", self.p.metronome.now, "-", self.recording_start_timestamp, "=", t/self.p.metronome.beat_divider);time.sleep_ms(10) 
+            print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48);time.sleep_ms(10) 
             self.records[self.recording].append([t, event])
     
     def display(self):
@@ -88,8 +88,8 @@ class Looper:
         "Returns whether a track was successfully recorded"
         if self.recording != None:
             if len(self.records[self.recording])>0:
-                now = self.p.metronome.now
                 #Loop was actually recorded
+                now = self.p.metronome.now
                 self.d.text("Finish recording\nloop {}".format(self.loop_names[self.recording]), 2000)
                 self.recorded |= 1<<self.recording
                 self.chord_channel, self.melody_channel = self.record_channels[-1]
@@ -113,8 +113,9 @@ class Looper:
                     print("Duration: ", d/48, "(minimun: ", self.p.metronome.beat_divider/48, ")")
                     self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
                     
-                self.loop_start[self.recording] = now
+                self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
+                self.cursors[self.recording] = 0
             else:
                 self.d.text("Nothing recorded", 2000)
             print("Recorded: ", self.records[self.recording])
@@ -169,20 +170,21 @@ class Looper:
         c = self.cursors[loop]
         if now > self.durations[loop]:
             #jump back to the start of the loop
-            print("Restarting loop", loop, "now: ", now, "index: ", c, "ticks:", self.p.metronome.now/48)
+            #print("Restarting loop", loop, "start", self.loop_start[loop]/48, "duration: ", self.durations[loop]/48, "now: ", now/48, "index: ", c, "ticks:", self.p.metronome.now/48)
             c=0
-            self.loop_start[loop] += self.durations[loop]
+            self.loop_start[loop] += ((self.p.metronome.now-self.loop_start[loop])//self.durations[loop])*self.durations[loop]
             now = self.p.metronome.now - self.loop_start[loop]
+            #print("Restarted. now: ", now/48, "start", self.loop_start[loop]/48, "index: ", c, "ticks:", self.p.metronome.now/48)        
             #Stop all playing notes, just in case
-            for c in self.record_channels[loop]:
-                self.p.midi.all_off(c)
-
+            for d in self.record_channels[loop]:
+                self.p.midi.all_off(d)
+        #print("loop", loop, "loop_start:", self.loop_start[loop]/48, "note n.", c, "Now: ", now/48, end="")
         t, msg = self.records[loop][c]
-        #print("loop", loop, "start: ", t, "Now: ", now, "(", ticks, self.loop_start[loop], ")");time.sleep_ms(50)
+        #print("Start: ", t/48);time.sleep_ms(5)
         while t <= now:
             if self.playing & (1<<loop):
                 #actually play the note
-                print("Playing note n.", c, "now: ", now/48, "recorded time: ", t/48, "ticks:", self.p.metronome.now/48)
+                print("Loop", loop, "playing note n.", c, "now: ", now/48, "recorded time: ", t/48, "ticks:", self.p.metronome.now/48)
                 self.p.midi.inject(msg)
             c+=1
             t, msg = self.records[loop][c]
@@ -190,6 +192,7 @@ class Looper:
     
     def loop(self):
         #Play active loops
+        #print("Tick: ", self.p.metronome.now/48);time.sleep_ms(100)
         for i in range(0,8):
             if self.recorded & (1<<i):
                 #Walk through all recorded loops
