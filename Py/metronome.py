@@ -13,13 +13,16 @@ class Metronome:
         
     def set_bpm(self, bpm):
         self.bpm = bpm
-        self.beat_duration = 60000/bpm
+        self.beat_duration = 60000/bpm        
         
     def on(self):
         self.enable = True
     
     def off(self):
         self.enable = False
+        
+    def toggle(self):
+        self.enable = not(self.enable)
     
     def loop(self):
         t = time.ticks_ms()
