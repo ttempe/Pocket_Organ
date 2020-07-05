@@ -9,10 +9,7 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * add a shortcut to quit and return to the REPL, for ease of debugging
-# * what should happen if I change to a different instrument while recording a loop?
-# * what should happen if I change teh volume while recording a loop?
-# * use const() where appropriate
+# * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
 
 class PocketOrgan:
     def __init__(self):
@@ -42,8 +39,11 @@ class PocketOrgan:
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
+        last_tap_timestamp = 0
         if not self.l.stop_recording():
             self.d.text("Looper", 0)
+            self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
+            self.d.text('Tap "minor" to\nset rythm', 3)
         self.l.display()
         while self.k.looper:
             key = self.k.current_note_key
@@ -70,7 +70,38 @@ class PocketOrgan:
                     #No further action is possible
                     while self.k.notes[key] or self.k.looper:
                         self.loop(freeze_display=True)
+                        
+            elif self.k.minor:
+                #Set the beat by tapping it on the "minor" key
+                now = time.ticks_ms()
+                duration = now-last_tap_timestamp
+                if last_tap_timestamp and duration < 2000 and duration >300:
+                    #it's the 2nd tap
+                    self.p.metronome.set_bpm(60000//duration)
+                    self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
+                last_tap_timestamp=now
+                while self.k.minor:
+                    #wait for "minor" key release
+                    self.loop(freeze_display=True)
+                    
+            elif (self.k.seventh and self.p.metronome.bpm<200)or (self.k.third and self.p.metronome.bpm>30):
+                #manually adjust the BPM (+/-)
+                self.p.metronome.set_bpm( (self.p.metronome.bpm//5)*5+5*self.k.seventh - 5*self.k.third)
+                self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
+                while self.k.seventh or self.k.third:
+                    #wait for both keys release
+                    self.loop(freeze_display=True)
+            
+            elif self.k.fifth:
+                #Toggle metronome tick
+                self.p.metronome.toggle()
+                print("Toggle")
+                while self.k.fifth:
+                    #Wait for "fifth" key release
+                    self.loop(freeze_display=True)
+                
             self.loop()
+            
 
         self.l.apply_ui()
 
@@ -138,7 +169,7 @@ class PocketOrgan:
                 print("On: {} chord".format(self.k.current_note_key));time.sleep_us(50)
                 self.loop_chord() #returns when the chord is released
                 print("Chord off");time.sleep_us(50)
-            elif self.k.instr:
+            elif self.k.instr and self.loop.recording != None:
                 #MIDI instrument selection loop
                 self.loop_instr()
             elif self.k.volume:
