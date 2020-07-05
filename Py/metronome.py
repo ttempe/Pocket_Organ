@@ -25,14 +25,12 @@ class Metronome:
         t = time.ticks_ms()
         d = (t - self.last_beat)//self.beat_duration
         if d:
-            self.last_beat += d * self.beat_duration
-            self.beats += d * self.beat_divider
-            self.start_of_beat = self.beats
+            self.last_beat += d * self.beat_duration #last start of beat (ms)
+            self.beats += d * self.beat_divider      #last start of beat (fixed-point)
             if self.enable:
                 self.midi.note_on(9, 76, 64)
-        #TODO: toggle NoteOff slightly after each beat?
-        self.now = self.beats + (t-self.last_beat)//self.beat_divider
-
+        self.now = self.beats + ((t-self.last_beat)*self.beat_divider)//self.beat_duration
+ 
     def round_to_beats(self, d):
         "Round a fixed-point duration to the nearest number of beats"
         return round(d/self.beat_divider)*self.beat_divider
