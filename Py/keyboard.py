@@ -52,10 +52,10 @@ class Keyboard:
             self.c3.set_threshold(i, p)
         for i, p in enumerate([20, 10, 20,     20, 10, 17,     13, 20, 15]): #Fa, Sol, La
             self.c1.set_threshold(i, p)
-        for i, p in enumerate([50, 40, 55,     40, 4, 20,      10, 10, 10,    10]): #Si, Ut, Slider_volume, Sharp
+        for i, p in enumerate([50, 20, 55,     40, 4, 20,      10, 10, 10,    10]): #Si, Ut, Slider_volume, Sharp
             self.c2.set_threshold(i, p)        
         for i, p in enumerate([20, 20, 20,     100, 100, 100,        7, 15, 7,   #Slider_2, N/C, Slider_3,
-                               20, 1, 1,          #Shift, N/C, N/C,
+                               40, 1, 1,          #Shift, N/C, N/C,
                                50, 50, 50, 100]):  #7th, 5th, 3rd, minor
             self.c4.set_threshold(i, p)
         
