@@ -171,7 +171,7 @@ class PocketOrgan:
                 print("On: {} chord".format(self.k.current_note_key));time.sleep_us(50)
                 self.loop_chord() #returns when the chord is released
                 print("Chord off");time.sleep_us(50)
-            elif self.k.instr and (None != self.l.recording):
+            elif self.k.instr and (None == self.l.recording):
                 #MIDI instrument selection loop
                 self.loop_instr()
             elif self.k.volume:
