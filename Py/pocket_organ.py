@@ -9,6 +9,8 @@ import time
 import gc #Garbage collector
 
 #TODO:
+# * Read the accelerometer
+# * Choose a better selection of percussion for the Drum mode
 # * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
 
 class PocketOrgan:
@@ -153,8 +155,8 @@ class PocketOrgan:
         while self.k.drum:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
-                    self.p.play_drum(i)
-                    print("Drum", i);time.sleep_ms(10)
+                    name = self.p.play_drum(i)
+                    self.d.text(name, duration=1000)
             self.loop()
 
     def loop_waiting(self):

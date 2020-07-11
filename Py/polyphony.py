@@ -23,6 +23,8 @@ class Polyphony:
         self.set_instr(self.instr)
         self.volume = 64
         self.set_volume(self.volume)
+        #TODO: move the drum names to instr_names.py
+        self.drums = [("Bass drum", 36), ("Snare", 38), ("Low tom", 45), ("High tom", 50), ("Crash cymbal", 49), ("Ride cymbal", 51), ("Open hi-hat", 46), ("Closed hi-hat", 42) ]
         
     def start_chord(self):
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
@@ -66,7 +68,9 @@ class Polyphony:
         self.l.append(self.midi.all_off(self.l.melody_channel))
         
     def play_drum(self, note):
-        self.l.append(self.midi.note_on(self.l.drum_channel, note+60, 64))
+        name, note = self.drums[note]
+        self.l.append(self.midi.note_on(self.l.drum_channel, note, 64))
+        return name
 
     def set_instr(self, instr):
         self.instr = instr
