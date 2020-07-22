@@ -27,13 +27,24 @@ class Polyphony:
         self.drums = [("Bass drum", 36), ("Snare", 38), ("Low tom", 45), ("High tom", 50), ("Crash cymbal", 49), ("Ride cymbal", 51), ("Open hi-hat", 46), ("Closed hi-hat", 42) ]
         
     def start_chord(self):
+        def round_note(n):
+            return n%12 + 60
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
-        chord = [root,
-                         root + 4 - bool(self.k.minor),
-                         root + 7
+        
+        #Here is the logic to determine the chord shape
+        aug = self.k.fifth and not self.k.minor
+        dim = self.k.fifth and self.k.minor
+        sus4 = self.k.third and not self.k.minor
+        sus2 = self.k.third and self.k.minor
+
+        #Triad
+        chord = [        round_note(root),
+                         round_note(root + 4 - self.k.minor + sus4 - sus2*2),
+                         round_note(root + 7 + aug - dim)
                          ]
+        #Seventh
         if self.k.seventh:
-            chord.append(root+10)
+            chord.append(round_note(root+10-self.k.minor))
         self.play_chord(chord, 64, 40)
         self.d.disp_chord(
         #print(
