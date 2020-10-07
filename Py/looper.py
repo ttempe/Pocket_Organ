@@ -1,9 +1,14 @@
 import time
+import flash_W25Q128 as flash
 
 #TODO:
+# * check whether the IC is free before deleting/starting recording a loop
+#
 # * allocate the channels to the loops dynamically, only use the ones you need -> extra flexibility
 # * alternately, set some channels to percussion only and/or melody only.
 # * refuse to record if some loops are recorded but none is playing?
+#
+# * save loop state to microcontroller flash
 
 def bits(n):
     "8-bit bit map iterator"
@@ -19,16 +24,26 @@ class Looper:
         self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display
+        self.f = flash.Flash(8)
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number
         self.recording_start_timestamp = None
-        self.records = [[],[],[],[],[],[],[],[]]
-        self.cursors = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.durations = [0, 0, 0, 0, 0, 0, 0, 0]
-        self.loop_start = [0,0,0,0,0,0,0,0] #Timestamps
+        #*#self.records = [[],[],[],[],[],[],[],[]]
+        self.record_lengths = [0]*8
+        self.cursors = [0]*8
+        self.durations = [0]*8
+        self.loop_start = [0]*8 #Timestamps
         self.toggle_play_waitlist = 0 #bit map
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
+
+        #TODO: load recorded tracks status here
+
+        #Check & fix inconsitent flash disk state
+
+        if self.f.check_erased(self.loop_exists):
+            #Whole flash is being erased. Make sure we don't expect any tracks
+            self.recorded = 0
     
     def append(self, event):
         #Called by Polyphony for every Midi event
@@ -38,8 +53,10 @@ class Looper:
                 #This is the 1st note in the loop. Use it as the start date.
                 self.recording_start_timestamp = self.p.metronome.now
             t = self.p.metronome.now - self.recording_start_timestamp
-            #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48);time.sleep_ms(10) 
-            self.records[self.recording].append([t, event])
+            #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48, "note:", event);time.sleep_ms(10) 
+            #*#self.records[self.recording].append([t, event])
+            self.f.record_message(t, event)
+            self.record_lengths[self.recording]+=1
     
     def display(self):
         #As seen from the player:
@@ -61,19 +78,23 @@ class Looper:
         return self.recorded & (1<<n)
 
     def delete_track(self, n):
-        self.records[n]=[]
-        self.recorded &= ~(1<<n)
-        self.durations[n] = 0
-        self.playing &= ~(1<<n)
-        self.toggle_play_waitlist &= ~(1<<n)
-        self.display()
-        self.d.text("Loop {}\ndeleted".format(self.loop_names[n]))
+        #*#self.records[n]=[]
+        if not self.f.busy():
+            self.f.erase(n)
+            self.recorded &= ~(1<<n)
+            self.durations[n] = 0
+            self.playing &= ~(1<<n)
+            self.toggle_play_waitlist &= ~(1<<n)
+            self.display()
+            self.d.text("Loop {}\ndeleted".format(self.loop_names[n]))
 
     def start_recording(self, n):
         #This only sets the stage.
         #The start of recording really happens in self.append()
-        if 6 <= n:
-            self.d.text("Can't record\na loop on this\nkey", 2000)
+        if n >= 6:
+            #Key Ut can't have a loop, because each loop takes 2 MIDI channels
+            #(one for chords and one for melody), and channel 9 is reserved for drums
+            self.d.text("Can't record\na loop on this\nkey", 2000) 
         else:
             self.recording = n
             self.recording_start_timestamp = None
@@ -84,22 +105,25 @@ class Looper:
             self.display()
             self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
             self.p.metronome.on()
-            #TODO: make sure this gets recorded somewhere in Flash 
+            self.f.start_recording(self.recording)
 
     def stop_recording(self):
         "Returns whether a track was successfully recorded"
         if self.recording != None:
-            if len(self.records[self.recording])>0:
+            #*#if len(self.records[self.recording])>0:
+            if self.record_lengths[self.recording]>0:
                 #Loop was actually recorded
                 now = self.p.metronome.now
                 self.d.text("Finish recording\nloop {}".format(self.loop_names[self.recording]), 2000)
                 self.recorded |= 1<<self.recording
                 self.chord_channel, self.melody_channel = self.record_channels[-1]
                 #Add a final event with a duration long into the future, to simplify the code in self.pop_note()
-                self.records[self.recording].append((self.p.metronome.now+1000, None))
+                #*#self.records[self.recording].append((self.p.metronome.now+1000, None))
+                self.f.record_message(self.p.metronome.now + 1000, b"  ")
+                self.record_lengths[self.recording] += 1
                 #Set new loop duration
                 d = now - self.recording_start_timestamp
-                print("Raw duration: ", d/48, "=", now/48, "-", self.recording_start_timestamp/48)
+                #print("Raw duration: ", d/48, "=", now/48, "-", self.recording_start_timestamp/48)
                 d = self.p.metronome.round_to_beats(d)
                 if self.playing:
                     #round to a multiple of the shortest duration
@@ -112,7 +136,7 @@ class Looper:
                     #print("Duration: ", d/48, ", rounded to", self.durations[self.recording]/48)
                 else:
                     #Make sure no recording is shorter than one metronome beat
-                    print("Duration: ", d/48)
+                    #print("Duration: ", d/48)
                     self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
                     
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
@@ -120,9 +144,10 @@ class Looper:
                 self.cursors[self.recording] = 0
             else:
                 self.d.text("Nothing recorded", 2000)
-            #print("Recorded: ", self.records[self.recording])
+            #print("Recorded", self.record_lengths[self.recording], "events")
             self.recording = None
             self.p.metronome.off()
+            self.f.finish_recording()
             return True
         else:
             return False
@@ -172,7 +197,7 @@ class Looper:
         c = self.cursors[loop]
         if now > self.durations[loop]:
             #jump back to the start of the loop
-            print("Restarting loop", loop, "start", self.loop_start[loop]/48, "duration: ", self.durations[loop]/48, "now: ", now/48, "index: ", c, "ticks:", self.p.metronome.now/48)
+            #print("Restarting loop", loop, "start", self.loop_start[loop]/48, "duration: ", self.durations[loop]/48, "now: ", now/48, "ticks:", self.p.metronome.now/48)
             c=0
             self.loop_start[loop] += ((self.p.metronome.now-self.loop_start[loop])//self.durations[loop])*self.durations[loop]
             now = self.p.metronome.now - self.loop_start[loop]
@@ -180,23 +205,27 @@ class Looper:
             #Stop all playing notes, just in case
             for d in self.record_channels[loop]:
                 self.p.midi.all_off(d)
-        t, msg = self.records[loop][c]
+        #*#t, msg = self.records[loop][c]
+        t, msg = self.f.read_message(loop, c)
         while t <= now:
+            #In case there are multiple messages to be played now:
             if self.playing & (1<<loop):
                 #actually play the note
                 #print("Loop", loop, "playing note n.", c, "now: ", now/48, "recorded time: ", t/48, "ticks:", self.p.metronome.now/48)
                 self.p.midi.inject(msg)
             c+=1
-            t, msg = self.records[loop][c]
+            #*#t, msg = self.records[loop][c]
+            t, msg = self.f.read_message(loop, c)
         self.cursors[loop]=c
     
     def loop(self):
         #Play active loops
         #print("Tick: ", self.p.metronome.now/48);time.sleep_ms(100)
-        for i in range(0,8):
+        for i in range(8):
             if self.recorded & (1<<i):
                 #Walk through all recorded loops
                 self.pop_notes(i)
+        self.f.loop()
 
 
 #End
