@@ -3,7 +3,13 @@ from machine import Pin
 
 class Backlight:
     def __init__(self):
+        
         self.oe_pin   = Pin("B3",  Pin.OUT)
+        #TODO: Switch to PWM
+        #from pyb import Pin, Timer
+        #tim = Timer(2, freq=1000)
+        #self.ch = tim.channel(1, Timer.PWM, pin=self.oe_pin)
+        #self.ch.pulse_width_percent(50)
         self.data_pin = Pin("B9",  Pin.OUT)
         self.clk_pin  = Pin("C0", Pin.OUT)
         self.intensity = 128
