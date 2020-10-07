@@ -12,9 +12,21 @@ import gc #Garbage collector
 # * Read the accelerometer
 # * Choose a better selection of percussion for the Drum mode
 # * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
+# * setup a mechanism for sending a message to the display, together with a function for checking whether this message is still active
+# * find a way of voiding the warranty before exposing the filesystem throught USB?
+# * add a reinit() call to each of the SPI chip drivers, to setup the bus for itself. Takes ~150 us.
 
 class PocketOrgan:
     def __init__(self):
+        
+        #For V15 only: pull high the CS for all devices on the SPI bus
+        from machine import Pin
+        Pin("B8",  Pin.OUT).value(1)
+        #Pin("B12", Pin.OUT).value(1)#Already pulled up electrically
+        Pin("A8", Pin.OUT).value(1)
+        Pin("C3", Pin.OUT).value(1)
+        Pin("C5", Pin.OUT).value(1)
+        
         self.d = display.Display()
         self.b = backlight.Backlight()
         self.k = keyboard.Keyboard()
