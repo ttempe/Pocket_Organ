@@ -9,9 +9,12 @@ import framebuf
 
 def load_image(name):
     "takes a filename, returns a framebuffer"
-    f = open(name, 'rb')
+    try:
+        f = open(name, 'rb')
+    except:
+        raise ImportError("Error opening file: "+name)
     if b'P4\n' != f.readline():                         # Magic number
-        raise ImportError("Invalid file")
+        raise ImportError("Invalid file: "+name)
     f.readline()                                       # Creator comment
     width, height = list(int(j) for j in f.readline()[:-1].decode().split(" ")) # Dimensions
     data = bytearray(f.read())
@@ -41,9 +44,12 @@ class Display:
         self.disp.fill(0)
         x = 0
         for c in text:
-            img, width, height = load_image("img/"+c+".pbm") 
-            self.disp.framebuf.blit(img, x, 16)
-            x += width
+            try:
+                img, width, height = load_image("img/"+c+".pbm") 
+                self.disp.framebuf.blit(img, x, 16)
+                x += width
+            except ImportError:
+                print("Error loading file for", c)
         self.disp.show()
     
     def text(self, text, line=0, duration=None):
