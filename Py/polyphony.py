@@ -24,7 +24,7 @@ class Polyphony:
         self.volume = 64
         self.set_volume(self.volume)
         #TODO: move the drum names to instr_names.py
-        self.drums = [("Bass drum", 36), ("Snare", 38), ("Low tom", 45), ("High tom", 50), ("Crash cymbal", 49), ("Ride cymbal", 51), ("Open hi-hat", 46), ("Closed hi-hat", 42) ]
+        self.drums = [("Snare", 38), ("Bass drum", 36), ("Low tom", 45), ("High tom", 50), ("Crash cymbal", 49), ("Ride cymbal", 51), ("Open hi-hat", 46), ("Closed hi-hat", 42) ]
         
     def start_chord(self):
         def round_note(n):
