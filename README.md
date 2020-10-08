@@ -33,6 +33,17 @@ See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master
  * It has a LiPo battery that lasts a few hours, and a USB port for charging, and for MIDI over USB.
 * The enclosure is published on: https://a360.co/2Yl1HuQ
 
+# capacitive touch keys: prototypes V10+
+
+I've basically restarted from scratch at the beginning of 2020. This branch has:
+* capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
+* a STM32F405 MCU
+* I've re-written the whole code in Micropython. See the "Py" directory
+
+![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V12/V12_assembled.jpg)
+
+As of October 2020, I have a working V14 protopype, but am not fully satisfied with the touch sensors (input is noisy and a little laggy). I am working on V15, which will feature a new capacitive sensor chip, as well as a strumming comb.
+
 # Pressure-sensitive: prototypes V6 to V9
 
 This branch of the project culminated in functional prototypes.
@@ -51,16 +62,6 @@ I've decided to move away from this principle, after:
 * realizing that it would be a significant challenge to further lower the key mechanical resistance
 * experiencing the Sylphyo's amazingly expressive capacitive touch keys.
 
-# capacitive touch keys: prototypes V10+
-
-I've basically restarted from scratch at the beginning of 2020. This branch has:
-* capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
-* a STM32F405 MCU
-* I'm re-writing the whole code in Micropython. See the "Py" directory
-
-![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V12/V12_assembled.jpg)
-
-As of May 2020, after 4 iterations of PCB, I'm still struggling getting reliable readings on the capacitive keys.
 
 # Musical design
 
