@@ -15,13 +15,13 @@ class AT42QT110:
     def __init__(self, spi, cs_pin):
         "chip is connected thourgh SPI; expecting a machine.SPI object (for the bus) and a machine.pin object (for the CS pin)"
         self.spi = spi
-        self.cs_pin = cs_pin
-        self.cs_pin(1)
+        self.cs = cs_pin
+        self.cs(1)
         self.rate = 1500000
         self.buf = bytearray(3)
         self.buttons=0
         #IC Initialization
-        self.send(b"\x90\xF0")#Auto trigger, 11-key, parallel acquisition, edge sync, free run
+        self.send_command(b"\x90\xF0")#Auto trigger, 11-key, parallel acquisition, edge sync, free run
         
     def send_command(self, cmd, read=0):
         "Send a single SPI command. Optionally write data specified in 'write'. Optionally read and return 'read' bytes."
@@ -62,5 +62,7 @@ class AT42QT110:
         #time.sleep_ms(160)#after reset
         time.sleep_us(150)#after a full recalibration
 
-
+#Debug. TODO: Remove
+from machine import SPI, Pin
+a = AT42QT110(SPI(1), Pin("B8", Pin.OUT))
 #End

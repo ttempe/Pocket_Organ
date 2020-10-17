@@ -1,17 +1,19 @@
+#Copyright Thomas TEMPE, 2020
+
 import time
-from machine import Pin
+import board
 
 class Backlight:
     def __init__(self):
         
-        self.oe_pin   = Pin("B3",  Pin.OUT)
+        self.oe_pin   = board.backlight_oe_pin
         #TODO: Switch to PWM
         #from pyb import Pin, Timer
         #tim = Timer(2, freq=1000)
         #self.ch = tim.channel(1, Timer.PWM, pin=self.oe_pin)
         #self.ch.pulse_width_percent(50)
-        self.data_pin = Pin("B9",  Pin.OUT)
-        self.clk_pin  = Pin("C0", Pin.OUT)
+        self.data_pin = board.backlight_data_pin
+        self.clk_pin  = board.backlight_clk_pin
         self.intensity = 128
         self.LED = [1, 2, 0, 3, 4, 5, 6, 7]
         self.off()

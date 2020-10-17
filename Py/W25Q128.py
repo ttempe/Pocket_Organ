@@ -116,21 +116,8 @@ class W25Q128:
                 self.last_op_was_write = False
         return False
 
-# Test code
-from machine import Pin, SPI
-Pin("B8",  Pin.OUT).value(1)
-Pin("A8", Pin.OUT).value(1)
-Pin("C3", Pin.OUT).value(1)
-Pin("C5", Pin.OUT).value(1)
-
-flash = W25Q128(SPI(1), Pin("B12", Pin.OUT))
-
-# #test busy
-# #flash.write(0, b"Hello world")
-# t = time.ticks_us()
-# flash.read(0,10)
-# print(time.ticks_us()-t)
-# flash.erase_64k(65536)
-# flash.read(0,10)
+# # Test code
+# import board
+# flash = W25Q128(board.flash_spi, board.flash_cs)
 
 #End

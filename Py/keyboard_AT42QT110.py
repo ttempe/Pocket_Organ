@@ -1,6 +1,6 @@
 import AT42QT110
-from machine import Pin, SPI
 import time
+import board
 
 #TODO:
 #force a recalibration when switching between USB and battery power
@@ -12,19 +12,18 @@ class Keyboard:
     including key mapping.
     """
     def __init__(self):
-        self.melody_led = Pin("A0", Pin.OUT)
+        self.melody_led = board.keyboard_melody_led
         self.melody_led(1)
 
-        self.spi = SPI(1)
-        self.uc1 = AT42QT110.AT42QT110(self.spi, Pin("B8", Pin.OUT))
-        self.uc2 = AT42QT110.AT42QT110(self.spi, Pin("C5", Pin.OUT))
-        self.uc3 = AT42QT110.AT42QT110(self.spi, Pin("C3", Pin.OUT))
+        self.uc1 = AT42QT110.AT42QT110(board.keyboard_spi, board.keyboard_uc1_cs)
+        self.uc2 = AT42QT110.AT42QT110(board.keyboard_spi, board.keyboard_uc2_cs)
+        self.uc3 = AT42QT110.AT42QT110(board.keyboard_spi, board.keyboard_uc3_cs)
 
         time.usleep(160) #give time to complete auto-calibration
-        self.volume_pin = Pin("B0", Pin.IN, Pin.PULL_UP)
-        self.instr_pin = Pin("C4", Pin.IN, Pin.PULL_UP)
-        self.looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
-        self.drum_pin = Pin("A3", Pin.IN, Pin.PULL_UP)
+        self.volume_pin = board.keyboard_volume_pin
+        self.instr_pin = board.keyboard_instr_pin
+        self.looper_pin = board.keyboard_looper_pin
+        self.drum_pin = board.keyboard_drum_pin
 
         self.note_sliders = bytearray(8)
         self.notes = bytearray(8)
@@ -39,19 +38,7 @@ class Keyboard:
     def loop(self):
         self.notes_old = self.notes[:]
         self.note_sliders_old = self.note_sliders[:]
-#         t=c=0
-#         while 0==t:
-#             try:
-#                 c+=1
-#                 self.c1.read()
-#                 self.c2.read()
-#                 self.c3.read()
-#                 self.c4.read()
-#                 t=1
-#             except:
-#                 pass
-#         if c>2:
-#             print("Touch sensors: {} trials".format(c))
+
         self.uc1.read()
         self.uc2.read()
         self.uc3.read()        

@@ -25,16 +25,16 @@
 # * count the number of "read status" operations per cycle; add a test to only check every 40 ms?
 # * handle all exceptions raised below
 
-from machine import Pin, SPI
 import W25Q128
 import errno
+import board
 
 class FlashError(RuntimeError):
     pass
 
 class Flash:
     def __init__(self, nb_loops = 8):        
-        self.ic = W25Q128.W25Q128(SPI(1), Pin("B12", Pin.OUT))
+        self.ic = W25Q128.W25Q128(board.flash_spi, board.flash_cs)
         self.nb_loops = nb_loops
         #Round down to an integer number of erase block sizes, to avoid erasing the beginning of the next loop
         self.memory_per_loop = (self.ic.capacity//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
@@ -192,8 +192,5 @@ class Flash:
         for i in range(len):
             t, m = self.read_message(loop, pos+i)
             print(t/48, m)
-
-#Debug code. TODO:Remove
-f = Flash()
 
 #End

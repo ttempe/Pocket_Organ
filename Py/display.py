@@ -1,7 +1,7 @@
 import ssd1306
-from machine import SPI, Pin
 import time
 import framebuf
+import board
 
 #Notes:
 # * disp.fill(0) takes  ~500 us
@@ -23,10 +23,10 @@ def load_image(name):
 
 class Display:
     def __init__(self):
-        self.disp = ssd1306.SSD1306_SPI(128, 64, SPI(1),
-                           dc=Pin("B1", Pin.OUT),
-                           res=Pin("C9", Pin.OUT),
-                           cs=Pin("A8", Pin.OUT),
+        self.disp = ssd1306.SSD1306_SPI(128, 64, board.display_spi,
+                           dc =  board.display_dc,
+                           res = board.display_res,
+                           cs =  board.display_cs,
                            external_vcc=False, mirror_v=True, mirror_h=True)
 
         self.disp.contrast(50)

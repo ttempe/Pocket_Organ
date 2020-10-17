@@ -18,15 +18,6 @@ import gc #Garbage collector
 
 class PocketOrgan:
     def __init__(self):
-        
-        #For V15 only: pull high the CS for all devices on the SPI bus
-        from machine import Pin
-        Pin("B8",  Pin.OUT).value(1)
-        #Pin("B12", Pin.OUT).value(1)#Already pulled up electrically
-        Pin("A8", Pin.OUT).value(1)
-        Pin("C3", Pin.OUT).value(1)
-        Pin("C5", Pin.OUT).value(1)
-        
         self.d = display.Display()
         self.b = backlight.Backlight()
         self.k = keyboard.Keyboard()

@@ -1,6 +1,6 @@
-from machine import Pin
+import board
 
-pin = Pin("B0", Pin.IN, Pin.PULL_UP)
+pin = board.main_startup_pin
 if not(pin()):
     #Start if the "volume" key is pressed on startup
     import pocket_organ
