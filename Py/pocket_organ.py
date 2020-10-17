@@ -27,8 +27,7 @@ class PocketOrgan:
     def loop(self, freeze_display=False):
         self.l.loop()
         self.p.loop()
-        if not freeze_display:
-            self.d.loop()
+        self.d.loop(freeze_display)
         gc.collect()
         self.k.loop()
     

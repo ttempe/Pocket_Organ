@@ -1,5 +1,6 @@
 import time
 import flash_W25Q128 as flash
+import indicator
 
 #TODO:
 # * check whether the IC is free before deleting/starting recording a loop
@@ -24,7 +25,7 @@ class Looper:
         self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display
-        self.f = flash.Flash(8)
+        self.f = flash.Flash(display, 8)
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number
@@ -44,6 +45,10 @@ class Looper:
         if self.f.check_erased(self.loop_exists):
             #Whole flash is being erased. Make sure we don't expect any tracks
             self.recorded = 0
+        indicator.Indicator(self.d, ["flash_blank", "flash_w"], self.indicator_status) #The indicator registers itself with display
+    
+    def indicator_status(self):
+        return 1 if self.f.busy() else 0
     
     def append(self, event):
         #Called by Polyphony for every Midi event

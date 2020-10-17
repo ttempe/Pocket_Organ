@@ -3,6 +3,10 @@ import time
 import framebuf
 import board
 
+#Instructions for creating files:
+#in Gimp, image->mode->indexed, "use black-and-white (1-bit) palette"
+#then export as PBM, and choose "ASCII" data formatting.
+
 #Notes:
 # * disp.fill(0) takes  ~500 us
 # * disp.show()  takes ~2200 us
@@ -10,7 +14,7 @@ import board
 def load_image(name):
     "takes a filename, returns a framebuffer"
     try:
-        f = open(name, 'rb')
+        f = open("img/"+name+".pbm", 'rb')
     except:
         raise ImportError("Error opening file: "+name)
     if b'P4\n' != f.readline():                         # Magic number
@@ -30,14 +34,18 @@ class Display:
                            external_vcc=False, mirror_v=True, mirror_h=True)
 
         self.disp.contrast(50)
-        self.disp_image("img/logo.pbm")
+        self.disp_image("logo")
         self.disp.show()
         self.erase_time = 0
-
+        self.indicators = []
+        self.indicators_width = 0
 
     def disp_image(self, img):
         self.disp.framebuf.blit(load_image(img)[0], 0, 0)
         self.disp.show()
+
+    def disp_indicator(self, img, pos):
+        self.disp.framebuf.blit(img, pos, 0)
 
     def disp_chord(self, text):
         """Displays text using the large font"""
@@ -45,7 +53,7 @@ class Display:
         x = 0
         for c in text:
             try:
-                img, width, height = load_image("img/"+c+".pbm") 
+                img, width, height = load_image(c) 
                 self.disp.framebuf.blit(img, x, 16)
                 x += width
             except ImportError:
@@ -78,9 +86,27 @@ class Display:
         self.disp.fill(0)
         self.disp.show()
         self.erase_time = None
+        #TODO: erase only starting from line 9
+        for i in self.indicators:
+            i.display()
 
-    def loop(self):
-        if self.erase_time != None and self.erase_time <= time.ticks_ms():
-            self.clear() #takes no time at all.
+    def register_indicator(self, i, width):
+        """Register an Indicator object.
+        It will be called back at every loop to (possibly) update an icon in the top 8 pixels of the screen.
+        i is the indicator object
+        The indicator can register a number of pixels for itself, by setting width.
+        register_indicator will return the allocated position of the icon.
+        """
+        self.indicators.append(i)
+        old_width = self.indicators_width
+        self.indicators_width += width
+        return old_width
+
+    def loop(self, freeze_display=None):
+        if not freeze_display:
+            if self.erase_time != None and self.erase_time <= time.ticks_ms():
+                self.clear() #takes no time at all.
+        for i in self.indicators:
+            i.loop()
         
 #end
