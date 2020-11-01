@@ -147,7 +147,7 @@ class Flash:
 
     def busy(self):
         "Is the flash device busy with any erase operation? (Refuse start of recording if so)"
-        return bool((self.erase_cursor != None) or self.page_cursor >0 )
+        return bool((self.erase_cursor != None) or (self.page_cursor and self.page_cursor >0) )
 
     def read_message(self, loop, cursor):
         "Returns one message. Caches one message from each loop in memory, for speed."

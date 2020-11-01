@@ -25,7 +25,7 @@ class Looper:
         self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display
-        self.f = flash.Flash(display, 8)
+        self.f = flash.Flash(8)
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number

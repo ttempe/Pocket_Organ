@@ -5,7 +5,7 @@ import board
 
 #Instructions for creating files:
 #in Gimp, image->mode->indexed, "use black-and-white (1-bit) palette"
-#then export as PBM, and choose "ASCII" data formatting.
+#then export as PBM, and choose "Raw" data formatting.
 
 #Notes:
 # * disp.fill(0) takes  ~500 us
@@ -13,12 +13,14 @@ import board
 
 def load_image(name):
     "takes a filename, returns a framebuffer"
+    filename = "/img/"+name+".pbm"
     try:
-        f = open("img/"+name+".pbm", 'rb')
+        f = open(filename, 'rb')
     except:
-        raise ImportError("Error opening file: "+name)
+        raise ImportError("Error opening file: " + filename)
     if b'P4\n' != f.readline():                         # Magic number
-        raise ImportError("Invalid file: "+name)
+        pass
+        raise ImportError("Invalid file: " + filename)
     f.readline()                                       # Creator comment
     width, height = list(int(j) for j in f.readline()[:-1].decode().split(" ")) # Dimensions
     data = bytearray(f.read())
@@ -86,7 +88,7 @@ class Display:
         self.disp.fill(0)
         self.disp.show()
         self.erase_time = None
-        #TODO: erase only starting from line 9
+        #TODO: erase only starting from line 9?
         for i in self.indicators:
             i.display()
 

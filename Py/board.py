@@ -7,7 +7,7 @@ spi = SPI(1)
 
 backlight_oe_pin =   Pin("B3", Pin.OUT)
 backlight_data_pin = Pin("B9",  Pin.OUT)
-backligth_clk_pin =  Pin("C0", Pin.OUT)
+backlight_clk_pin =  Pin("C0", Pin.OUT)
 
 display_spi = spi
 display_dc =  Pin("C0", Pin.OUT)
