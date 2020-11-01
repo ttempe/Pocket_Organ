@@ -2,9 +2,16 @@ import time
 import midi
 import metronome
 
-# This code assumes only one chord will ever be sent at once.
+# Only one chord is ever sent at once.
 # TODO:
 # * have Midi return the MIDI message string, and have Polyphony call the looper directly
+# * update the chord shape when the user toggles the 3rd/5th/7th buttons
+
+def bits(n):
+    "8-bit bit map iterator"
+    for i in range(0, 8):
+        if n&(1<<i):
+            yield i
 
 class Polyphony:
     def __init__(self, keyboard, display, looper):
@@ -25,6 +32,11 @@ class Polyphony:
         self.set_volume(self.volume)
         #TODO: move the drum names to instr_names.py
         self.drums = [("Snare", 38), ("Bass drum", 36), ("Low tom", 45), ("High tom", 50), ("Crash cymbal", 49), ("Ride cymbal", 51), ("Open hi-hat", 46), ("Closed hi-hat", 42) ]
+        self.chord = [] #Currently playing chord
+        self.strum_chord = [] #same chord, but with enough notes to cover all strumming keys
+        self.strum_mute_old = 0
+        self.strum_keys_old = 0
+
         
     def start_chord(self):
         def round_note(n):
@@ -38,34 +50,48 @@ class Polyphony:
         sus2 = self.k.third and self.k.minor
 
         #Triad
-        chord = [        round_note(root),
+        self.chord = [   round_note(root),
                          round_note(root + 4 - self.k.minor + sus4 - sus2*2),
                          round_note(root + 7 + aug - dim)
                          ]
         #Seventh
         if self.k.seventh:
-            chord.append(round_note(root+10-self.k.minor))
-        self.play_chord(chord, 64, 40)
+            self.chord.append(round_note(root+10-self.k.minor))
+        if not self.k.strum_mute and not self.k.strum_keys:
+            self.play_chord(64, 40)
+        else:
+            self.strum_keys_old = 0 #Play all keys on the next loop()
         self.d.disp_chord(
-        #print(
              self.chord_names[self.k.current_note_key] +
              ("#" if self.k.sharp else "") +
              ("m" if self.k.minor else "") +
              ("7" if self.k.seventh else "")
              )
+        #extend that chord to cover all strumming keys
+        if len(self.chord)<self.k.nb_strum_keys:
+            self.strum_chord = [self.chord[0]-12]
+            self.strum_chord.extend(self.chord)
+            incr = 12
+            while len(self.strum_chord)<self.k.nb_strum_keys:
+                for n in self.chord:
+                    self.strum_chord.append(n+incr)
+                incr +=12
+
+            
     
-    def play_chord(self, notes, velocity, timing): #timing = number of ms between successive notes
-        """Starts playing a list of notes.
+    def play_chord(self, velocity, timing): #timing = number of ms between successive notes
+        """Starts playing all notes for the chord.
         The 1st one is played immediately, the following ones are spaced by timing (in milliseconds).
         """
-        self.l.append(self.midi.note_on(self.l.chord_channel, notes[0], velocity))
-        for i, n in enumerate(notes[1:], start=1):
+        self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[0], velocity))
+        for i, n in enumerate(self.chord[1:], start=1):
             self.pending.append((n, velocity, time.ticks_ms()+timing*i))
         
     def stop_chord(self):
         self.l.append(self.midi.all_off(self.l.chord_channel))
         self.pending = []
         self.d.clear()
+        self.strum_chord = []
 
     def start_note(self, i):
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + 1*self.k.sharp
@@ -95,6 +121,29 @@ class Polyphony:
 
     def loop(self):
         self.metronome.loop()
+        
+        #Are we strumming?
+        if self.strum_chord:
+            #If the user just activated the strum mute:
+            if self.k.strum_mute and not self.strum_mute_old:
+                #Mute any key that's not being held
+                for i, k in enumerate(self.strum_chord):
+                    if not((self.k.strum_keys>>i)&1):
+                        self.midi.note_off(self.l.chord_channel, k, 64)
+            #update newly released strum keys
+            elif self.k.strum_mute:
+                #Keys that were in _old but are no longer in _new
+                for i in bits(self.strum_keys_old & (~self.k.strum_keys)):
+                    self.midi.note_off(self.l.chord_channel, self.strum_chord[i], 64)
+
+            #update newly strummed keys
+            for i in bits(self.k.strum_keys & (~self.strum_keys_old)):
+                self.midi.note_on(self.l.chord_channel, self.strum_chord[i], 64)
+                
+            self.strum_mute_old = self.k.strum_mute
+            self.strum_keys_old = self.k.strum_keys
+        
+        #Non-strummed chord:
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
         if len(self.pending):
             next = self.pending[0][2]
