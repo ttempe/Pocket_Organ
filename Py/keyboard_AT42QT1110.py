@@ -7,6 +7,48 @@ import board
 #clean up slider code
 #Minor is not working
 
+class Slider:
+    "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
+    
+    def __init__(self, uc, electrodes, sensitivity, repeat=False):
+        """
+        'repeat' indicates whether the last electrode is repeated at the end of the slider
+        (in a 1/2/3/1 manner).
+        """
+        self.uc = uc
+        self.electrodes = electrodes
+        self.repeat = bool(repeat)
+        self.sens   = sensitivity                #List of expected max deviation for each electrode
+        self.count  = len(electrodes)+self.repeat
+        self.values = bytearray(self.count)      #For storing intermediary results
+        self.ref    = bytearray(len(electrodes)) #Reference value, after calibration
+        if self.repeat:
+            self.sens.append(self.sens[0])
+
+    def calibrate():
+        for i, e in enumerate(self.electrodes):
+            self.thres[i] = self.uc.read_threshold(e)
+        if self.repeat:
+            self.values[-1]=self.values[1]        
+
+    def read():
+        val = []
+        #Get a relative reading for each electrode, between 0 and 100
+        for i, e in enumerate(self.electrodes):
+            r = self.uc.read_analog(e)
+            self.values[i] = max(((self.thres[i] - r)*100)//self.sens[i],100)
+        if self.repeat:
+            self.values[-1]=self.values[1]
+        print("Values:", self.values)
+        for e in range(self.count-1):
+            val.append(self.values[e]+self.values[e+1])
+        #Find the value with the highest reading
+        highest = max( (v, i) for i, v in enumerate(val) )[1]
+        print("Highest point is between electrodes", highest, "and", highest+1)
+
+        res = highest*100//len(self.values)
+        res += (100//len(self.values))
+
 class Keyboard:
     """
     This is the abstraction layer responsible for collecting all user input,
@@ -20,6 +62,8 @@ class Keyboard:
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
 
+        self.vol_slider = Slider( self.uc2, [3, 4, 5], True)
+
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
         self.looper_pin = board.keyboard_looper_pin
@@ -30,9 +74,12 @@ class Keyboard:
         self.note_sliders_old = bytearray(8)
         self.notes_old = bytearray(8)
         self.volume_old = False
-        
+
         self.loop()
         self.melody_led(0)
+        self.strum_mute = False
+        self.strum_keys = 0 #Bytearray
+        self.nb_strum_keys = 8
 
                 
     def loop(self):
@@ -83,8 +130,14 @@ class Keyboard:
                 self.current_note_key = i
                 break
 
+        #Update the strum keys status
+        b = self.uc3.button
+        self.strum_mute = b(5)
+        self.strum_keys = b(9)+(b(8)<<1)+(b(7)<<2)+(b(6)<<3)+(b(4)<<4)+(b(3)<<5)+(b(1)<<6)+(b(2)<<7)
+
         #TODO: implement melody lock
         self.melody_led(self.shift)
+        
             
 #end
             
