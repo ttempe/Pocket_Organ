@@ -1,6 +1,6 @@
 import display
 import backlight
-import keyboard
+import keyboard_AT42QT1110 as keyboard
 import looper
 import polyphony
 import instr_names
@@ -35,10 +35,10 @@ class PocketOrgan:
         #TODO: set the master and channel volumes separately
         self.d.disp_volume(self.p.volume)
         while self.k.volume:
-            if self.p.volume != self.k.slider_vol_val//2:
-                self.p.volume = self.k.slider_vol_val//2
-                self.d.disp_volume(self.p.volume)
-                self.p.set_volume(self.p.volume)
+            #if self.p.volume != self.k.slider_vol_val//2:
+            #    self.p.volume = self.k.slider_vol_val//2
+            #    self.d.disp_volume(self.p.volume)
+            #    self.p.set_volume(self.p.volume)
             self.loop(freeze_display=True)
 
     def loop_looper(self):
@@ -141,6 +141,7 @@ class PocketOrgan:
             self.loop(freeze_display=True)
 
     def loop_chord(self):
+        "Currently playing a chord"
         root = self.k.current_note_key
         self.p.start_chord()
         self.b.light_one(root)
