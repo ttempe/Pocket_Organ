@@ -195,7 +195,7 @@ class Looper:
             #send an "all notes off" midi command
             self._stop_playing(i)
         self.toggle_play_waitlist = 0
-        self.b.off()
+        self.b.light_none()
 
     def pop_notes(self, loop):
         now = self.p.metronome.now - self.loop_start[loop]

@@ -69,7 +69,7 @@ class Polyphony:
              )
         #extend that chord to cover all strumming keys
         if len(self.chord)<self.k.nb_strum_keys:
-            self.strum_chord = [self.chord[0]-12]
+            self.strum_chord = [self.chord[0]-12, self.chord[1]-12]
             self.strum_chord.extend(self.chord)
             incr = 12
             while len(self.strum_chord)<self.k.nb_strum_keys:

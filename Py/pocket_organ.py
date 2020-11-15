@@ -23,6 +23,12 @@ class PocketOrgan:
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
+#         #DEBUG. TODO:Remove. For cycle time measurement
+#         self.min=1000000
+#         self.max=0
+#         self.total=0
+#         self.count=0
+#         self.last=None
 
     def loop(self, freeze_display=False):
         self.l.loop()
@@ -30,7 +36,25 @@ class PocketOrgan:
         self.d.loop(freeze_display)
         gc.collect()
         self.k.loop()
-    
+#         #DEBUG. TODO:Remove. For cycle time measurement
+#         if self.last:
+#             t = time.ticks_us()-self.last
+#             self.min=min(t, self.min)
+#             self.max=max(t, self.max)
+#             self.total += t
+#             self.count += 1
+#         self.last = time.ticks_us()
+#         if not(self.count & 1023):
+#             try:
+#                 print("Min:", self.min, "Max", self.max, "Avg", self.total/self.count)
+#             except:
+#                 pass
+#             self.min=1000000
+#             self.max=0
+#             self.total=0
+#            self.count=0
+            
+
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
         self.d.disp_volume(self.p.volume)
@@ -152,7 +176,7 @@ class PocketOrgan:
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
-        self.b.off()
+        self.b.light_none()
 
     def loop_drum(self):
         while self.k.drum:
