@@ -29,15 +29,20 @@ import W25Q128
 import errno
 import board
 
+def roundup(x, y):
+    "Round a number up to the next end of page"
+    return (x+(-x%y))//y*y
+
 class FlashError(RuntimeError):
     pass
 
 class Flash:
-    def __init__(self, nb_loops = 8):        
+    def __init__(self, nb_loops = 8, start=0):
         self.ic = W25Q128.W25Q128(board.flash_spi, board.flash_cs)
         self.nb_loops = nb_loops
+        self.start = roundup(start, self.ic.erase_block_size) #only start storing data after this address
         #Round down to an integer number of erase block sizes, to avoid erasing the beginning of the next loop
-        self.memory_per_loop = (self.ic.capacity//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
+        self.memory_per_loop = ((self.ic.capacity-self.start)//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
         self.current_loop = None          #a loop here is one record (track), corresponding to one key of the looper
         self.write_buffer = bytearray(64) #small in-memory write buffer
         self.page_cursor = None           #cursor inside self.write_buffer. (Points to the end of valid data inside write_buffer)
@@ -62,7 +67,7 @@ class Flash:
         
         #Check all tracks
         for i in range(self.nb_loops):
-            if not(exists(i)) and (self.ic.read(i * self.memory_per_loop, 1)[0] != 0xFF or self.ic.read(i * self.memory_per_loop - 1 + self.ic.erase_block_size, 1)[0] != 0xFF):
+            if not(exists(i)) and (self.ic.read(i * self.memory_per_loop + self.start, 1)[0] != 0xFF or self.ic.read(i * self.memory_per_loop - 1 + self.ic.erase_block_size + self.start, 1)[0] != 0xFF):
                 #If the track is listed as deleted, but we find data for it in the flash IC (the 1st and last bytes of the 1st block are not both 0xFF)
                 error_tracks.append(i)
         #print("tracks to erase: ", error_tracks)
@@ -70,7 +75,7 @@ class Flash:
             #Assume the whole chip is unformatted. Erase everything.
             print("Erasing whole chip. This will take 1~3 minutes")
             #TODO: display on the screen
-            self.ic.erase_whole_chip()
+            self.erase(0, self.nb_loops * self.memory_per_loop)
             return 1
         elif 1==len(error_tracks):
             #Erase the whole loop
@@ -129,7 +134,7 @@ class Flash:
 
             #Then commit to memory and update the internal buffer and cursors
             #print("Writing:", start_of_write, end_of_page, write_length, self.write_buffer[0:write_length])
-            self.ic.write(start_of_write, self.write_buffer[0:write_length])
+            self.ic.write(start_of_write + self.start, self.write_buffer[0:write_length])
             
             self.write_buffer[0:self.page_cursor-write_length] = self.write_buffer[write_length:self.page_cursor]
             self.page_cursor -= write_length
@@ -155,7 +160,7 @@ class Flash:
         if cursor != self.read_cursors[loop] or None == self.read_buffer[loop]:
             #update the read cache from flash
             self.read_cursors[loop] = cursor
-            r = self.ic.read(self.memory_per_loop * loop + cursor * 8, 7)
+            r = self.ic.read(self.memory_per_loop * loop + cursor * 8 + self.start, 7)
             t = (r[0]<<24)+(r[1]<<16)+(r[2]<<8)+(r[3])
             #print("extracted from memory:", r)
             if 0xFF==r[6]:
@@ -173,10 +178,10 @@ class Flash:
     def loop(self):
         if (self.erase_cursor != None) and not self.ic.busy():
             #Erase the next block
-            if (self.ic.read(self.erase_cursor, 7)[0] != 0xFF):
+            if (self.ic.read(self.erase_cursor + self.start, 7)[0] != 0xFF):
                 #Only erase if there's data written, to go faster.
                 #0x00 gets written as the last byte of each record
-                self.ic.erase_block(self.erase_cursor)
+                self.ic.erase_block(self.erase_cursor + self.start)
             if self.erase_cursor == self.erase_start:
                 #We just sent the last order
                 self.erase_cursor = None
