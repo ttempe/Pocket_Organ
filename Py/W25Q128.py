@@ -22,6 +22,10 @@ import time
 # * need to erase (in min 4kB blocks) before writing
 # * writing and erasing can take a long time (up to a minute)
 
+def roundup(x, y):
+    "Round a number up to the next end of page"
+    return (x+(-x%y))//y*y
+
 class W25Q128:
     def __init__(self, spi, cs):
         "class for one W25Q128 flash memory IC. cs is a Pin object for the SPI cable select pin"
@@ -42,7 +46,7 @@ class W25Q128:
     def reinit(self):
         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
 
-    def send_command(self, cmd, addr=None, write=None, read=None):
+    def send_command(self, cmd, addr=None, write=None, read=None, into=None):
         "Send a single SPI command. Optionally write data specified in 'write'. Optionally read and return 'read' bytes."
         #self.spi.init(baudrate=self.rate, polarity=0, phase=0)
         r = None
@@ -52,7 +56,9 @@ class W25Q128:
             self.spi.write(bytes( [ (addr>>16)&0xFF, (addr>> 8)&0xFF, (addr)&0xFF ] ) )
         if write != None:
             self.spi.write(bytearray(write))
-        if read != None:
+        if into != None:
+            self.spi.readinto(into)
+        elif read != None:
             r = self.spi.read(read)
         self.cs(1)
         return r
@@ -60,6 +66,19 @@ class W25Q128:
     def get_id(self):
         return self.send_command(b"\x9F", read=2)
 
+    def read_into(self, addr, buf):
+        busy = self.busy()
+        if busy:
+            #Chip is busy with a long write/erase operation
+            self.send_command(b"\x75") #Suspend
+            time.sleep_us(20)
+        r = self.send_command(b"\x03", addr, into=buf) # Read
+        if busy:
+            #Chip was busy. Resume write/erase operation
+            self.send_command(b"\x7A") #Resume
+            time.sleep_us(20)
+        return r
+        
     def read(self, addr, len):
         #Reading 1~8 bytes typically takes 180 us
         busy = self.busy()
@@ -87,6 +106,12 @@ class W25Q128:
 #        self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
 #        self.send_command(b"\x52", addr = addr&0xFF8000) #erase 32k block
         self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
+
+    def erase_block_4k(self, addr):
+        "erase a block"
+        self.last_op_was_write = True
+        self.send_command(b"\x06") #Write enable
+        self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
 
     def erase_whole_chip(self):
         #Takes between 40s (typical)  and 200s (max)
@@ -116,6 +141,50 @@ class W25Q128:
                 self.last_op_was_write = False
         return False
 
+class BlockDev:
+    def __init__(self, W25Q128, nb_blocks):
+        #This object can be mounted by os.mount.
+        #block size is 4 kB
+        #Takes the first nb_blocks*4kB of memory from the flash device.
+        #Reading should be full speed
+        #Write operations are blocking, and can take hundreds of milliseconds
+        self.dev = W25Q128
+        self.nb_blocks = nb_blocks
+        self.block_size = 4096
+       
+    def readblocks(self, block_num, buf, offset=0):
+        start = block_num * self.block_size + offset
+        self.dev.read_into(start, buf)
+
+    def writeblocks(self, block_num, buf, offset=None):
+        if offset == None:
+            self.dev.erase_block_4k(block_num*self.block_size)
+            while self.dev.busy():
+                time.sleep_us(100)
+            offset=0
+        start = block_num * self.block_size + offset
+        cursor = 0
+
+        while cursor < len(buf):
+            end = min(start + len(buf), roundup(start+cursor, self.dev.page_length))
+            self.dev.write(start + cursor, memoryview(buf)[cursor:end-start])
+            cursor = end - start
+            while self.dev.busy():
+                time.sleep_us(100)
+
+    def ioctl(self, op, arg):
+        if   4==op:
+            return self.nb_blocks
+        elif 5==op:
+            return self.block_size
+        elif 6==op:
+            #erase block
+            self.dev.erase_block_4k(arg*self.block_size)
+            while self.dev.busy():
+                time.sleep_us(100)
+            return 0
+        return None
+ 
 # # Test code
 # import board
 # flash = W25Q128(board.flash_spi, board.flash_cs)
