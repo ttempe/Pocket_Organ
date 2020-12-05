@@ -12,42 +12,77 @@ class Slider:
     
     def __init__(self, uc, electrodes, sensitivity, repeat=False):
         """
-        'repeat' indicates whether the last electrode is repeated at the end of the slider
-        (in a 1/2/3/1 manner).
+        'electrodes' is a list of the electrode numbers from touch sensor 'uc' to be used by this slider
+        'sensitivity' is the maximum expected deviation in the value of each corresponding electrode, when naturally sliding a finger over it.
+        'repeat' indicates whether the last electrode is repeated at the end of the slider (in a 1/2/3/1 manner).
         """
         self.uc = uc
         self.electrodes = electrodes
         self.repeat = bool(repeat)
         self.sens   = sensitivity                #List of expected max deviation for each electrode
-        self.count  = len(electrodes)+self.repeat
-        self.values = bytearray(self.count)      #For storing intermediary results
-        self.ref    = bytearray(len(electrodes)) #Reference value, after calibration
+        self.count  = len(electrodes)+bool(self.repeat)
+        self.thres  = [0]*len(electrodes)        #Reference value, after calibration
         if self.repeat:
             self.sens.append(self.sens[0])
+        self.calibrate()
 
-    def calibrate():
+    def sensitivity_detect(self):
+        """
+        to be called manually during hardware development. Evenly swipe a finger over the slider, and it will
+        display the corresponding "sensitivity" values.
+        Values need to be updated every time a new hardware iteration modifies the routing around the touch IC
+        or electrodes.
+        """
+        vmin = [2048]*len(self.electrodes)
+        vmax = [0]*len(self.electrodes)
+        while True:
+            for i, e in enumerate(self.electrodes):
+                v = self.uc.read_analog(e)
+                vmin[i]=min(vmin[i],v)
+                vmax[i]=max(vmax[i],v)
+                print(vmax[i]-vmin[i], end=",")
+            print("")
+            time.sleep_ms(200)        
+
+    def calibrate(self):
         for i, e in enumerate(self.electrodes):
             self.thres[i] = self.uc.read_threshold(e)
         if self.repeat:
-            self.values[-1]=self.values[1]        
+            self.thres[-1]=self.thres[0]        
 
-    def read():
-        val = []
-        #Get a relative reading for each electrode, between 0 and 100
+    def read(self):
+        values = [0]*self.count     #For storing intermediary results
+                                    #Fully pressed: ~127; fully released: ~0
+        touch = 0
+        #Get a relative reading for each electrode, between 0 and 127
         for i, e in enumerate(self.electrodes):
-            r = self.uc.read_analog(e)
-            self.values[i] = max(((self.thres[i] - r)*100)//self.sens[i],100)
-        if self.repeat:
-            self.values[-1]=self.values[1]
-        print("Values:", self.values)
-        for e in range(self.count-1):
-            val.append(self.values[e]+self.values[e+1])
-        #Find the value with the highest reading
-        highest = max( (v, i) for i, v in enumerate(val) )[1]
-        print("Highest point is between electrodes", highest, "and", highest+1)
-
-        res = highest*100//len(self.values)
-        res += (100//len(self.values))
+            if self.uc.button(e):
+                touch+=1
+        if touch:
+            for i, e in enumerate(self.electrodes):
+                #if self.uc.button(e):
+                r = self.uc.read_analog(e)
+                values[i] = min(((self.thres[i] - r)*127)//(self.sens[i]),127)
+                #print("r", r, "; thres", self.thres[i], "; min", (self.thres[i] - r)*127, "; sens", self.sens[i], "; //", ((self.thres[i] - r)*127)//(self.sens[i]),"; value", values[i])
+            if self.repeat:
+                values[-1]=values[0]
+            v_sum = []
+            for e in range(self.count-1):
+                v_sum.append(values[e]+values[e+1])
+            #Find the value with the highest reading
+            highest_val, highest = max( (v, i) for i, v in enumerate(v_sum) )
+            #print("Highest point is between electrodes", highest, "and", highest+1, "value", highest)
+            if highest_val<60:
+                #none of the key is pressed hard enough. Reading will be very fragile. Ignore
+                return None
+            else:
+                slice = 127//(self.count-1)
+                res = highest*slice
+                res += int(slice*(values[highest+1]/(values[highest]+values[highest+1])))#interpolate
+                #print(0, 127, slice, highest*slice, res, highest_val)
+                return min(res, 127)
+        else:
+            return None
 
 class Keyboard:
     """
@@ -62,7 +97,7 @@ class Keyboard:
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
 
-        self.vol_slider = Slider( self.uc2, [3, 4, 5], True)
+        self.vol_slider = Slider( self.uc2, [2, 3, 4, 5], [24,23,8,24], True)
 
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
@@ -73,7 +108,9 @@ class Keyboard:
         self.notes = bytearray(8)
         self.note_sliders_old = bytearray(8)
         self.notes_old = bytearray(8)
+        self.volume = False
         self.volume_old = False
+        self.volume_val =  64 #value from 0 to 100
 
         self.loop()
         self.melody_led(0)
@@ -122,6 +159,11 @@ class Keyboard:
             self.uc2.recalibrate_all_keys()
             self.uc3.recalibrate_all_keys()
         self.volume_old = self.volume
+        
+        #Volume slider
+        if self.volume:
+            v=self.vol_slider.read()
+            self.volume_val = v
 
         #is there a key being pressed right now?
         self.current_note_key = None
