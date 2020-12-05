@@ -46,5 +46,8 @@ class Backlight:
         
     def light_one(self, k):
         self.display(0, 1<<k)
+        
+    def light_none(self):
+        self.display(0, 0)
 
 #End
