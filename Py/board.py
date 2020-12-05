@@ -1,7 +1,18 @@
 #board.py
 
 #This file centralizes the pin allocation configuration in one location, and does pin initialization when needed
+
+#TODO
+# * Create and mount a filesystem 
+
 from machine import Pin, SPI
+
+#This is the version number of the board.
+#Starting with version 16, all version-specific software (eg: choice of driver) should refer to this variable
+#to remain backward compatible.
+#Older board versions are not assumed to be feature-complete, but should keep working with at least
+#the same level of functionality.
+version = 16
 
 spi = SPI(1)
 
@@ -25,6 +36,7 @@ keyboard_spi =    spi
 keyboard_uc1_cs = Pin("B8", Pin.OUT)
 keyboard_uc2_cs = Pin("C5", Pin.OUT)
 keyboard_uc3_cs = Pin("C3", Pin.OUT)
+keyboard_trigger= Pin("B4", Pin.OUT)
 keyboard_uc1_cs(1)
 keyboard_uc2_cs(1)
 keyboard_uc3_cs(1)
