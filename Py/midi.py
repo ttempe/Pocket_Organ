@@ -54,6 +54,11 @@ class Midi:
                        value & 0x7F])
         self.uart.write(n)
         return n
+    
+    def set_master_volume(self, volume):
+        n = bytearray([0xF0, 0x7F, 0x7F, 0x04, 0x01, 0x00, volume&127, 0xF7])
+        self.uart.write(n)
+        return n
 
     def test2(self):
         while 1 :

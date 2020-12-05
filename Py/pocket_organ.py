@@ -57,12 +57,11 @@ class PocketOrgan:
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
-        self.d.disp_volume(self.p.volume)
+        volume_old=0
         while self.k.volume:
-            #if self.p.volume != self.k.slider_vol_val//2:
-            #    self.p.volume = self.k.slider_vol_val//2
-            #    self.d.disp_volume(self.p.volume)
-            #    self.p.set_volume(self.p.volume)
+            if self.k.volume_val != volume_old and self.k.volume_val:
+                self.p.set_master_volume( self.k.volume_val)
+                self.d.disp_volume(self.k.volume_val)
             self.loop(freeze_display=True)
 
     def loop_looper(self):
