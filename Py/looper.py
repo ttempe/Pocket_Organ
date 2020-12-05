@@ -30,7 +30,6 @@ class Looper:
         self.playing = 0      #bit map
         self.recording = None #channel number
         self.recording_start_timestamp = None
-        #*#self.records = [[],[],[],[],[],[],[],[]]
         self.record_lengths = [0]*8
         self.cursors = [0]*8
         self.durations = [0]*8
@@ -58,8 +57,7 @@ class Looper:
                 #This is the 1st note in the loop. Use it as the start date.
                 self.recording_start_timestamp = self.p.metronome.now
             t = self.p.metronome.now - self.recording_start_timestamp
-            #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48, "note:", event);time.sleep_ms(10) 
-            #*#self.records[self.recording].append([t, event])
+            #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48, "note:", event);time.sleep_ms(10)
             self.f.record_message(t, event)
             self.record_lengths[self.recording]+=1
     
@@ -83,7 +81,6 @@ class Looper:
         return self.recorded & (1<<n)
 
     def delete_track(self, n):
-        #*#self.records[n]=[]
         if not self.f.busy():
             self.f.erase(n)
             self.recorded &= ~(1<<n)
@@ -115,7 +112,6 @@ class Looper:
     def stop_recording(self):
         "Returns whether a track was successfully recorded"
         if self.recording != None:
-            #*#if len(self.records[self.recording])>0:
             if self.record_lengths[self.recording]>0:
                 #Loop was actually recorded
                 now = self.p.metronome.now
@@ -123,7 +119,6 @@ class Looper:
                 self.recorded |= 1<<self.recording
                 self.chord_channel, self.melody_channel = self.record_channels[-1]
                 #Add a final event with a duration long into the future, to simplify the code in self.pop_note()
-                #*#self.records[self.recording].append((self.p.metronome.now+1000, None))
                 self.f.record_message(self.p.metronome.now + 1000, b"  ")
                 self.record_lengths[self.recording] += 1
                 #Set new loop duration
@@ -210,7 +205,6 @@ class Looper:
             #Stop all playing notes, just in case
             for d in self.record_channels[loop]:
                 self.p.midi.all_off(d)
-        #*#t, msg = self.records[loop][c]
         t, msg = self.f.read_message(loop, c)
         while t <= now:
             #In case there are multiple messages to be played now:
@@ -219,7 +213,6 @@ class Looper:
                 #print("Loop", loop, "playing note n.", c, "now: ", now/48, "recorded time: ", t/48, "ticks:", self.p.metronome.now/48)
                 self.p.midi.inject(msg)
             c+=1
-            #*#t, msg = self.records[loop][c]
             t, msg = self.f.read_message(loop, c)
         self.cursors[loop]=c
     
