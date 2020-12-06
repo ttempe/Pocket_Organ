@@ -14,7 +14,10 @@ class Midi:
         time.sleep_ms(200)
         self.rst(1)
         time.sleep_ms(200)
-        
+        #SAM2695 reset. Disables reverb, chorus, microphone, echo, spatial effects, equalizer. Polyphony is increased to 64 simultaneous notes
+        #self.uart.write(bytearray([0xB0, 0x63, 0x37, 0xB0, 0x62, 0x5F, 0xB0, 0x06, 0x00]))
+
+
     def inject(self, midi_code):
         "For use by the looper"
         self.uart.write(midi_code)
@@ -57,6 +60,23 @@ class Midi:
     
     def set_master_volume(self, volume):
         n = bytearray([0xF0, 0x7F, 0x7F, 0x04, 0x01, 0x00, volume&127, 0xF7])
+        self.uart.write(n)
+        return n
+    
+#     def channel_aftertouch(self, channel, value):
+#         #No effect on the SAM2695
+#         n = bytearray([0xD0+(channel&0x0F), value&127])
+#         self.uart.write(n)
+#         return n
+# 
+#     def polyphonic_aftertouch(self, note, channel, value):
+#         #No effect on the SAM2695
+#         n = bytearray([0xA0+(channel&0x0F), note&127, value&127])
+#         self.uart.write(n)
+#         return n
+
+    def pitch_bend(self, channel, value):
+        n = bytearray([0xE0+(channel&0x0F), 0, value&127])
         self.uart.write(n)
         return n
 
