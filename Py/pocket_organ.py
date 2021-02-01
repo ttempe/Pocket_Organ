@@ -9,8 +9,11 @@ import time
 import gc #Garbage collector
 
 #TODO:
+# * consider frozen bytecode to reduce the program's disk usage
+# * consider RLE-encoded font graphics to drastically reduce the space taken by the fonts
+# * Melody mode: only checks the # key when registering the note keypress?
 # * Read the accelerometer
-# * Choose a better selection of percussion for the Drum mode
+# * Arrange the percussion instruments around the keyboard (drum mode)
 # * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
 # * setup a mechanism for sending a message to the display, together with a function for checking whether this message is still active
 # * find a way of voiding the warranty before exposing the filesystem throught USB?
@@ -34,7 +37,7 @@ class PocketOrgan:
         self.l.loop()
         self.p.loop()
         self.d.loop(freeze_display)
-        gc.collect()
+        gc.collect();
         self.k.loop()
 #         #DEBUG. TODO:Remove. For cycle time measurement
 #         if self.last:
@@ -58,6 +61,9 @@ class PocketOrgan:
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
         volume_old=0
+        #DEBUG. TODO: remove. For free memory measurement.
+        print("Remaining free RAM: {}".format(gc.mem_free()))
+        
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
@@ -221,13 +227,16 @@ class PocketOrgan:
         self.p.stop_all_notes()
         self.d.clear()
 
-o = None
-while not o:
-    try:
-        o = PocketOrgan()
-    except OSError:
-        time.sleep(1)
-        print(".", end="")
+
+# o = None
+# while not o:
+#     try:
+#         o = PocketOrgan()
+#     except OSError:
+#         time.sleep(1)
+#         print(".", end="")
+
+o = PocketOrgan()
 
 o.loop_waiting()
 
