@@ -1,5 +1,5 @@
 #Copyright Thomas TEMPE 2020
-import display
+import display_stub as display
 
 class Indicator:
     def __init__(self, d, images, state_callback, pos=None):

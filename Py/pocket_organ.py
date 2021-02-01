@@ -1,4 +1,4 @@
-import display
+import display_stub as display
 import backlight
 import keyboard_AT42QT1110 as keyboard
 import looper

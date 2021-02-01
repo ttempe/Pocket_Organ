@@ -13,7 +13,7 @@ import board
 
 def load_image(name):
     "takes a filename, returns a framebuffer"
-    filename = "img/"+name+".pbm"
+    filename = "/ext/"+name+".pbm"
     try:
         f = open(filename, 'rb')
     except:
