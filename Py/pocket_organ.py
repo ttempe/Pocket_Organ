@@ -11,13 +11,12 @@ import gc #Garbage collector
 #TODO:
 # * consider frozen bytecode to reduce the program's disk usage
 # * consider RLE-encoded font graphics to drastically reduce the space taken by the fonts
-# * Melody mode: only checks the # key when registering the note keypress?
-# * Read the accelerometer
 # * Arrange the percussion instruments around the keyboard (drum mode)
 # * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
 # * setup a mechanism for sending a message to the display, together with a function for checking whether this message is still active
 # * find a way of voiding the warranty before exposing the filesystem throught USB?
 # * add a reinit() call to each of the SPI chip drivers, to setup the bus for itself. Takes ~150 us.
+# * Read the accelerometer
 
 class PocketOrgan:
     def __init__(self):
@@ -189,6 +188,9 @@ class PocketOrgan:
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     name = self.p.play_drum(i)
                     self.d.text(name, duration=1000)
+            if self.k.sharp and not self.k.sharp_old:
+                name = self.p.play_drum(8)
+                self.d.text(name, duration=1000)
             self.loop()
 
     def loop_waiting(self):

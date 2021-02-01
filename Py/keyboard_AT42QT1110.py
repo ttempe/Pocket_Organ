@@ -111,16 +111,17 @@ class Keyboard:
         self.volume = False
         self.volume_old = False
         self.volume_val =  64 #value from 0 to 100
+        self.sharp = False
 
         self.loop()
         self.melody_led(0)
         self.strum_mute = False
         self.strum_keys = 0 #Bytearray
         self.nb_strum_keys = 8
-
                 
     def loop(self):
         self.notes_old = self.notes[:]
+        self.sharp_old = self.sharp
         self.note_sliders_old = self.note_sliders[:]
 
         self.uc1.loop()
