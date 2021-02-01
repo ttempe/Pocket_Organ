@@ -30,6 +30,7 @@ display_cs(1)
 flash_spi = spi
 flash_cs  = Pin("B12", Pin.OUT)
 flash_cs(1)
+flash_fs_size = 256 #Measured in blocks of 4kB. 256=1MB
 
 #for AT42QT1110 version
 keyboard_spi =    spi
@@ -49,3 +50,5 @@ keyboard_drum_pin   = Pin("A3", Pin.IN, Pin.PULL_UP)
 main_startup_pin = keyboard_volume_pin
 
 #Pin("B12", Pin.OUT).value(1)
+
+#End

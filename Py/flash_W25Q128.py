@@ -37,10 +37,10 @@ class FlashError(RuntimeError):
     pass
 
 class Flash:
-    def __init__(self, nb_loops = 8, start=0):
+    def __init__(self, nb_loops = 8):
         self.ic = W25Q128.W25Q128(board.flash_spi, board.flash_cs)
         self.nb_loops = nb_loops
-        self.start = roundup(start, self.ic.erase_block_size) #only start storing data after this address
+        self.start = board.flash_fs_size*self.ic.erase_block_size #only start storing data after this address
         #Round down to an integer number of erase block sizes, to avoid erasing the beginning of the next loop
         self.memory_per_loop = ((self.ic.capacity-self.start)//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
         self.current_loop = None          #a loop here is one record (track), corresponding to one key of the looper
@@ -67,7 +67,7 @@ class Flash:
         
         #Check all tracks
         for i in range(self.nb_loops):
-            if not(exists(i)) and (self.ic.read(i * self.memory_per_loop + self.start, 1)[0] != 0xFF or self.ic.read(i * self.memory_per_loop - 1 + self.ic.erase_block_size + self.start, 1)[0] != 0xFF):
+            if not(exists(i)) and (self.ic.read(i * self.memory_per_loop + self.start, 1)[0] != 0xFF or self.ic.read(i * self.memory_per_loop + self.ic.erase_block_size -1 + self.start, 1)[0] != 0xFF):
                 #If the track is listed as deleted, but we find data for it in the flash IC (the 1st and last bytes of the 1st block are not both 0xFF)
                 error_tracks.append(i)
         #print("tracks to erase: ", error_tracks)
@@ -75,7 +75,7 @@ class Flash:
             #Assume the whole chip is unformatted. Erase everything.
             print("Erasing whole chip. This will take 1~3 minutes")
             #TODO: display on the screen
-            self.erase(0, self.nb_loops * self.memory_per_loop)
+            self.erase(self.start, self.nb_loops * self.memory_per_loop)
             return 1
         elif 1==len(error_tracks):
             #Erase the whole loop

@@ -34,7 +34,7 @@ class W25Q128:
         self.rate = 50000000#50MHz
         self.last_op_was_write = False
         self.page_length = 256 #for writing
-        self.erase_block_size = 65536 #needs to match the instructions in erase_block()
+        self.erase_block_size = 4096 #needs to match the instructions in erase_block()
 
         #Start communicating with the device
         self.reinit()
@@ -49,6 +49,7 @@ class W25Q128:
     def send_command(self, cmd, addr=None, write=None, read=None, into=None):
         "Send a single SPI command. Optionally write data specified in 'write'. Optionally read and return 'read' bytes."
         #self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        #print("--Sending cmd {}, addr={}, write={}, read={}, into={}".format(cmd, addr, write, read, into))
         r = None
         self.cs(0)
         self.spi.write(cmd)
@@ -103,12 +104,13 @@ class W25Q128:
         self.send_command(b"\x06") #Write enable
         
         ##if you change this, remember to adjust self.erase_block_size in __init__()
-#        self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
+        self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
 #        self.send_command(b"\x52", addr = addr&0xFF8000) #erase 32k block
-        self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
+        #self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
 
     def erase_block_4k(self, addr):
         "erase a block"
+        #print("-Erase block {}".format(addr))
         self.last_op_was_write = True
         self.send_command(b"\x06") #Write enable
         self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
@@ -126,10 +128,12 @@ class W25Q128:
         #If writing beyond the page boundary, the write operation will wrap to the beginning of the page.
         #One full page write takes typical 0.7ms (max 3ms)
         #Sending one full page takes ~510us
-        self.last_op_was_write = True
-        self.send_command(b"\x06") #Write enable
-        self.send_command(b"\x02", addr, write=data) #Write enable
-    
+        #print("-Write: @{}, len={}".format(addr, len(data)))
+        if len(data):
+            self.last_op_was_write = True
+            self.send_command(b"\x06") #Write enable
+            self.send_command(b"\x02", addr, write=data) #Write enable
+        
     def busy(self):
         "Checks whether the previous write/erase operation is complete."
         #Call command "read_status_register", check the "BUSY" bit
@@ -153,26 +157,37 @@ class BlockDev:
         self.block_size = 4096
        
     def readblocks(self, block_num, buf, offset=0):
+        #print("read block {}, offset={}".format(block_num, offset))
         start = block_num * self.block_size + offset
         self.dev.read_into(start, buf)
 
-    def writeblocks(self, block_num, buf, offset=None):
-        if offset == None:
-            self.dev.erase_block_4k(block_num*self.block_size)
-            while self.dev.busy():
-                time.sleep_us(100)
-            offset=0
-        start = block_num * self.block_size + offset
-        cursor = 0
+    def wait(self):
+        while self.dev.busy():
+            time.sleep_us(100)
 
-        while cursor < len(buf):
-            end = min(start + len(buf), roundup(start+cursor, self.dev.page_length))
-            self.dev.write(start + cursor, memoryview(buf)[cursor:end-start])
-            cursor = end - start
-            while self.dev.busy():
-                time.sleep_us(100)
+    def writeblocks(self, block_num, buf, offset=None):
+        #print("write block {}, len={}, offset={}".format(block_num, len(buf), offset) )
+        cursor = 0
+        if offset == None:
+            a, b=divmod(len(buf), self.block_size)
+            nb_blocks = a+bool(b)
+            for b in range(nb_blocks):
+                self.dev.erase_block_4k((block_num+b)*self.block_size)
+                self.wait()
+        elif offset:
+            self.dev.write(block_num*self.block_size+offset, memoryview(buf)[0:self.block_size-offset])
+            self.wait()
+            cursor = self.block_size-offset
+        
+        while cursor<len(buf):
+            bite = min(len(buf)-cursor, self.block_size)
+            self.dev.write(block_num*self.block_size+cursor, memoryview(buf)[cursor:cursor+bite])
+            self.wait()
+            cursor += bite
+        #print("Done")
 
     def ioctl(self, op, arg):
+        #print("ioctl {}, arg={}".format(op, arg))
         if   4==op:
             return self.nb_blocks
         elif 5==op:
@@ -180,8 +195,7 @@ class BlockDev:
         elif 6==op:
             #erase block
             self.dev.erase_block_4k(arg*self.block_size)
-            while self.dev.busy():
-                time.sleep_us(100)
+            self.wait()
             return 0
         return None
  
