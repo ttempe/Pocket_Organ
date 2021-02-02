@@ -3,7 +3,7 @@ import backlight
 import keyboard_AT42QT1110 as keyboard
 import looper
 import polyphony
-import instr_names
+import instr_names_stub as instr_names
 
 import time
 import gc #Garbage collector
