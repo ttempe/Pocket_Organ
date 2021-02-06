@@ -17,7 +17,7 @@ class Display:
         pass
 
     def text(self, text, line=0, duration=None):
-        pass
+        print(text)
 
     def disp_volume(self, volume, text = "Volume"):
         pass
