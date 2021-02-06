@@ -93,10 +93,12 @@ class Looper:
     def start_recording(self, n):
         #This only sets the stage.
         #The start of recording really happens in self.append()
+        #Returns True on success
         if n >= 6:
             #Key Ut can't have a loop, because each loop takes 2 MIDI channels
             #(one for chords and one for melody), and channel 9 is reserved for drums
-            self.d.text("Can't record\na loop on this\nkey", 2000) 
+            self.d.text("Can't record\na loop on this\nkey", 2000)
+            return False
         else:
             self.recording = n
             self.recording_start_timestamp = None
@@ -108,6 +110,7 @@ class Looper:
             self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
             self.p.metronome.on()
             self.f.start_recording(self.recording)
+            return True
 
     def stop_recording(self):
         "Returns whether a track was successfully recorded"

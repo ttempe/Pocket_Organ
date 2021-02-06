@@ -69,6 +69,15 @@ class PocketOrgan:
                 self.d.disp_volume(self.k.volume_val)
             self.loop(freeze_display=True)
 
+    def loop_quick(self):
+        #Quick loop record mode.
+        self.l.p.metronome.pause()
+        print("Entering quick loop recorder")
+        while not self.k.looper:
+            self.loop()
+        print("Exiting quick loop recorder")
+        self.l.p.metronome.resume()
+
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
         last_tap_timestamp = 0
@@ -97,11 +106,33 @@ class PocketOrgan:
                             self.loop(freeze_display=True)
                 elif self.l.recording == None:
                     #Not in recording mode yet
-                    self.l.start_recording(key)                    
-                    #Capture the UI until the key and the "loop" button are both released
-                    #No further action is possible
-                    while self.k.notes[key] or self.k.looper:
-                        self.loop(freeze_display=True)
+                    if self.l.start_recording(key):
+                        #Recording start success
+                        #Capture the UI until the key and the "loop" button are both released
+                        #or detect additional presses to the key
+                        quick = False
+                        released = False
+                        while self.k.looper or self.k.notes[key]:
+                            self.loop(freeze_display=True)
+                            if self.k.looper and not self.k.notes[key]:
+                                released = True
+                            elif self.k.looper and self.k.notes[key] and released:
+                                #new press. Toggle "quick recording" on and off
+                                released = False
+                                quick = not(quick)
+                                if quick:
+                                    self.d.text("Start recording\nquick loop ", 2000)
+                                    self.l.p.metronome.off()
+                                else:
+                                    self.d.text("Start recording\nnormal loop", 2000)
+                                    self.l.p.metronome.on()
+                        #Keys released. Return?
+                        if quick:
+                            self.loop_quick()
+                    else:
+                        #Recording start failed
+                        while self.k.notes[key]:
+                            self.loop(freeze_display=True)
                         
             elif self.k.minor:
                 #Set the beat by tapping it on the "minor" key
