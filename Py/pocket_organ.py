@@ -14,15 +14,12 @@ import gc #Garbage collector
 # * add key expression (bending?); filter the messages
 # * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
 # * Store fonts as frozen bytecode with https://github.com/peterhinch/micropython_data_to_py
-# * Add an itermediary-sized font (16*16?)
+# * Add an itermediary-sized font with https://github.com/peterhinch/micropython-font-to-py. (Pre-compiled fonts: https://github.com/peterhinch/micropython-font-to-py)
 # * Get notifications working; add a "write/erase" notification
 # * Save the status of recorded loops into flash memory somewhere
 # * Split the volume slider into channel-specific (no keypress) and global (hold "volume" button)
 # * Re-do the SSD1306 interface, then get the code working
 # * Add the ability to modify the chord shape on the fly (sus, dim...)
-# * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Build a stand-alone firmware flasher program
-# * Add a reinit() call to each of the SPI chip drivers, to setup the buim...)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Build a stand-alone firmware flasher program
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
