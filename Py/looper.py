@@ -36,7 +36,7 @@ class Looper:
         self.loop_start = [0]*8 #Timestamps
         self.toggle_play_waitlist = 0 #bit map
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
-        self.quick = 0        #for the quick loop recording mode
+        self.quick_time = None
 
         #TODO: load recorded tracks status here
 
@@ -57,16 +57,15 @@ class Looper:
             if not self.recording_start_timestamp:
                 #This is the 1st note in the loop. Use it as the start date.
                 self.recording_start_timestamp = self.p.metronome.now
-            t = self.p.metronome.now - self.recording_start_timestamp
+            if self.quick_time != None:
+                #Quick loop recording
+                t = self.quick_time
+            else:
+                t = self.p.metronome.now - self.recording_start_timestamp
             #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48, "note:", event);time.sleep_ms(10)
             self.f.record_message(t, event)
             self.record_lengths[self.recording]+=1
-    
-    def append_quick(self, event):
-        #called by pocket_organ to record events in the quick loop recording mode
-        #TODO
-        pass
-    
+
     def display(self):
         #Display loops status on the note keys backlight
         #red    = recording
@@ -116,8 +115,18 @@ class Looper:
             self.d.text("Start recording\nloop {}".format(self.loop_names[n]), 2000)
             self.p.metronome.on()
             self.f.start_recording(self.recording)
+            self.quick_time = None
             return True
-
+    
+    def start_recording_quick(self):
+        #Called after start_recording. Switches to "quick looper" mode.
+        self.quick_time = 0
+        self.recording_start_timestamp = 0
+    
+    def quick_increment(self):
+        #Move quick mode to next chord
+        self.quick_time += self.p.metronome.beat_divider
+    
     def stop_recording(self):
         "Returns whether a track was successfully recorded"
         if self.recording != None:
@@ -131,12 +140,16 @@ class Looper:
                 self.f.record_message(self.p.metronome.now + 1000, b"  ")
                 self.record_lengths[self.recording] += 1
                 #Set new loop duration
-                d = now - self.recording_start_timestamp
+                if self.quick_time:
+                    d = self.quick_time
+                else:
+                    d = now - self.recording_start_timestamp
                 #print("Raw duration: ", d/48, "=", now/48, "-", self.recording_start_timestamp/48)
                 d = self.p.metronome.round_to_beats(d)
                 if self.playing:
-                    #round to a multiple of the shortest duration
-                    #TODO: Handle the case where I stopped playing the shortest loop before recording. Record the reference "min duration" for each loop?
+                    #round up to a multiple of the shortest duration
+                    #TODO: make that a sub-multiple as well?
+                    #TODO: Handle the case where I stopped playing the shortest loop before recording. Record the reference "min duration" for each loop? Mandate that at least one recorded loop is playing?
                     min_duration = min([ self.durations[i] for i in bits(self.playing)])
                     #divide by 2 if possible
                     if min_duration%(self.p.metronome.beat_divider*2):
@@ -147,7 +160,6 @@ class Looper:
                     #Make sure no recording is shorter than one metronome beat
                     #print("Duration: ", d/48)
                     self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
-                    
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
                 self.cursors[self.recording] = 0

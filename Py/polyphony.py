@@ -37,7 +37,7 @@ class Polyphony:
         self.strum_mute_old = 0
         self.strum_keys_old = 0
 
-    def start_chord(self):
+    def start_chord(self, quick_mode=False):
         def round_note(n):
             return n%12 + 60
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
@@ -56,7 +56,9 @@ class Polyphony:
         #Seventh
         if self.k.seventh:
             self.chord.append(round_note(root+10-self.k.minor))
-        if not self.k.strum_mute and not self.k.strum_keys:
+        if quick_mode:
+            self.play_chord(64, 0)
+        elif not self.k.strum_mute and not self.k.strum_keys:
             self.play_chord(64, 40)
         else:
             self.strum_keys_old = 0 #Play all keys on the next loop()
@@ -76,15 +78,16 @@ class Polyphony:
                     self.strum_chord.append(n+incr)
                 incr +=12
 
-            
-    
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
         The 1st one is played immediately, the following ones are spaced by timing (in milliseconds).
         """
         self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[0], velocity))
         for i, n in enumerate(self.chord[1:], start=1):
-            self.pending.append((n, velocity, time.ticks_ms()+timing*i))
+            if timing:
+                self.pending.append((n, velocity, time.ticks_ms()+timing*i))
+            else:
+                self.l.append(self.midi.note_on(self.l.chord_channel, n, velocity))                
         
     def stop_chord(self):
         self.l.append(self.midi.all_off(self.l.chord_channel))

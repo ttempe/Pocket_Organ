@@ -145,14 +145,15 @@ class PocketOrgan:
                                 quick = not(quick)
                                 if quick:
                                     self.d.text("Start recording\nquick loop ", 2000)
-                                    self.l.p.metronome.off()
+                                    self.p.metronome.off()
                                 else:
                                     self.d.text("Start recording\nnormal loop", 2000)
-                                    self.l.p.metronome.on()
+                                    self.p.metronome.on()
                         #Keys released. Return?
                         if quick:
+                            self.l.start_recording_quick()
                             self.loop_quick()
-
+                            return
                     else:
                         #Recording start failed
                         while self.k.notes[key]:
@@ -226,15 +227,24 @@ class PocketOrgan:
     def loop_quick(self):
         #Quick loop record mode.
         #TODO: Stop all currently playing instruments
-        self.l.p.metronome.pause()
-        self.l.quick = 0
+        #TODO: bug: the timing of the chords is not aligned to the metronome
+        self.p.metronome.pause()
+        self.p.midi.all_off(self.l.melody_channel)
         print("Entering quick loop recorder")
         while not self.k.looper:
             self.loop()
             if None != self.k.current_note_key:
-                self.p.start_chord()
+                #note key pressed
+                self.p.start_chord(quick_mode=True)
+                self.l.quick_increment()
+                time.sleep_ms(500)
+                self.p.stop_chord()
+                time.sleep_ms(200)
+                while None != self.k.current_note_key:
+                    #Wait for key release
+                    self.loop()           
         print("Exiting quick loop recorder")
-        self.l.p.metronome.resume()
+        self.p.metronome.resume()
 
     def loop_chord(self):
         "Currently playing a chord"
@@ -297,17 +307,9 @@ class PocketOrgan:
         self.p.stop_all_notes()
         self.d.clear()
 
-
-# o = None
-# while not o:
-#     try:
-#         o = PocketOrgan()
-#     except OSError:
-#         time.sleep(1)
-#         print(".", end="")
-
-o = PocketOrgan()
-
-o.loop_waiting()
+def start():
+    o = PocketOrgan()
+    o.loop_waiting()
+start()
 
 #end
