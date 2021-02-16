@@ -2,9 +2,6 @@
 
 #This file centralizes the pin allocation configuration in one location, and does pin initialization when needed
 
-#TODO
-# * Create and mount a filesystem 
-
 from machine import Pin, SPI
 
 #This is the version number of the board.
@@ -30,7 +27,7 @@ display_cs(1)
 flash_spi = spi
 flash_cs  = Pin("B12", Pin.OUT)
 flash_cs(1)
-flash_fs_size = 256 #Measured in blocks of 4kB. 256=1MB
+flash_fs_size = 0 #Measured in blocks of 4kB. 256=1MB
 
 #for AT42QT1110 version
 keyboard_spi =    spi
