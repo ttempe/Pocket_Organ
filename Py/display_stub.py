@@ -14,7 +14,7 @@ class Display:
         pass
 
     def disp_chord(self, text):
-        pass
+        print(text)
 
     def text(self, text, line=0, duration=None):
         print(text)
