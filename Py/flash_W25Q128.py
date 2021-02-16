@@ -21,7 +21,6 @@
 # * if you finish recording a loop, but the last Write operation (3ms max) did not finish before power loss, the end of the loop could be corrupted.
 
 #TODO:
-# * display write/erase or erase_whole_chip status on the screen
 # * count the number of "read status" operations per cycle; add a test to only check every 40 ms?
 # * handle all exceptions raised below
 

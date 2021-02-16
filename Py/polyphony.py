@@ -37,7 +37,6 @@ class Polyphony:
         self.strum_mute_old = 0
         self.strum_keys_old = 0
 
-        
     def start_chord(self):
         def round_note(n):
             return n%12 + 60

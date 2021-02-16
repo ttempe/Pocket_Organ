@@ -9,14 +9,39 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * consider frozen bytecode to reduce the program's disk usage
-# * consider RLE-encoded font graphics to drastically reduce the space taken by the fonts
-# * Arrange the percussion instruments around the keyboard (drum mode)
-# * Should the volume be global or channel-specifi? What should happen if I change it while recording a loop?
-# * setup a mechanism for sending a message to the display, together with a function for checking whether this message is still active
-# * find a way of voiding the warranty before exposing the filesystem throught USB?
-# * add a reinit() call to each of the SPI chip drivers, to setup the bus for itself. Takes ~150 us.
-# * Read the accelerometer
+# * Finish the "quick loop" feature
+# * implement capo and tune
+# * add key expression (bending?); filter the messages
+# * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
+# * Store fonts as frozen bytecode with https://github.com/peterhinch/micropython_data_to_py
+# * Add an itermediary-sized font (16*16?)
+# * Get notifications working; add a "write/erase" notification
+# * Save the status of recorded loops into flash memory somewhere
+# * Split the volume slider into channel-specific (no keypress) and global (hold "volume" button)
+# * Re-do the SSD1306 interface, then get the code working
+# * Add the ability to modify the chord shape on the fly (sus, dim...)
+# * Find a way of voiding the warranty before exposing the filesystem throught USB?
+# * Build a stand-alone firmware flasher program
+# * Add a reinit() call to each of the SPI chip drivers, to setup the buim...)
+# * Find a way of voiding the warranty before exposing the filesystem throught USB?
+# * Build a stand-alone firmware flasher program
+# * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
+# * Get the accelerometer working
+# * Fix MIDI output; have it tested by experienced DAW users.
+# * Practice the looper. Is it flexible enough in handling loops of various lengths?
+# * Do I need a 5th button? (eg: for storing sets of loops)
+# * Disable FS access?
+# * Measure the time the musician has been playing
+# * Run the filesystem files with higher priority than the frozen bytecode?
+
+s for itself with optimal speed. Takes ~150 us.
+# * Get the accelerometer working
+# * Fix MIDI output; have it tested by experienced DAW users.
+# * Practice the looper. Is it flexible enough in handling loops of various lengths?
+# * Do I need a 5th button? (eg: for storing sets of loops)
+# * Disable FS access?
+# * Measure the time the musician has been playing
+# * Run the filesystem files with higher priority than the frozen bytecode?
 
 class PocketOrgan:
     def __init__(self):
@@ -53,7 +78,19 @@ class PocketOrgan:
 #                 pass
 #             self.min=1000000
 #             self.max=0
-#             self.total=0
+#             self.total=0im...)
+# * Find a way of voiding the warranty before exposing the filesystem throught USB?
+# * Build a stand-alone firmware flasher program
+# * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
+# * Get the accelerometer working
+# * Fix MIDI output; have it tested by experienced DAW users.
+# * Practice the looper. Is it flexible enough in handling loops of various lengths?
+# * Do I need a 5th button? (eg: for storing sets of loops)
+# * Disable FS access?
+# * Measure the time the musician has been playing
+# * Run the filesystem files with higher priority than the frozen bytecode?
+
+
 #            self.count=0
             
 
@@ -68,15 +105,6 @@ class PocketOrgan:
                 self.p.set_master_volume( self.k.volume_val)
                 self.d.disp_volume(self.k.volume_val)
             self.loop(freeze_display=True)
-
-    def loop_quick(self):
-        #Quick loop record mode.
-        self.l.p.metronome.pause()
-        print("Entering quick loop recorder")
-        while not self.k.looper:
-            self.loop()
-        print("Exiting quick loop recorder")
-        self.l.p.metronome.resume()
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
@@ -129,6 +157,7 @@ class PocketOrgan:
                         #Keys released. Return?
                         if quick:
                             self.loop_quick()
+
                     else:
                         #Recording start failed
                         while self.k.notes[key]:
@@ -198,6 +227,19 @@ class PocketOrgan:
                 while self.k.current_note_key != None:
                     self.loop(freeze_display=True)
             self.loop(freeze_display=True)
+
+    def loop_quick(self):
+        #Quick loop record mode.
+        #TODO: Stop all currently playing instruments
+        self.l.p.metronome.pause()
+        self.l.quick = 0
+        print("Entering quick loop recorder")
+        while not self.k.looper:
+            self.loop()
+            if None != self.k.current_note_key:
+                self.p.start_chord()
+        print("Exiting quick loop recorder")
+        self.l.p.metronome.resume()
 
     def loop_chord(self):
         "Currently playing a chord"

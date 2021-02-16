@@ -36,6 +36,7 @@ class Looper:
         self.loop_start = [0]*8 #Timestamps
         self.toggle_play_waitlist = 0 #bit map
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
+        self.quick = 0        #for the quick loop recording mode
 
         #TODO: load recorded tracks status here
 
@@ -61,15 +62,20 @@ class Looper:
             self.f.record_message(t, event)
             self.record_lengths[self.recording]+=1
     
+    def append_quick(self, event):
+        #called by pocket_organ to record events in the quick loop recording mode
+        #TODO
+        pass
+    
     def display(self):
-        #As seen from the player:
-        #red = recording
+        #Display loops status on the note keys backlight
+        #red    = recording
         #orange = recorded and paused
-        #green = recorded and playing
+        #green  = recorded and playing
         
         #This translates to:
-        #Green = (recorded or playing) and not recording
-        #Red = recording or (recorded and not playing)
+        #Green component = (recorded or playing) and not recording
+        #Red component   = recording or (recorded and not playing)
         playing = self.playing ^ self.toggle_play_waitlist
         recording = (1 << self.recording) if (self.recording!=None) else 0
         green = (self.recorded | playing) & ~recording
