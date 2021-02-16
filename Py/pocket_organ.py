@@ -33,8 +33,6 @@ import gc #Garbage collector
 # * Disable FS access?
 # * Measure the time the musician has been playing
 # * Run the filesystem files with higher priority than the frozen bytecode?
-
-s for itself with optimal speed. Takes ~150 us.
 # * Get the accelerometer working
 # * Fix MIDI output; have it tested by experienced DAW users.
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
