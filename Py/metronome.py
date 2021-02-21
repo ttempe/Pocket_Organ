@@ -24,10 +24,11 @@ class Metronome:
         
     def pause(self):
         self.paused = True
+        self.pause_time = time.ticks_ms()-self.last_beat
     
     def resume(self):
         if self.paused:
-            self.last_beat = time.ticks_ms()
+            self.last_beat = time.ticks_ms()-self.pause_time
             self.paused = False
         
     def toggle(self):
