@@ -93,6 +93,7 @@ class Keyboard:
         self.melody_led = board.keyboard_melody_led
         self.melody_led(1)
 
+        #Reminder: on V17, Touch_trigger is not connected on uc2 and uc3
         self.uc1 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc1_cs)
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
