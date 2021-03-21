@@ -40,17 +40,14 @@ import gc #Garbage collector
 
 class PocketOrgan:
     def __init__(self):
+        self.min_loop_duration=12 #ms        
         self.d = display.Display()
         self.b = backlight.Backlight()
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
-#         #DEBUG. TODO:Remove. For cycle time measurement
-#         self.min=1000000
-#         self.max=0
-#         self.total=0
-#         self.count=0
-#         self.last=None
+        self.last_t = time.ticks_ms()
+        self.longest_loop = 0
 
     def loop(self, freeze_display=False):
         self.l.loop()
@@ -88,6 +85,11 @@ class PocketOrgan:
 
 #            self.count=0
             
+        #make sure we have constant time between loops
+        t=time.ticks_ms()        
+        time.sleep_ms(max(0,self.min_loop_duration-(t-self.last_t)))
+        self.longest_loop = max(self.longest_loop, t-self.last_t)
+        self.last_t = t
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
