@@ -43,6 +43,7 @@ keyboard_volume_pin = Pin("B0", Pin.IN, Pin.PULL_UP)
 keyboard_instr_pin  = Pin("C4", Pin.IN, Pin.PULL_UP)
 keyboard_looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
 keyboard_drum_pin   = Pin("A3", Pin.IN, Pin.PULL_UP)
+keyboard_note_keys  = [7,6,8,1,0,9,4,3] #Order of the note key pads from Do to Ut. All must be on the same UC.
 
 main_startup_pin = keyboard_volume_pin
 

@@ -3,9 +3,27 @@ import time
 import board
 
 #TODO:
-#force a recalibration when switching between USB and battery power (instead of when pressing the Volume key)
-#clean up slider code
-#Minor is not working
+# * force a recalibration when switching between USB and battery power (instead of when pressing the Volume key)
+# * clean up slider code
+# * check the analog measurements for slight drift of all the values while none of the keys are being pressed
+# * Synchronize the main loop with the uc1 acquisition cycle
+# * Decrease the sensitivity of the key below when the key above is detected? (finger shadow)
+
+#Debug: 
+last=0;pmin=127;pmax=0
+def print_delayed(v):
+    global last, pmin, pmax
+    
+    if time.ticks_ms()-last >50:
+        last = time.ticks_ms()
+        print(pmin, pmax)
+        pmin=127
+        pmax=0
+    else:
+        pmin=min(pmin, v)
+        pmax=max(pmax, v)
+
+
 
 class Slider:
     "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
@@ -105,25 +123,38 @@ class Keyboard:
         self.looper_pin = board.keyboard_looper_pin
         self.drum_pin = board.keyboard_drum_pin
 
-        self.note_sliders = bytearray(8)
-        self.notes = bytearray(8)
-        self.note_sliders_old = bytearray(8)
+        self.notes = bytearray(8) #binary output
         self.notes_old = bytearray(8)
+        self.notes_val = bytearray(8) #analog value
+        self.notes_val_old = bytearray(8) #analog value
+        self.notes_ref = [0]*8 #reference value from unpressed key (from calibration)
+        self.notes_thres = 9 #above this value, assume the key is pressed
+        self.notes_max = 40  #highest possible analog value
         self.volume = False
         self.volume_old = False
         self.volume_val =  64 #value from 0 to 100
         self.sharp = False
-
+        self.current_note_key = None
+        time.sleep_ms(20)
+        self.calibrate()
         self.loop()
         self.melody_led(0)
         self.strum_mute = False
         self.strum_keys = 0 #Bytearray
         self.nb_strum_keys = 8
                 
+    def calibrate(self):
+        self.uc1.recalibrate_all_keys()
+        self.uc2.recalibrate_all_keys()
+        self.uc3.recalibrate_all_keys()
+        for note, button in enumerate(board.keyboard_note_keys):
+            self.notes_ref[note] = self.uc1.read_analog(button)
+    
     def loop(self):
+        
         self.notes_old = self.notes[:]
+        self.notes_val_old = self.notes_val[:]
         self.sharp_old = self.sharp
-        self.note_sliders_old = self.note_sliders[:]
 
         self.uc1.loop()
         self.uc2.loop()
@@ -140,26 +171,16 @@ class Keyboard:
         self.minor = self.uc2.button(0)
         self.shift = self.uc2.button(1)
         self.sharp = self.uc1.button(2)
-        #Slider: 3, 4, 5, 3
 
-        self.notes[0] = self.uc1.button(7) #Do
-        self.notes[1] = self.uc1.button(6) #Re
-        self.notes[2] = self.uc1.button(8) #Mi
-        self.notes[3] = self.uc1.button(1) #Fa
-        self.notes[4] = self.uc1.button(0) #Sol
-        self.notes[5] = self.uc1.button(9) #La
-        self.notes[6] = self.uc1.button(4) | self.uc1.button(5) #Si
-        self.notes[7] = self.uc1.button(3) #Ut
-
-        #self.slider_vol_pressed, self.slider_vol_val = self.c4.slider(2)
-        #self.slider2_pressed, self.slider2_val = self.c4.slider(1)
-        #self.slider3_pressed, self.slider3_val = self.c2.slider(3)
-
+        for note, button in enumerate(board.keyboard_note_keys):
+            a = self.notes_ref[note] - self.uc1.read_analog(button)
+            #self.notes[note] = self.uc1.button(button)
+            self.notes[note] = (a>= self.notes_thres)
+            self.notes_val[note] = max(min(a - self.notes_thres, self.notes_max), 0)
+        
         #Re-calibrate the touch keys on "Volume" press
         if self.volume and not self.volume_old:
-            self.uc1.recalibrate_all_keys()
-            self.uc2.recalibrate_all_keys()
-            self.uc3.recalibrate_all_keys()
+            self.calibrate()
         self.volume_old = self.volume
         
         #Volume slider
@@ -168,11 +189,14 @@ class Keyboard:
             self.volume_val = v
 
         #is there a key being pressed right now?
-        self.current_note_key = None
-        for i, n in enumerate(self.notes):
-            if n:
-                self.current_note_key = i
-                break
+        if self.current_note_key!=None:
+            if not self.notes[self.current_note_key]:
+                self.current_note_key = None
+        if None == self.current_note_key:
+            for i, n in enumerate(self.notes):
+                if n:
+                    self.current_note_key = i
+                    break
 
         #Update the strum keys status
         b = self.uc3.button
