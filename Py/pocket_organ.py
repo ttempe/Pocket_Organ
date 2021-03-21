@@ -9,7 +9,6 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * Finish the "quick loop" feature
 # * implement capo and tune
 # * add key expression (bending?); filter the messages
 # * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
@@ -17,8 +16,8 @@ import gc #Garbage collector
 # * Add an itermediary-sized font with https://github.com/peterhinch/micropython-font-to-py. (Pre-compiled fonts: https://github.com/peterhinch/micropython-font-to-py)
 # * Get notifications working; add a "write/erase" notification
 # * Save the status of recorded loops into flash memory somewhere
-# * Split the volume slider into channel-specific (no keypress) and global (hold "volume" button)
-# * Re-do the SSD1306 interface, then get the code working
+# * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
+# * Get the OLED display working
 # * Add the ability to modify the chord shape on the fly (sus, dim...)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Build a stand-alone firmware flasher program
@@ -30,13 +29,7 @@ import gc #Garbage collector
 # * Disable FS access?
 # * Measure the time the musician has been playing
 # * Run the filesystem files with higher priority than the frozen bytecode?
-# * Get the accelerometer working
-# * Fix MIDI output; have it tested by experienced DAW users.
-# * Practice the looper. Is it flexible enough in handling loops of various lengths?
-# * Do I need a 5th button? (eg: for storing sets of loops)
-# * Disable FS access?
-# * Measure the time the musician has been playing
-# * Run the filesystem files with higher priority than the frozen bytecode?
+# * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
 
 class PocketOrgan:
     def __init__(self):
@@ -55,36 +48,6 @@ class PocketOrgan:
         self.d.loop(freeze_display)
         gc.collect();
         self.k.loop()
-#         #DEBUG. TODO:Remove. For cycle time measurement
-#         if self.last:
-#             t = time.ticks_us()-self.last
-#             self.min=min(t, self.min)
-#             self.max=max(t, self.max)
-#             self.total += t
-#             self.count += 1
-#         self.last = time.ticks_us()
-#         if not(self.count & 1023):
-#             try:
-#                 print("Min:", self.min, "Max", self.max, "Avg", self.total/self.count)
-#             except:
-#                 pass
-#             self.min=1000000
-#             self.max=0
-#             self.total=0im...)
-# * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Build a stand-alone firmware flasher program
-# * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
-# * Get the accelerometer working
-# * Fix MIDI output; have it tested by experienced DAW users.
-# * Practice the looper. Is it flexible enough in handling loops of various lengths?
-# * Do I need a 5th button? (eg: for storing sets of loops)
-# * Disable FS access?
-# * Measure the time the musician has been playing
-# * Run the filesystem files with higher priority than the frozen bytecode?
-
-
-#            self.count=0
-            
         #make sure we have constant time between loops
         t=time.ticks_ms()        
         time.sleep_ms(max(0,self.min_loop_duration-(t-self.last_t)))
