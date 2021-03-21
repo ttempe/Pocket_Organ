@@ -56,10 +56,7 @@ class PocketOrgan:
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
-        volume_old=0
-        #DEBUG. TODO: remove. For free memory measurement.
-        print("Remaining free RAM: {}".format(gc.mem_free()))
-        
+        volume_old=0       
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
@@ -164,7 +161,7 @@ class PocketOrgan:
         or 2 successive presses (choose an instrument within this family).
         """
         instr = None #output
-        k1 = k1_shift = k2 = 0 #these are the successive keys pressed for instrument
+        k1 = k1_shift = k2 = 0 #these are te successive keys pressed for instrument
         self.d.text("Choose instrument", duration=1)
         while self.k.instr:
             #TODO: display whether the shift key is being pressed
