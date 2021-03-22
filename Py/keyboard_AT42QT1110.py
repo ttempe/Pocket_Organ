@@ -9,22 +9,6 @@ import board
 # * Synchronize the main loop with the uc1 acquisition cycle
 # * Decrease the sensitivity of the key below when the key above is detected? (finger shadow)
 
-#Debug: 
-last=0;pmin=127;pmax=0
-def print_delayed(v):
-    global last, pmin, pmax
-    
-    if time.ticks_ms()-last >50:
-        last = time.ticks_ms()
-        print(pmin, pmax)
-        pmin=127
-        pmax=0
-    else:
-        pmin=min(pmin, v)
-        pmax=max(pmax, v)
-
-
-
 class Slider:
     "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
     
