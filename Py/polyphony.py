@@ -36,10 +36,17 @@ class Polyphony:
         self.strum_chord = [] #same chord, but with enough notes to cover all strumming keys
         self.strum_mute_old = 0
         self.strum_keys_old = 0
+        self.default_velocity = 64
+        
+        #For continuous expression control
+        self.playing_chord = None
+        self.expr1_old = self.default_velocity
+        self.expr1_time = 0
 
     def start_chord(self, quick_mode=False):
         def round_note(n):
             return n%12 + 60
+        self.playing_chord = self.k.current_note_key
         root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
         
         #Here is the logic to determine the chord shape
@@ -57,9 +64,9 @@ class Polyphony:
         if self.k.seventh:
             self.chord.append(round_note(root+10-self.k.minor))
         if quick_mode:
-            self.play_chord(64, 0)
+            self.play_chord(self.default_velocity, 0)
         elif not self.k.strum_mute and not self.k.strum_keys:
-            self.play_chord(64, 40)
+            self.play_chord(self.default_velocity, 40)
         else:
             self.strum_keys_old = 0 #Play all keys on the next loop()
         self.d.disp_chord(
@@ -94,21 +101,23 @@ class Polyphony:
         self.pending = []
         self.d.clear()
         self.strum_chord = []
+        self.playing_chord = None
+        self.expr1_none=-10
 
     def start_note(self, i):
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + 1*self.k.sharp
         self.melody_keys_transpose[i] = transpose
-        self.l.append(self.midi.note_on(self.l.melody_channel, self.scale[i]+transpose, 64))
+        self.l.append(self.midi.note_on(self.l.melody_channel, self.scale[i]+transpose, self.default_velocity))
     
     def stop_note(self, i):
-        self.l.append(self.midi.note_off(self.l.melody_channel, self.scale[i]+self.melody_keys_transpose[i], 64))
+        self.l.append(self.midi.note_off(self.l.melody_channel, self.scale[i]+self.melody_keys_transpose[i], self.default_velocity))
 
     def stop_all_notes(self):
         self.l.append(self.midi.all_off(self.l.melody_channel))
         
     def play_drum(self, note):
         name, note = self.drums[note]
-        self.l.append(self.midi.note_on(self.l.drum_channel, note, 64))
+        self.l.append(self.midi.note_on(self.l.drum_channel, note, self.default_velocity))
         return name
 
     def set_instr(self, instr):
@@ -124,7 +133,7 @@ class Polyphony:
     def set_master_volume(self, vol):
         #TODO: if changing in quick succession, only append every 0.1s (requires making a queue of volume changes)
         self.midi.set_master_volume(vol)
-
+        
     def loop(self):
         self.metronome.loop()
         
@@ -135,16 +144,17 @@ class Polyphony:
                 #Mute any key that's not being held
                 for i, k in enumerate(self.strum_chord):
                     if not((self.k.strum_keys>>i)&1):
-                        self.midi.note_off(self.l.chord_channel, k, 64)
+                        self.midi.note_off(self.l.chord_channel, k, self.default_velocity)
             #update newly released strum keys
             elif self.k.strum_mute:
                 #Keys that were in _old but are no longer in _new
                 for i in bits(self.strum_keys_old & (~self.k.strum_keys)):
-                    self.midi.note_off(self.l.chord_channel, self.strum_chord[i], 64)
+                    self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
 
             #update newly strummed keys
+            #TODO: Apply the current velocity
             for i in bits(self.k.strum_keys & (~self.strum_keys_old)):
-                self.midi.note_on(self.l.chord_channel, self.strum_chord[i], 64)
+                self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
                 
             self.strum_mute_old = self.k.strum_mute
             self.strum_keys_old = self.k.strum_keys
@@ -155,6 +165,16 @@ class Polyphony:
             next = self.pending[0][2]
             if next <= time.ticks_ms():
                 n = self.pending.pop(0)
-                self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))       
+                self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
+        
+        #Are we playing something? Update effects:
+        if self.playing_chord != None:
+            expr1 = self.k.notes_val[self.playing_chord]
+            if abs(expr1 - self.expr1_old) > 1 and (time.ticks_ms() - self.expr1_time > 10):
+                print(expr1)
+                self.expr1_old = expr1
+                self.expr1_time = time.ticks_ms()
+                self.midi.set_controller(self.l.chord_channel, 11, int(127*expr1//self.k.notes_max))
+                
                 
 #end
