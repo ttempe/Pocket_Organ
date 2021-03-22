@@ -10,6 +10,8 @@ import gc #Garbage collector
 
 #TODO:
 # * implement capo and tune
+# * implement the Shift Lock feature
+# * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * add key expression (bending?); filter the messages
 # * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
 # * Store fonts as frozen bytecode with https://github.com/peterhinch/micropython_data_to_py
