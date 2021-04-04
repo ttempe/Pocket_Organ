@@ -88,12 +88,12 @@ elif 17 == version:
     keyboard_uc2_cs(1)
     keyboard_uc3_cs(1)
     keyboard_melody_led = Pin("C3", Pin.OUT)
-    keyboard_volume_pin = Pin("A2", Pin.IN, Pin.PULL_UP)
-    keyboard_instr_pin  = Pin("A1", Pin.IN, Pin.PULL_UP)
-    keyboard_looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
-    keyboard_drum_pin   = Pin("A3", Pin.IN, Pin.PULL_UP)
+    keyboard_volume_pin = Pin("A3", Pin.IN, Pin.PULL_UP)
+    keyboard_instr_pin  = Pin("A4", Pin.IN, Pin.PULL_UP)
+    keyboard_looper_pin = Pin("A1", Pin.IN, Pin.PULL_UP)
+    keyboard_drum_pin   = Pin("A2", Pin.IN, Pin.PULL_UP)
     keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 3, 1, 2]) #Order of the note key pads from Do to Ut. All must be on the same UC.
-    keyboard_sharp      = 6 #on UC1
+    keyboard_sharp      = 4 #on UC1
     keyboard_uc2_seventh= 6 #on UC2
     keyboard_uc2_fifth  = 7 #on UC2
     keyboard_uc2_third  = 8 #on UC2
