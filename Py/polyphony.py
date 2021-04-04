@@ -40,9 +40,11 @@ class Polyphony:
         self.default_velocity = 64
         
         #For continuous expression control
-        self.playing_chord = None
-        self.expr1_old = self.default_velocity
-        self.expr1_time = 0
+        self.playing_chord  = None
+        self.expr1_old      = self.default_velocity
+        self.expr1_time     = 0
+        self.expr_bend_old  = 0
+        self.expr_bend_time = 0
 
     def start_chord(self, quick_mode=False):
         def round_note(n):
@@ -167,13 +169,21 @@ class Polyphony:
                 n = self.pending.pop(0)
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
         
-        #Are we playing something? Update effects:
+        #Update expression
         if self.playing_chord != None:
+            #Channel expression (volume): vary pressure on the key being played
             expr1 = self.k.notes_val[self.playing_chord]
             if abs(expr1 - self.expr1_old) > 8 and (time.ticks_ms() - self.expr1_time > 10):
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
                 self.midi.set_controller(self.l.chord_channel, 11, expr1)
-                
+            #Bending up: if the next key is pressed, up to 1/2 tone
+            expr_up   = self.k.notes_val[(self.playing_chord+1)%8]
+            expr_down = self.k.notes_val[(self.playing_chord+7)%8]
+            expr_bend = min(64+int(expr_up*.3),96) if expr_up else max(64-int(expr_down*.3),32)
+            if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):
+                self.expr_bend_old = expr_bend
+                self.expr_bend_time = time.ticks_ms()
+                self.midi.pitch_bend(self.l.chord_channel, expr_bend)                
                 
 #end
