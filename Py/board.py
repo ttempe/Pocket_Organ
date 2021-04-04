@@ -17,7 +17,7 @@ if 16 == version:
     backlight_oe_pin   = Pin("B3", Pin.OUT)
     backlight_data_pin = Pin("B9",  Pin.OUT)
     backlight_clk_pin  = Pin("C0", Pin.OUT)
-    backlight_leds     = [1, 2, 0, 3, 4, 5, 6, 7]
+    backlight_leds     = bytearray([1, 2, 0, 3, 4, 5, 6, 7])
 
     display_spi = spi
     display_dc =  Pin("C0", Pin.OUT)
@@ -45,7 +45,7 @@ if 16 == version:
     keyboard_instr_pin  = Pin("C4", Pin.IN, Pin.PULL_UP)
     keyboard_looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
     keyboard_drum_pin   = Pin("A3", Pin.IN, Pin.PULL_UP)
-    keyboard_note_keys  = [7,6,8,1,0,9,4,3] #Order of the note key pads from Do to Ut. All must be on the same UC.
+    keyboard_note_keys  = bytearray([7,6,8,1,0,9,4,3]) #Order of the note key pads from Do to Ut. All must be on the same UC.
     keyboard_sharp      = 6 #on UC1
     keyboard_uc2_seventh= 6 #on UC2
     keyboard_uc2_fifth  = 7 #on UC2
@@ -53,7 +53,9 @@ if 16 == version:
     keyboard_uc2_minor  = 0 #on UC2
     keyboard_uc2_shift  = 1 #on UC2
     keyboard_strum_mute = 5 #on UC3
-    keyboard_strum_keys = [9, 8, 7, 6, 4, 3, 1, 2] #on UC3
+    keyboard_strum_keys = bytearray([9, 8, 7, 6, 4, 3, 1, 2]) #on UC3
+    keyboard_notes_thres= bytearray([9]*8) #above this value, assume the key is pressed
+    keyboard_notes_max  = bytearray([40]*8)#highest possible analog value
 
     main_startup_pin = keyboard_volume_pin
 
@@ -62,7 +64,7 @@ elif 17 == version:
     backlight_oe_pin(1)
     backlight_data_pin = Pin("C13",  Pin.OUT)
     backlight_clk_pin  = Pin("C15", Pin.OUT)
-    backlight_leds     = [0, 1, 2, 4, 3, 6, 7, 5]
+    backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])
 
     display_spi = spi
     display_dc =  Pin("B13", Pin.OUT)
@@ -90,7 +92,7 @@ elif 17 == version:
     keyboard_instr_pin  = Pin("A1", Pin.IN, Pin.PULL_UP)
     keyboard_looper_pin = Pin("A4", Pin.IN, Pin.PULL_UP)
     keyboard_drum_pin   = Pin("A3", Pin.IN, Pin.PULL_UP)
-    keyboard_note_keys  = [6, 7, 8, 0, 9, 3, 1, 2] #Order of the note key pads from Do to Ut. All must be on the same UC.
+    keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 3, 1, 2]) #Order of the note key pads from Do to Ut. All must be on the same UC.
     keyboard_sharp      = 6 #on UC1
     keyboard_uc2_seventh= 6 #on UC2
     keyboard_uc2_fifth  = 7 #on UC2
@@ -98,7 +100,9 @@ elif 17 == version:
     keyboard_uc2_minor  = 0 #on UC2
     keyboard_uc2_shift  = 1 #on UC2
     keyboard_strum_mute = 6 #on UC3
-    keyboard_strum_keys = [5,4,3,2,1,0,10,9,8,7] #on UC3
+    keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7]) #on UC3
+    keyboard_notes_thres= bytearray([8,8,10,2,5,5,2,7]) #above this value, assume the key is pressed
+    keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
 
     main_startup_pin = keyboard_volume_pin
 
