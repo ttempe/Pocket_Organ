@@ -15,7 +15,6 @@ class Backlight:
         self.data_pin = board.backlight_data_pin
         self.clk_pin  = board.backlight_clk_pin
         self.intensity = 128
-        self.LED = [1, 2, 0, 3, 4, 5, 6, 7]
         self.off()
         
     def on(self):
@@ -39,8 +38,8 @@ class Backlight:
         green = ~green
         self.off()
         for i in range(0, 8):
-            self.push_bit( (green >> self.LED[i])& 1)
-            self.push_bit( (red >> self.LED[i])& 1)
+            self.push_bit( (green >> board.backlight_leds[i])& 1)
+            self.push_bit( (red   >> board.backlight_leds[i])& 1)
         self.push_bit(0)
         self.on()
         

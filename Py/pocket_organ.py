@@ -33,6 +33,9 @@ import gc #Garbage collector
 # * Run the filesystem files with higher priority than the frozen bytecode?
 # * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
 
+# Notes:
+# * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
+
 class PocketOrgan:
     def __init__(self):
         self.min_loop_duration=12 #ms        

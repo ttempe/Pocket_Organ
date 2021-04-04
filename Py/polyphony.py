@@ -1,15 +1,16 @@
 import time
 import midi
 import metronome
+import board
 
 # Only one chord is ever sent at once.
 # TODO:
 # * have Midi return the MIDI message string, and have Polyphony call the looper directly
 # * update the chord shape when the user toggles the 3rd/5th/7th buttons
 
-def bits(n):
+def bits(n, range):
     "8-bit bit map iterator"
-    for i in range(0, 8):
+    for i in range(0, range):
         if n&(1<<i):
             yield i
 
@@ -76,14 +77,15 @@ class Polyphony:
              ("7" if self.k.seventh else "")
              )
         #extend that chord to cover all strumming keys
-        if len(self.chord)<self.k.nb_strum_keys:
-            self.strum_chord = [self.chord[0]-12, self.chord[1]-12]
+        if len(self.chord)<len(board.keyboard_strum_keys):
+            self.strum_chord = [self.chord[0]-12, self.chord[1]-12, self.chord[2]-12]
             self.strum_chord.extend(self.chord)
             incr = 12
-            while len(self.strum_chord)<self.k.nb_strum_keys:
+            while len(self.strum_chord)<len(board.keyboard_strum_keys):
                 for n in self.chord:
                     self.strum_chord.append(n+incr)
                 incr +=12
+            print("Strum keys: ", self.strum_chord)
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -148,12 +150,12 @@ class Polyphony:
             #update newly released strum keys
             elif self.k.strum_mute:
                 #Keys that were in _old but are no longer in _new
-                for i in bits(self.strum_keys_old & (~self.k.strum_keys)):
+                for i in bits(self.strum_keys_old & (~self.k.strum_keys), len(board.keyboard_strum_keys)):
                     self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
 
             #update newly strummed keys
             #TODO: Apply the current velocity
-            for i in bits(self.k.strum_keys & (~self.strum_keys_old)):
+            for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
                 self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
                 
             self.strum_mute_old = self.k.strum_mute

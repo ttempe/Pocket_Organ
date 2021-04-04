@@ -99,8 +99,8 @@ class Keyboard:
         self.uc1 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc1_cs)
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
-
-        self.vol_slider = Slider( self.uc2, [2, 3, 4, 5], [24,23,8,24], True)
+        
+        self.vol_slider = Slider( self.uc2, [2, 3, 4, 5], [24,23,8,24], True) #TODO: Move this to board.py
 
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
@@ -149,12 +149,12 @@ class Keyboard:
         self.looper = not(self.looper_pin.value())
         self.drum = not(self.drum_pin.value())
         
-        self.seventh = self.uc2.button(6)
-        self.fifth = self.uc2.button(7)
-        self.third = self.uc2.button(8)
-        self.minor = self.uc2.button(0)
-        self.shift = self.uc2.button(1)
-        self.sharp = self.uc1.button(2)
+        self.seventh = self.uc2.button(board.keyboard_uc2_seventh)
+        self.fifth   = self.uc2.button(board.keyboard_uc2_fifth)
+        self.third   = self.uc2.button(board.keyboard_uc2_third)
+        self.minor   = self.uc2.button(board.keyboard_uc2_minor)
+        self.shift   = self.uc2.button(board.keyboard_uc2_shift)
+        self.sharp   = self.uc1.button(board.keyboard_sharp)
 
         for note, button in enumerate(board.keyboard_note_keys):
             a = self.notes_ref[note] - self.uc1.read_analog(button)
