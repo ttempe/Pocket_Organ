@@ -85,7 +85,6 @@ class Polyphony:
                 for n in self.chord:
                     self.strum_chord.append(n+incr)
                 incr +=12
-            print("Strum keys: ", self.strum_chord)
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -154,7 +153,6 @@ class Polyphony:
                     self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
 
             #update newly strummed keys
-            #TODO: Apply the current velocity
             for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
                 self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
                 
@@ -172,11 +170,10 @@ class Polyphony:
         #Are we playing something? Update effects:
         if self.playing_chord != None:
             expr1 = self.k.notes_val[self.playing_chord]
-            if abs(expr1 - self.expr1_old) > 1 and (time.ticks_ms() - self.expr1_time > 10):
-                print(expr1)
+            if abs(expr1 - self.expr1_old) > 8 and (time.ticks_ms() - self.expr1_time > 10):
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
-                self.midi.set_controller(self.l.chord_channel, 11, int(127*expr1//self.k.notes_max))
+                self.midi.set_controller(self.l.chord_channel, 11, expr1)
                 
                 
 #end

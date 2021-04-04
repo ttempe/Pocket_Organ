@@ -112,8 +112,6 @@ class Keyboard:
         self.notes_val = bytearray(8) #analog value
         self.notes_val_old = bytearray(8) #analog value
         self.notes_ref = [0]*8 #reference value from unpressed key (from calibration)
-        self.notes_thres = 9 #above this value, assume the key is pressed
-        self.notes_max = 40  #highest possible analog value
         self.volume = False
         self.volume_old = False
         self.volume_val =  64 #value from 0 to 100
@@ -125,7 +123,6 @@ class Keyboard:
         self.melody_led(0)
         self.strum_mute = False
         self.strum_keys = 0 #Bytearray
-        self.nb_strum_keys = 8
                 
     def calibrate(self):
         self.uc1.recalibrate_all_keys()
@@ -158,9 +155,11 @@ class Keyboard:
 
         for note, button in enumerate(board.keyboard_note_keys):
             a = self.notes_ref[note] - self.uc1.read_analog(button)
-            #self.notes[note] = self.uc1.button(button)
-            self.notes[note] = (a>= self.notes_thres)
-            self.notes_val[note] = max(min(a - self.notes_thres, self.notes_max), 0)
+            self.notes[note] = (a>= board.keyboard_notes_thres[note])
+            if a <= board.keyboard_notes_thres[note]:
+                self.notes_val[note] = 0
+            else:
+                self.notes_val[note] = int(max(min(a - board.keyboard_notes_thres[note], board.keyboard_notes_max[note]), 0)/board.keyboard_notes_max[note]*100)+20
         
         #Re-calibrate the touch keys on "Volume" press
         if self.volume and not self.volume_old:
@@ -184,12 +183,23 @@ class Keyboard:
 
         #Update the strum keys status
         b = self.uc3.button
-        self.strum_mute = b(5)
-        self.strum_keys = b(9)+(b(8)<<1)+(b(7)<<2)+(b(6)<<3)+(b(4)<<4)+(b(3)<<5)+(b(1)<<6)+(b(2)<<7)
+        self.strum_mute = self.uc3.button(board.keyboard_strum_mute)
+        self.strum_keys=0
+        for n, k in enumerate(board.keyboard_strum_keys):
+            self.strum_keys += self.uc3.button(k)<<n
 
         #TODO: implement melody lock
         self.melody_led(self.shift)
         
-            
+    def disp(self):#for calibration
+        notes_thres = 0
+        while(True):
+            for note, button in enumerate(board.keyboard_note_keys):
+                a = self.notes_ref[note] - self.uc1.read_analog(button)
+                print(a, ",", end="")
+            print("")
+        time.sleep_ms(400)
+
+
 #end
             
