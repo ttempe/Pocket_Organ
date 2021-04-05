@@ -177,7 +177,8 @@ class Polyphony:
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
                 self.midi.set_controller(self.l.chord_channel, 11, expr1)
-            #Bending up: if the next key is pressed, up to 1/2 tone
+            #Bending: if the next key is pressed, up to 1/2 tone
+            #TODO: Update the display with # or b as the key is bent
             expr_up   = self.k.notes_val[(self.playing_chord+1)%8]
             expr_down = self.k.notes_val[(self.playing_chord+7)%8]
             expr_bend = min(64+int(expr_up*.3),96) if expr_up else max(64-int(expr_down*.3),32)
