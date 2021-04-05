@@ -57,14 +57,12 @@ if 16 == version:
     keyboard_notes_thres= bytearray([9]*8) #above this value, assume the key is pressed
     keyboard_notes_max  = bytearray([40]*8)#highest possible analog value
 
-    main_startup_pin = keyboard_volume_pin
-
 elif 17 == version:
     backlight_oe_pin   = Pin("C14", Pin.OUT)
     backlight_oe_pin(1)
     backlight_data_pin = Pin("C13",  Pin.OUT)
     backlight_clk_pin  = Pin("C15", Pin.OUT)
-    backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])
+    backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])#Order of the LEDs
 
     display_spi = spi
     display_dc =  Pin("B13", Pin.OUT)
@@ -101,10 +99,10 @@ elif 17 == version:
     keyboard_uc2_shift  = 1 #on UC2
     keyboard_strum_mute = 6 #on UC3
     keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7]) #on UC3
-    keyboard_notes_thres= bytearray([8,8,10,2,5,5,2,7]) #above this value, assume the key is pressed
+    keyboard_notes_thres= bytearray([10,10,12,4,7,7,4,9]) #above this value, assume the key is pressed
     keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
 
-    main_startup_pin = keyboard_volume_pin
+main_startup_pin = keyboard_volume_pin
 
 
 #End
