@@ -4,10 +4,10 @@ import board
 
 #TODO:
 # * force a recalibration when switching between USB and battery power (instead of when pressing the Volume key)
-# * clean up slider code
+# * clean up and debug slider code.
 # * check the analog measurements for slight drift of all the values while none of the keys are being pressed
 # * Synchronize the main loop with the uc1 acquisition cycle
-# * Decrease the sensitivity of the key below when the key above is detected? (finger shadow)
+# * Decrease the sensitivity of the key below when the key above is detected? (finger shadow map)
 
 class Slider:
     "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
@@ -100,7 +100,7 @@ class Keyboard:
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
         
-        self.vol_slider = Slider( self.uc2, [2, 3, 4, 5], [24,23,8,24], True) #TODO: Move this to board.py
+        self.vol_slider = Slider( self.uc2, board.keyboard_slider_keys, board.keyboard_slider_cal, True) #TODO: Move this to board.py
 
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
