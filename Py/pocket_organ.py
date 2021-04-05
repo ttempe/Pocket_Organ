@@ -9,6 +9,8 @@ import time
 import gc #Garbage collector
 
 #TODO:
+# * Install nano-gui module & fonts into frozen bytecode with upip
+# * Also freeze the contents of img/*.pbm
 # * implement capo and tune
 # * implement the Shift Lock feature
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
@@ -32,6 +34,8 @@ import gc #Garbage collector
 # * Measure the time the musician has been playing
 # * Run the filesystem files with higher priority than the frozen bytecode?
 # * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
+# * Find a workaround for holding "Drum", which causes drift correction and misdetections after a while
+# * Can I store all my code in frozen bytecode, and overload from the filesystem?
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -61,11 +65,13 @@ class PocketOrgan:
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
+        print("Volume:")
         volume_old=0       
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
                 self.d.disp_volume(self.k.volume_val)
+                print(self.k.volume_val)
             self.loop(freeze_display=True)
 
     def loop_looper(self):
