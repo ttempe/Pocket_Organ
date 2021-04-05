@@ -106,7 +106,8 @@ class Keyboard:
         self.instr_pin = board.keyboard_instr_pin
         self.looper_pin = board.keyboard_looper_pin
         self.drum_pin = board.keyboard_drum_pin
-
+        self.melody_lock = False
+        self.drum = False
         self.notes = bytearray(8) #binary output
         self.notes_old = bytearray(8)
         self.notes_val = bytearray(8) #analog value
@@ -136,6 +137,7 @@ class Keyboard:
         self.notes_old = self.notes[:]
         self.notes_val_old = self.notes_val[:]
         self.sharp_old = self.sharp
+        self.drum_old  = self.drum
 
         self.uc1.loop()
         self.uc2.loop()
@@ -150,7 +152,7 @@ class Keyboard:
         self.fifth   = self.uc2.button(board.keyboard_uc2_fifth)
         self.third   = self.uc2.button(board.keyboard_uc2_third)
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
-        self.shift   = self.uc2.button(board.keyboard_uc2_shift)
+        self.shift   = self.uc2.button(board.keyboard_uc2_shift) or self.melody_lock
         self.sharp   = self.uc1.button(board.keyboard_sharp)
 
         for note, button in enumerate(board.keyboard_note_keys):
@@ -188,7 +190,11 @@ class Keyboard:
         for n, k in enumerate(board.keyboard_strum_keys):
             self.strum_keys += self.uc3.button(k)<<n
 
-        #TODO: implement melody lock
+        #Melody & Melody lock
+        if self.drum_old and not self.drum and self.shift:
+            self.melody_lock=True
+        elif self.drum and self.melody_lock:
+            self.melody_lock=False
         self.melody_led(self.shift)
         
     def disp(self):#for calibration
