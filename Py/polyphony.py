@@ -25,6 +25,7 @@ class Polyphony:
         self.midi = midi.Midi()
         self.metronome = metronome.Metronome(self.midi)
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
+        self.transpose = 0
         self.chord_names = ["C", "D", "E", "F", "G", "A", "B", "C"]
         self.melody_keys_transpose = bytearray(8) #for keeping track of how which key was played
         self.instr = 22
@@ -41,16 +42,18 @@ class Polyphony:
         
         #For continuous expression control
         self.playing_chord  = None
+        self.playing_notes  = 0
         self.expr1_old      = self.default_velocity
         self.expr1_time     = 0
         self.expr_bend_old  = 0
         self.expr_bend_time = 0
+        self.bend_baseline  = 0
 
     def start_chord(self, quick_mode=False):
         def round_note(n):
             return n%12 + 60
         self.playing_chord = self.k.current_note_key
-        root = self.scale[self.k.current_note_key] + self.k.sharp #current_note_key should not be None
+        root = self.scale[self.k.current_note_key] + self.k.sharp + self.transpose #current_note_key should not be None
         
         #Here is the logic to determine the chord shape
         aug = self.k.fifth and not self.k.minor
@@ -110,12 +113,15 @@ class Polyphony:
     def start_note(self, i):
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + 1*self.k.sharp
         self.melody_keys_transpose[i] = transpose
-        self.l.append(self.midi.note_on(self.l.melody_channel, self.scale[i]+transpose, self.default_velocity))
+        self.playing_notes += 1
+        self.l.append(self.midi.note_on(self.l.melody_channel, self.scale[i] + self.transpose + transpose, self.default_velocity))
     
     def stop_note(self, i):
-        self.l.append(self.midi.note_off(self.l.melody_channel, self.scale[i]+self.melody_keys_transpose[i], self.default_velocity))
+        self.playing_notes -= 1
+        self.l.append(self.midi.note_off(self.l.melody_channel, self.scale[i] + self.transpose + self.melody_keys_transpose[i], self.default_velocity))
 
     def stop_all_notes(self):
+        self.playing_notes = 0
         self.l.append(self.midi.all_off(self.l.melody_channel))
         
     def play_drum(self, note):
@@ -173,18 +179,20 @@ class Polyphony:
         if self.playing_chord != None:
             #Channel expression (volume): vary pressure on the key being played
             expr1 = self.k.notes_val[self.playing_chord]
-            if abs(expr1 - self.expr1_old) > 8 and (time.ticks_ms() - self.expr1_time > 10):
+            if abs(expr1 - self.expr1_old) > 8 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
                 self.midi.set_controller(self.l.chord_channel, 11, expr1)
             #Bending: if the next key is pressed, up to 1/2 tone
             #TODO: Update the display with # or b as the key is bent
+            #TODO: set a longer bending range, and add ability to bend over multiple keys
             expr_up   = self.k.notes_val[(self.playing_chord+1)%8]
             expr_down = self.k.notes_val[(self.playing_chord+7)%8]
             expr_bend = min(64+int(expr_up*.3),96) if expr_up else max(64-int(expr_down*.3),32)
-            if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):
+            if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                 self.expr_bend_old = expr_bend
                 self.expr_bend_time = time.ticks_ms()
-                self.midi.pitch_bend(self.l.chord_channel, expr_bend)                
+                self.midi.pitch_bend(self.l.chord_channel, expr_bend)
+            
                 
 #end
