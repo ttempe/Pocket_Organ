@@ -101,6 +101,7 @@ class Keyboard:
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
         
         self.vol_slider = Slider( self.uc2, board.keyboard_slider_keys, board.keyboard_slider_cal, True) #TODO: Move this to board.py
+        self.key_levels = bytearray([0, 2, 4, 5, 7, 9, 11, 12])
 
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
@@ -118,6 +119,7 @@ class Keyboard:
         self.volume_val =  64 #value from 0 to 100
         self.sharp = False
         self.current_note_key = None
+        self.current_note_level = None
         time.sleep_ms(20)
         self.calibrate()
         self.loop()
@@ -131,7 +133,22 @@ class Keyboard:
         self.uc3.recalibrate_all_keys()
         for note, button in enumerate(board.keyboard_note_keys):
             self.notes_ref[note] = self.uc1.read_analog(button)
-    
+
+    def current_note_key_level(self):
+        """Returns a number from 0 to 12 (nb of semi-tones from C)
+        depending on note keys pressed. (C=0; C#=1; D=2...)
+        Returns None if no key pressed
+        2nd parameter indicates whether the level is a combination of 2 keys
+        """
+        if self.current_note_key != None:
+            d = 0
+            if self.current_note_key>0 and self.notes[self.current_note_key-1]:
+                d=-1
+            elif self.current_note_key<7 and self.notes[self.current_note_key+1]:
+                d=1
+            return self.key_levels[self.current_note_key]+d, bool(d)
+        return None, None
+
     def loop(self):
         
         self.notes_old = self.notes[:]

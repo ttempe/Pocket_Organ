@@ -2,7 +2,7 @@
 
 #This file centralizes the pin allocation configuration in one location, and does pin initialization when needed
 
-from machine import Pin, SPI
+from machine import Pin, SPI, ADC
 
 #This is the version number of the board.
 #Starting with version 16, all version-specific software (eg: choice of driver) should refer to this variable
@@ -58,14 +58,18 @@ if 16 == version:
     keyboard_notes_max  = bytearray([40]*8)#highest possible analog value
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [24,23,8,24]
+    vbat = lambda : 4.2
 
-
-elif 17 == version:
+elif version >= 17:
     backlight_oe_pin   = Pin("C14", Pin.OUT)
     backlight_oe_pin(1)
     backlight_data_pin = Pin("C13",  Pin.OUT)
     backlight_clk_pin  = Pin("C15", Pin.OUT)
-    backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])#Order of the LEDs
+    if 17 == version: 
+        backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])#Order of the LEDs
+    else:
+        backlight_leds     = bytearray([0, 1, 2, 4, 3, 5, 6, 7])#Order of the LEDs
+
 
     display_spi = spi
     display_dc =  Pin("B13", Pin.OUT)
@@ -93,11 +97,17 @@ elif 17 == version:
     keyboard_instr_pin  = Pin("A4", Pin.IN, Pin.PULL_UP)
     keyboard_looper_pin = Pin("A1", Pin.IN, Pin.PULL_UP)
     keyboard_drum_pin   = Pin("A2", Pin.IN, Pin.PULL_UP)
-    keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 3, 1, 2]) #Order of the note key pads from Do to Ut. All must be on the same UC.
     keyboard_sharp      = 4 #on UC1
     keyboard_uc2_seventh= 6 #on UC2
-    keyboard_uc2_fifth  = 7 #on UC2
-    keyboard_uc2_third  = 8 #on UC2
+    if 17 == version:
+        keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 3, 1, 2]) #Order of the note key pads from Do to Ut. All must be on the same UC.
+        keyboard_uc2_fifth  = 7 #on UC2
+        keyboard_uc2_third  = 8 #on UC2
+    else:
+        keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 2, 3, 1]) #Order of the note key pads from Do to Ut. All must be on the same UC.
+        keyboard_uc2_fifth  = 8 #on UC2
+        keyboard_uc2_third  = 7 #on UC2
+
     keyboard_uc2_minor  = 0 #on UC2
     keyboard_uc2_shift  = 1 #on UC2
     keyboard_strum_mute = 6 #on UC3
@@ -106,6 +116,9 @@ elif 17 == version:
     keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [33,35,11,20]
+    
+    vbat_ADC = ADC(Pin("B1"))
+    vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2
 
 main_startup_pin = keyboard_volume_pin
 

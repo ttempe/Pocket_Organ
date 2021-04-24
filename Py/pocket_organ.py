@@ -11,10 +11,11 @@ import gc #Garbage collector
 #TODO:
 # * Install nano-gui module & fonts into frozen bytecode with upip
 # * Also freeze the contents of img/*.pbm
-# * implement capo and tune
+# * implement tune
+# * re-do the melody mode to support key combinations for sharps
 # * implement the Shift Lock feature
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
-# * add key expression (bending?); filter the messages
+# * Record key expression (bending?); filter the messages
 # * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
 # * Store fonts as frozen bytecode with https://github.com/peterhinch/micropython_data_to_py
 # * Add an itermediary-sized font with https://github.com/peterhinch/micropython-font-to-py. (Pre-compiled fonts: https://github.com/peterhinch/micropython-font-to-py)
@@ -266,8 +267,23 @@ class PocketOrgan:
             elif self.k.drum:
                 self.loop_drum()
 
+    def capo_mode(self):
+        self.d.text("Capo {}".format(self.p.transpose))
+        t = 0
+        old_sharp = 0
+        while self.k.looper or self.k.current_note_key != None:
+            level, sharp = self.k.current_note_key_level()
+            if level != None and level != self.p.transpose and ( not(old_sharp) or sharp or time.ticks_ms()-t > 400):
+                #400 ms grace period when releasing a sharp (combinaison of 2 keypresses)
+                self.p.transpose = level
+                self.d.text("Capo {}".format(level))
+                t = time.ticks_ms() #Grace period to allow sharps
+                old_sharp = sharp
+            self.loop(freeze_display=True)
+
     def loop_shift(self): #TODO
         self.d.text("Melody mode")
+        playing_note=0
         while self.k.shift or self.k.current_note_key != None:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
@@ -276,6 +292,8 @@ class PocketOrgan:
                 elif self.k.notes_old[i] and not self.k.notes[i]:
                     #stop playing i
                     self.p.stop_note(i)
+            if self.k.looper and not self.p.playing_notes:
+                self.capo_mode()
             self.loop()
         self.p.stop_all_notes()
         self.d.clear()
