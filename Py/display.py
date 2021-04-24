@@ -29,12 +29,15 @@ def load_image(name):
 
 class Display:
     def __init__(self):
+        #Display connected through SPI bus
         self.disp = ssd1306.SSD1306_SPI(128, 64, board.display_spi,
-                           dc =  board.display_dc,
-                           res = board.display_res,
-                           cs =  board.display_cs,
-                           external_vcc=False, mirror_v=True, mirror_h=True)
-
+                            dc =  board.display_dc,
+                            res = board.display_res,
+                            cs =  board.display_cs,
+                            external_vcc=False, mirror_v=True, mirror_h=True)
+#        #variant: display connected through I2C bus
+#        from machine import Pin, I2C
+#        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
         self.disp.contrast(50)
         self.disp_image("logo")
         self.disp.show()
