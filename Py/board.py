@@ -2,16 +2,17 @@
 
 #This file centralizes the pin allocation configuration in one location, and does pin initialization when needed
 
-from machine import Pin, SPI, ADC
+from machine import Pin, SPI, ADC, UART
 
 #This is the version number of the board.
 #Starting with version 16, all version-specific software (eg: choice of driver) should refer to this variable
 #to remain backward compatible.
 #Older board versions are not assumed to be feature-complete, but should keep working with at least
 #the same level of functionality.
-version = 17
+version = 18
 
 spi = SPI(1)
+midi_UART = UART(3, 31250)
 
 if 16 == version:
     backlight_oe_pin   = Pin("B3", Pin.OUT)
@@ -59,6 +60,7 @@ if 16 == version:
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [24,23,8,24]
     vbat = lambda : 4.2
+    midi_rst = Pin("A15", Pin.OUT)
 
 elif version >= 17:
     backlight_oe_pin   = Pin("C14", Pin.OUT)
@@ -68,7 +70,7 @@ elif version >= 17:
     if 17 == version: 
         backlight_leds     = bytearray([0, 1, 2, 4, 3, 6, 7, 5])#Order of the LEDs
     else:
-        backlight_leds     = bytearray([0, 1, 2, 4, 3, 5, 6, 7])#Order of the LEDs
+        backlight_leds     = bytearray([0, 1, 2, 4, 3, 7, 5, 6])#Order of the LEDs
 
 
     display_spi = spi
@@ -116,6 +118,7 @@ elif version >= 17:
     keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [33,35,11,20]
+    midi_rst = Pin("C10", Pin.OUT, value=0)
     
     vbat_ADC = ADC(Pin("B1"))
     vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2

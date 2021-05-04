@@ -1,5 +1,4 @@
-from machine import Pin, UART
-#from pyb import UART
+import board
 import time
 
 #controllers
@@ -8,11 +7,11 @@ bank_select_LSB = const(0x20)
 
 class Midi:
     def __init__(self):
-        self.uart = UART(3, 31250)
-        self.rst = Pin("A15", Pin.OUT)
-        self.rst(0)
-        time.sleep_ms(200)
-        self.rst(1)
+        #TODO: Move to Board
+        self.uart = board.midi_UART
+        #board.midi_rst(0)
+        #time.sleep_ms(200)
+        board.midi_rst(1)
         time.sleep_ms(200)
         #SAM2695 reset. Disables reverb, chorus, microphone, echo, spatial effects, equalizer. Polyphony is increased to 64 simultaneous notes
         #self.uart.write(bytearray([0xB0, 0x63, 0x37, 0xB0, 0x62, 0x5F, 0xB0, 0x06, 0x00]))
