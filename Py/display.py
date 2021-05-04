@@ -11,6 +11,9 @@ import board
 # * disp.fill(0) takes  ~500 us
 # * disp.show()  takes ~2200 us
 
+#TODO: Move the icons to frozen storage.
+#TODO: use large font
+
 def load_image(name):
     "takes a filename, returns a framebuffer"
     filename = "img/"+name+".pbm"
@@ -38,7 +41,7 @@ class Display:
 #        #variant: display connected through I2C bus
 #        from machine import Pin, I2C
 #        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
-        self.disp.contrast(50)
+        self.disp.contrast(100)
         self.disp_image("logo")
         self.disp.show()
         self.erase_time = 0

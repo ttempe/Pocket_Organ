@@ -41,6 +41,7 @@ class W25Q128:
         id = self.get_id()
         if not (id[0] in [0xEF]):
             print("Warning: unknown flash memory chip manufacturer:", id)
+            #TODO: generate an error code with QR
         self.capacity = { 64:16*1024*1024 }[id[1]] #Fill in additional chip values here
         
     def reinit(self):

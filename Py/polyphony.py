@@ -66,6 +66,9 @@ class Polyphony:
                          round_note(root + 4 - self.k.minor + sus4 - sus2*2),
                          round_note(root + 7 + aug - dim)
                          ]
+        if self.k.current_note_key == 7:
+            #When playing Ut, Move the root key up one octave to make it sound different from Do
+            self.chord[0]=self.chord[0]+12
         #Seventh
         if self.k.seventh:
             self.chord.append(round_note(root+10-self.k.minor))

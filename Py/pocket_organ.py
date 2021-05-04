@@ -1,9 +1,9 @@
-import display_stub as display
+import display
 import backlight
 import keyboard_AT42QT1110 as keyboard
 import looper
 import polyphony
-import instr_names_stub as instr_names
+import instr_names
 
 import time
 import gc #Garbage collector
@@ -12,6 +12,7 @@ import gc #Garbage collector
 # * Install nano-gui module & fonts into frozen bytecode with upip
 # * Also freeze the contents of img/*.pbm
 # * implement tune
+# * Review the display. Add hints.
 # * re-do the melody mode to support key combinations for sharps
 # * implement the Shift Lock feature
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
@@ -37,6 +38,7 @@ import gc #Garbage collector
 # * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
 # * Find a workaround for holding "Drum", which causes drift correction and misdetections after a while
 # * Can I store all my code in frozen bytecode, and overload from the filesystem?
+# * Handle crashes: error codes, displaying a QR code with a link to documentation (25*25 -> 47 characters)
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -184,18 +186,19 @@ class PocketOrgan:
                 while self.k.current_note_key != None and self.k.instr:
                     self.loop(freeze_display=True)
                 #1st key released
-                while self.k.current_note_key == None and self.k.instr:
-                    #wait for 2nd key press, or Instr key release
-                    self.loop(freeze_display=True)
-                if self.k.current_note_key != None:
-                    #2nd note key pressed
-                    instr += self.k.current_note_key
-                self.d.text(instr_names.instrument_names[instr], 1, 2000)
-                self.p.set_instr(instr)
-                
-                #Wait for release of the note key
-                while self.k.current_note_key != None:
-                    self.loop(freeze_display=True)
+                while self.k.instr:
+                    while self.k.current_note_key == None and self.k.instr:
+                        #wait for 2nd key press, or Instr key release
+                        self.loop(freeze_display=True)
+                    if self.k.current_note_key != None:
+                        #2nd note key pressed
+                        instr += self.k.current_note_key
+                    self.d.text(instr_names.instrument_names[instr], 1, 2000)
+                    self.p.set_instr(instr)
+                    
+                    #Wait for release of the note key
+                    while self.k.current_note_key != None:
+                        self.loop(freeze_display=True)
             self.loop(freeze_display=True)
 
     def loop_quick(self):
