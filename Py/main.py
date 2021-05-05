@@ -1,10 +1,4 @@
-
-#First, set Micropython to load modules from the flash by default, and fall back to frozen modules.
-from sys import path
-path.pop(0)
-path.append("")
-
-#Next, start Pocket_Organ if the "Volume" key is pressed down
+#Start Pocket_Organ if the "Volume" key is pressed down
 from board import main_startup_pin, keyboard_melody_led
 from time import sleep
 
