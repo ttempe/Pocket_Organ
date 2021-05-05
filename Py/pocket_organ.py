@@ -9,35 +9,29 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * Install nano-gui module & fonts into frozen bytecode with upip
-# * Also freeze the contents of img/*.pbm
-# * implement tune
-# * Review the display. Add hints.
-# * re-do the melody mode to support key combinations for sharps
-# * implement the Shift Lock feature
-# * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
-# * Record key expression (bending?); filter the messages
-# * improve latency by measuring the derivative of key analog values and synchronizing the acquisition cycle with the main loop
-# * Store fonts as frozen bytecode with https://github.com/peterhinch/micropython_data_to_py
-# * Add an itermediary-sized font with https://github.com/peterhinch/micropython-font-to-py. (Pre-compiled fonts: https://github.com/peterhinch/micropython-font-to-py)
+# * Review the display messages.
 # * Get notifications working; add a "write/erase" notification
-# * Save the status of recorded loops into flash memory somewhere
+# * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
+# * Fix chord name for exotic chord shapes
+# * Make it easier to get a clean sharp. Display it on screen. Add full-tone bending.
+# * re-do the melody mode to support key combinations for sharps
+# * implement the Drum Lock feature
+# * Fix the volume slider
+# * review the volume and expression levels: am I playing too softly?
+# * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
+# * Record key expression; adjust the message filtering criteria
+# * Save the status of recorded loops and the HW revision into flash memory somewhere
 # * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
-# * Get the OLED display working
 # * Add the ability to modify the chord shape on the fly (sus, dim...)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Build a stand-alone firmware flasher program
+# * Build a stand-alone firmware flasher program. Make it work without a button.
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
-# * Get the accelerometer working
+# * Get the accelerometer working?
 # * Fix MIDI output; have it tested by experienced DAW users.
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
-# * Do I need a 5th button? (eg: for storing sets of loops)
-# * Disable FS access?
-# * Measure the time the musician has been playing
-# * Run the filesystem files with higher priority than the frozen bytecode?
-# * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
-# * Find a workaround for holding "Drum", which causes drift correction and misdetections after a while
-# * Can I store all my code in frozen bytecode, and overload from the filesystem?
+# * Measure the time the musician has been playing. Save it to flash.
+# * implement tuning
+# * Freeze the contents of img/*.pbm
 # * Handle crashes: error codes, displaying a QR code with a link to documentation (25*25 -> 47 characters)
 
 # Notes:

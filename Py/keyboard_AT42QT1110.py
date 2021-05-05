@@ -8,6 +8,7 @@ import board
 # * check the analog measurements for slight drift of all the values while none of the keys are being pressed
 # * Synchronize the main loop with the uc1 acquisition cycle
 # * Decrease the sensitivity of the key below when the key above is detected? (finger shadow map)
+# * Cleanup: use board.py variables directly rather than copying them into class Keyboard.
 
 class Slider:
     "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
