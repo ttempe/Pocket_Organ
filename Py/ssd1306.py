@@ -1,5 +1,12 @@
 # MicroPython SSD1306 OLED driver, I2C and SPI interfaces
 
+#Updated by Thomas TEMPE:
+# Added rotation, show_top8
+
+#Perf benchmarks:
+#show(): 2.3ms
+#show_top8(): 0.9ms
+
 import time
 import framebuf
 
@@ -76,7 +83,7 @@ class SSD1306:
     def invert(self, invert):
         self.write_cmd(SET_NORM_INV | (invert & 1))
 
-    def show(self):
+    def _show(self):
         x0 = 0
         x1 = self.width - 1
         if self.width == 64:
@@ -89,7 +96,15 @@ class SSD1306:
         self.write_cmd(SET_PAGE_ADDR)
         self.write_cmd(0)
         self.write_cmd(self.pages - 1)
+        
+    def show(self):
+        self._show()
         self.write_framebuf()
+    
+    def show_top8(self):
+        #Only refreshes the top 8 pixels of the screen
+        self._show()        
+        self.write_top8()
 
     def fill(self, col):
         self.framebuf.fill(col)
@@ -104,33 +119,36 @@ class SSD1306:
         self.framebuf.text(string, x, y, col)
 
 
-class SSD1306_I2C(SSD1306):
-    def __init__(self, width, height, i2c, addr=0x3c, external_vcc=False, mirror_v=False, mirror_h=False):
-        self.i2c = i2c
-        self.addr = addr
-        self.temp = bytearray(2)
-        # Add an extra byte to the data buffer to hold an I2C data/command byte
-        # to use hardware-compatible I2C transactions.  A memoryview of the
-        # buffer is used to mask this byte from the framebuffer operations
-        # (without a major memory hit as memoryview doesn't copy to a separate
-        # buffer).
-        self.buffer = bytearray(((height // 8) * width) + 1)
-        self.buffer[0] = 0x40  # Set first byte of data buffer to Co=0, D/C=1
-        self.framebuf = framebuf.FrameBuffer1(memoryview(self.buffer)[1:], width, height)
-        super().__init__(width, height, external_vcc, mirror_v, mirror_h)
-
-    def write_cmd(self, cmd):
-        self.temp[0] = 0x80 # Co=1, D/C#=0
-        self.temp[1] = cmd
-        self.i2c.writeto(self.addr, self.temp)
-
-    def write_framebuf(self):
-        # Blast out the frame buffer using a single I2C transaction to support
-        # hardware I2C interfaces.
-        self.i2c.writeto(self.addr, self.buffer)
-
-    def poweron(self):
-        pass
+# class SSD1306_I2C(SSD1306):
+#     def __init__(self, width, height, i2c, addr=0x3c, external_vcc=False, mirror_v=False, mirror_h=False):
+#         self.i2c = i2c
+#         self.addr = addr
+#         self.temp = bytearray(2)
+#         # Add an extra byte to the data buffer to hold an I2C data/command byte
+#         # to use hardware-compatible I2C transactions.  A memoryview of the
+#         # buffer is used to mask this byte from the framebuffer operations
+#         # (without a major memory hit as memoryview doesn't copy to a separate
+#         # buffer).
+#         self.buffer = bytearray(((height // 8) * width) + 1)
+#         self.buffer[0] = 0x40  # Set first byte of data buffer to Co=0, D/C=1
+#         self.framebuf = framebuf.FrameBuffer1(memoryview(self.buffer)[1:], width, height)
+#         super().__init__(width, height, external_vcc, mirror_v, mirror_h)
+# 
+#     def write_cmd(self, cmd):
+#         self.temp[0] = 0x80 # Co=1, D/C#=0
+#         self.temp[1] = cmd
+#         self.i2c.writeto(self.addr, self.temp)
+# 
+#     def write_framebuf(self):
+#         # Blast out the frame buffer using a single I2C transaction to support
+#         # hardware I2C interfaces.
+#         self.i2c.writeto(self.addr, self.buffer)
+# 
+#     def write_top8(self):
+#         self.write_framebuf()#Not implemented on I2C
+# 
+#     def poweron(self):
+#         pass
 
 
 class SSD1306_SPI(SSD1306):
@@ -144,6 +162,7 @@ class SSD1306_SPI(SSD1306):
         self.res = res
         self.cs = cs
         self.buffer = bytearray((height // 8) * width)
+        self.mv = memoryview(self.buffer)
         self.framebuf = framebuf.FrameBuffer1(self.buffer, width, height)
         super().__init__(width, height, external_vcc, mirror_v, mirror_h)
 
@@ -162,6 +181,14 @@ class SSD1306_SPI(SSD1306):
         self.cs.low()
         self.spi.write(self.buffer)
         self.cs.high()
+        
+    def write_top8(self):
+        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        self.cs.high()
+        self.dc.high()
+        self.cs.low()
+        self.spi.write(self.mv[0:128])
+        self.cs.high()        
 
     def poweron(self):
         self.res.high()
