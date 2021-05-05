@@ -67,7 +67,7 @@ class PocketOrgan:
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
-                self.d.disp_volume(self.k.volume_val)
+                self.d.disp_slider(self.k.volume_val, "Volume:")
                 print(self.k.volume_val)
             self.loop(freeze_display=True)
 

@@ -1,6 +1,5 @@
 import time
 import flash_W25Q128 as flash
-import indicator
 
 #TODO:
 # * check whether the IC is free before deleting/starting recording a loop
@@ -45,7 +44,8 @@ class Looper:
         if self.f.check_erased(self.loop_exists):
             #Whole flash is being erased. Make sure we don't expect any tracks
             self.recorded = 0
-        indicator.Indicator(self.d, ["flash_blank", "flash_w"], self.indicator_status) #The indicator registers itself with display
+        #TODO: rewrite
+        #indicator.Indicator(self.d, ["flash_blank", "flash_w"], self.indicator_status) #The indicator registers itself with display
     
     def indicator_status(self):
         return 1 if self.f.busy() else 0
