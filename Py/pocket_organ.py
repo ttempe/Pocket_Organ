@@ -12,10 +12,11 @@ import gc #Garbage collector
 
 #TODO:
 # * Review the display messages.
+# * Check whether I'm missing the last strumming key
 # * Get notifications working; add a "write/erase" notification
 # * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
 # * Fix chord name for exotic chord shapes
-# * Make it easier to get a clean sharp. Display it on screen. Add full-tone bending.
+# * Display sharps on screen.
 # * re-do the melody mode to support key combinations for sharps
 # * implement the Drum Lock feature
 # * Fix the volume slider
@@ -73,7 +74,7 @@ class PocketOrgan:
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
-        self.d.disp_slider(self.k.volume_val, "Volume:")
+        self.d.disp_slider(self.p.volume, "Volume:")
         volume_old=0       
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:

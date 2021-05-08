@@ -13,21 +13,29 @@ class Battery:
         self.d = disp
         self.last_icon = ""
         self.disp_update = 0
+        self.last_lvl = 0
         
     def classify(self, val):
         for lvl, icon in bat_levels:
             if val>lvl:
                 return icon
-        
+
+    def disp_bat(self, lvl):
+        self.d.disp.framebuf.rect(108, 0, 20, 0, 0)
+        self.d.disp.framebuf.rect(127, 2, 1, 4, 1)
+        self.d.disp.framebuf.rect(108, 0, 19, 8, 1)
+        self.d.disp.framebuf.fill_rect(110, 2, lvl, 4, 1)
+        self.d.disp.show_top8()
+
     def loop(self):
         if ticks_ms()-self.last_time > 500:
             if vusb()>4.5:
                 icon = "bat_chrg"
             else:
-                icon = self.classify(vbat())
-            if icon != self.last_icon:
-                self.d.indicator(icon, 108)
-                self.last_icon = icon
+                lvl = min(int(14*(vbat()-3.3)/1.0),14)
+            if lvl != self.last_lvl:
+                self.disp_bat(lvl)
+                self.last_lvl = lvl
             if verbose:
                 self.d.indicator_txt("-\|/"[self.disp_update%4] + str(vbat())[0:4]+"V", 58)
                 self.disp_update += 1
