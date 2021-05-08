@@ -10,6 +10,7 @@ from machine import Pin, SPI, ADC, UART
 #Older board versions are not assumed to be feature-complete, but should keep working with at least
 #the same level of functionality.
 version = 18
+verbose = True #display debug info on top of the screen. Display events info on the console.
 
 spi = SPI(1)
 midi_UART = UART(3, 31250)

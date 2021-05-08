@@ -1,4 +1,4 @@
-from board import vbat, vusb
+from board import vbat, vusb, verbose
 from time import ticks_ms
 
 bat_levels = [(4.2, "bat_100"),
@@ -12,6 +12,7 @@ class Battery:
         self.last_time = 0
         self.d = disp
         self.last_icon = ""
+        self.disp_update = 0
         
     def classify(self, val):
         for lvl, icon in bat_levels:
@@ -19,7 +20,7 @@ class Battery:
                 return icon
         
     def loop(self):
-        if ticks_ms()-self.last_time > 1000:
+        if ticks_ms()-self.last_time > 500:
             if vusb()>4.5:
                 icon = "bat_chrg"
             else:
@@ -27,7 +28,9 @@ class Battery:
             if icon != self.last_icon:
                 self.d.indicator(icon, 108)
                 self.last_icon = icon
-            self.d.indicator_txt(str(vbat())[0:4]+"V", 68)
+            if verbose:
+                self.d.indicator_txt("-\|/"[self.disp_update%4] + str(vbat())[0:4]+"V", 58)
+                self.disp_update += 1
             self.last_time = ticks_ms()
 
 #End

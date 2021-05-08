@@ -19,7 +19,8 @@ import writer, font_med, font_big, font_small
 #Indicators:
 # Pos Width Indicator
 #   0     8 Memory Write
-#  68    40 Battery voltage (debug)
+#  24    32 loop duration
+#  60    48 Battery voltage (debug)
 # 108    20 Battery
 
 #TODO: Move the icons to frozen storage.
@@ -102,7 +103,8 @@ class Display:
         self.disp.show()
         if duration:
             self.erase_time = time.ticks_ms() + duration
-        print(text)
+        if board.verbose:
+            print(text)
 
     def disp_slider(self, val, text):
         self.text(text)
@@ -123,7 +125,7 @@ class Display:
         self.erase_time = time.ticks_ms() + 2000 #auto-erase after 2 seconds
 
     def clear(self):
-        self.disp.framebuf.fill_rect(0,8,127,63,0)
+        self.disp.framebuf.fill_rect(0,8,128,56,0)
         self.disp.show()
         self.erase_time = None
 

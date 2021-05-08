@@ -4,7 +4,8 @@ import keyboard_AT42QT1110 as keyboard
 import looper
 import polyphony
 import instr_names
-import battery 
+import battery
+import board
 
 import time
 import gc #Garbage collector
@@ -48,6 +49,7 @@ class PocketOrgan:
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
         self.bat = battery.Battery(self.d)
         self.last_t = time.ticks_ms()
+        self.last_t_disp = 0
         self.longest_loop = 0
 
     def loop(self, freeze_display=False):
@@ -58,14 +60,20 @@ class PocketOrgan:
         gc.collect();
         self.k.loop()
         #make sure we have constant time between loops
-        t=time.ticks_ms()        
+        t=time.ticks_ms()
+        #display longest time
         time.sleep_ms(max(0,self.min_loop_duration-(t-self.last_t)))
-        self.longest_loop = max(self.longest_loop, t-self.last_t)
+        if board.verbose:
+            self.longest_loop = max(self.longest_loop, t-self.last_t)
+            if t-self.last_t_disp > 2100:
+                self.d.indicator_txt(str(self.longest_loop)+"ms", 24)
+                self.longest_loop = 0
+                self.last_t_disp = t
         self.last_t = t
 
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
-        print("Volume:")
+        self.d.disp_slider(self.k.volume_val, "Volume:")
         volume_old=0       
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
