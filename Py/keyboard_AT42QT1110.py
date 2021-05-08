@@ -179,7 +179,7 @@ class Keyboard:
             if a <= board.keyboard_notes_thres[note]:
                 self.notes_val[note] = 0
             else:
-                self.notes_val[note] = int(max(min(a - board.keyboard_notes_thres[note], board.keyboard_notes_max[note]), 0)/board.keyboard_notes_max[note]*100)+20
+                self.notes_val[note] = int(max(min(a - board.keyboard_notes_thres[note], board.keyboard_notes_max[note]), 0)/board.keyboard_notes_max[note]*127)
         
         #Re-calibrate the touch keys on "Volume" press
         if self.volume and not self.volume_old:

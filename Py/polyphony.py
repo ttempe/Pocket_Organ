@@ -182,20 +182,29 @@ class Polyphony:
         if self.playing_chord != None:
             #Channel expression (volume): vary pressure on the key being played
             expr1 = self.k.notes_val[self.playing_chord]
-            if abs(expr1 - self.expr1_old) > 8 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
+            if abs(expr1 - self.expr1_old) > 10 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
                 self.midi.set_controller(self.l.chord_channel, 11, expr1)
-            #Bending: if the next key is pressed, up to 1/2 tone
+
+            #Bending: if the next key is pressed, up to 1/2 tone, with a fast-cut-off (to make it easier to reach a sharp)
             #TODO: Update the display with # or b as the key is bent
-            #TODO: set a longer bending range, and add ability to bend over multiple keys
             expr_up   = self.k.notes_val[(self.playing_chord+1)%8]
             expr_down = self.k.notes_val[(self.playing_chord+7)%8]
-            expr_bend = min(64+int(expr_up*.3),96) if expr_up else max(64-int(expr_down*.3),32)
+            expr_bend = 0
+            if expr_up or expr_down:
+                expr_bend = min(64+int(expr_up*.6),96) if expr_up else max(64-int(expr_down*.6),32)
+            else:
+                #Bending: if the 2nd next key is pressed, up to 1 tone with a slow cut-off (to bend freely up to a full tone)
+                expr_up   = self.k.notes_val[(self.playing_chord+2)%8]
+                expr_down = self.k.notes_val[(self.playing_chord+6)%8]
+                #TODO: Understand why I can't seem to be able to bend a LA
+                #print(self.playing_chord, (self.playing_chord+2)%8, (self.playing_chord+6)%8, expr_up, expr_down);time.sleep_ms(10)
+                expr_bend = min(64+expr_up,127) if expr_up else max(64-expr_down,0)
             if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                 self.expr_bend_old = expr_bend
                 self.expr_bend_time = time.ticks_ms()
                 self.midi.pitch_bend(self.l.chord_channel, expr_bend)
-            
+
                 
 #end
