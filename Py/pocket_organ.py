@@ -4,6 +4,7 @@ import keyboard_AT42QT1110 as keyboard
 import looper
 import polyphony
 import instr_names
+import battery 
 
 import time
 import gc #Garbage collector
@@ -32,7 +33,7 @@ import gc #Garbage collector
 # * Measure the time the musician has been playing. Save it to flash.
 # * implement tuning
 # * Freeze the contents of img/*.pbm
-# * Handle crashes: error codes, displaying a QR code with a link to documentation (25*25 -> 47 characters)
+# * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters)
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -45,6 +46,7 @@ class PocketOrgan:
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
+        self.bat = battery.Battery(self.d)
         self.last_t = time.ticks_ms()
         self.longest_loop = 0
 
@@ -52,6 +54,7 @@ class PocketOrgan:
         self.l.loop()
         self.p.loop()
         self.d.loop(freeze_display)
+        self.bat.loop()
         gc.collect();
         self.k.loop()
         #make sure we have constant time between loops

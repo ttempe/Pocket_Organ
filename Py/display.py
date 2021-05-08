@@ -19,6 +19,7 @@ import writer, font_med, font_big, font_small
 #Indicators:
 # Pos Width Indicator
 #   0     8 Memory Write
+#  68    40 Battery voltage (debug)
 # 108    20 Battery
 
 #TODO: Move the icons to frozen storage.
@@ -67,9 +68,14 @@ class Display:
         self.disp.framebuf.blit(load_image(img)[0], 0, 0)
         self.disp.show()
 
-    def disp_indicator(self, img, pos):
+    def indicator(self, img, pos):
         self.disp.framebuf.blit(load_image(img)[0], pos, 0)
         self.disp.show_top8() #Takes <1ms
+    
+    def indicator_txt(self, txt, pos):
+        self.disp.framebuf.fill_rect(pos,0,len(txt)*8,8,0)
+        self.disp.text(txt, pos, 0)
+        self.disp.show_top8()
 
     def disp_chord(self, text):
         #Displays text using the large font

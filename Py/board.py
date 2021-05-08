@@ -60,6 +60,7 @@ if 16 == version:
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [24,23,8,24]
     vbat = lambda : 4.2
+    vusb = lambda : 5.0
     midi_rst = Pin("A15", Pin.OUT)
 
 elif version >= 17:
@@ -121,7 +122,9 @@ elif version >= 17:
     midi_rst = Pin("C10", Pin.OUT, value=0)
     
     vbat_ADC = ADC(Pin("B1"))
+    vusb_ADC = ADC(Pin("B0"))
     vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2
+    vusb = lambda : vbat_ADC.read_u16()/65536*3.3*2
 
 main_startup_pin = keyboard_volume_pin
 
