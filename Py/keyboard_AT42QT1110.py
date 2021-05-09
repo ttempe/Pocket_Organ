@@ -147,7 +147,7 @@ class Keyboard:
                 d=-1
             elif self.current_note_key<7 and self.notes[self.current_note_key+1]:
                 d=1
-            return self.key_levels[self.current_note_key]+d, bool(d)
+            return (self.key_levels[self.current_note_key]+d)%12, bool(d)
         return None, None
 
     def loop(self):
@@ -170,7 +170,7 @@ class Keyboard:
         self.fifth   = self.uc2.button(board.keyboard_uc2_fifth)
         self.third   = self.uc2.button(board.keyboard_uc2_third)
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
-        self.shift   = self.uc2.button(board.keyboard_uc2_shift) or self.melody_lock
+        self.shift   = self.uc2.button(board.keyboard_uc2_shift)
         self.sharp   = self.uc1.button(board.keyboard_sharp)
 
         for note, button in enumerate(board.keyboard_note_keys):

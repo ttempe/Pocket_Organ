@@ -80,7 +80,6 @@ class PocketOrgan:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
                 self.d.disp_slider(self.k.volume_val, "Volume:")
-                print(self.k.volume_val)
             self.loop(freeze_display=True)
 
     def loop_looper(self):
@@ -180,15 +179,18 @@ class PocketOrgan:
         Either one press on a note key (choose the 1st instrument of the family)
         or 2 successive presses (choose an instrument within this family).
         """
-        instr = None #output
+        instr_old = None
         k1 = k1_shift = k2 = 0 #these are te successive keys pressed for instrument
-        self.d.text("Choose instrument", duration=1)
+        self.d.text("Choose instr.", duration=1000)
+        self.d.text("Hold Melody key for additional families.", tip=True, line=1)
         while self.k.instr:
             #TODO: display whether the shift key is being pressed
             if self.k.current_note_key != None: #1st key pressed
-                family = self.k.current_note_key + (self.k.minor<<3)
-                self.d.text(instr_names.instrument_families[family], duration=2000)
-                instr = family <<3
+                family = self.k.current_note_key + (self.k.shift<<3)
+                self.d.text(instr_names.instrument_families[family])
+                self.d.text("Press again for next instr in family", tip=True, line=1, duration=2000)
+                #instr = family <<3
+                instr2 = 0
                 while self.k.current_note_key != None and self.k.instr:
                     self.loop(freeze_display=True)
                 #1st key released
@@ -198,8 +200,15 @@ class PocketOrgan:
                         self.loop(freeze_display=True)
                     if self.k.current_note_key != None:
                         #2nd note key pressed
-                        instr += self.k.current_note_key
-                    self.d.text(instr_names.instrument_names[instr], 1, 2000)
+                        if self.k.current_note_key == instr_old:
+                            #Pressing the same key multiple time moves to the next instr within that family
+                            instr2 = (instr2 +1)&0x07
+                        else:
+                            instr2 = self.k.current_note_key
+                            instr_old = self.k.current_note_key
+                    instr = (family << 3) + instr2
+                    self.d.text(instr_names.instrument_names[instr], 1)
+                    self.d.text("Again for next instr", tip=True, line=2, duration=2000)
                     self.p.set_instr(instr)
                     
                     #Wait for release of the note key
@@ -236,8 +245,8 @@ class PocketOrgan:
         self.b.light_one(root)
         while self.k.notes[root]:
             self.loop()
-            if self.k.shift:
-                self.loop_shift()
+            if self.k.shift or self.k.melody_lock:
+                self.loop_melody()
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
@@ -258,17 +267,20 @@ class PocketOrgan:
         "starting loop, waiting for 1st keypress"
         while 1:
             self.loop()
-            if self.k.shift:
+            if self.k.shift or self.k.melody_lock:
                 #Melody mode.
-                self.loop_shift()
+                self.loop_melody()
             elif self.k.current_note_key != None:
                 #Note keys: play chords
-                print("On: {} chord".format(self.k.current_note_key));time.sleep_us(50)
                 self.loop_chord() #returns when the chord is released
-                print("Chord off");time.sleep_us(50)
-            elif self.k.instr and (None == self.l.recording):
-                #MIDI instrument selection loop
-                self.loop_instr()
+            elif self.k.instr:
+                if self.l.recording:
+                    self.d.text("Can't change instrument while recording", tip=True)
+                    while self.k.instr:
+                        self.loop()
+                else:
+                    #MIDI instrument selection loop
+                    self.loop_instr()
             elif self.k.volume:
                 self.loop_volume()
             elif self.k.looper:
@@ -276,24 +288,29 @@ class PocketOrgan:
             elif self.k.drum:
                 self.loop_drum()
 
-    def capo_mode(self):
-        self.d.text("Capo {}".format(self.p.transpose))
+    def loop_capo(self):
+        print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
+        self.d.text(print_txt(self.p.transpose))
         t = 0
         old_sharp = 0
-        while self.k.looper or self.k.current_note_key != None:
+        last_text=""
+        while self.k.instr or self.k.current_note_key != None:
             level, sharp = self.k.current_note_key_level()
             if level != None and level != self.p.transpose and ( not(old_sharp) or sharp or time.ticks_ms()-t > 400):
                 #400 ms grace period when releasing a sharp (combinaison of 2 keypresses)
-                self.p.transpose = level
-                self.d.text("Capo {}".format(level))
+                self.p.transpose = level%12
+                text = print_txt(level)
+                if text != last_text:
+                    self.d.text(text)
+                    last_text = text
                 t = time.ticks_ms() #Grace period to allow sharps
                 old_sharp = sharp
             self.loop(freeze_display=True)
 
-    def loop_shift(self): #TODO
+    def loop_melody(self): #TODO
         self.d.text("Melody mode")
         playing_note=0
-        while self.k.shift or self.k.current_note_key != None:
+        while self.k.shift or self.k.melody_lock or self.k.current_note_key != None:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     #start playing i
@@ -301,8 +318,15 @@ class PocketOrgan:
                 elif self.k.notes_old[i] and not self.k.notes[i]:
                     #stop playing i
                     self.p.stop_note(i)
-            if self.k.looper and not self.p.playing_notes:
-                self.capo_mode()
+            if self.k.instr and not self.p.playing_notes:
+                if self.k.shift:
+                    self.loop_capo()
+                elif self.l.recording:
+                    self.d.text("Can't change instrument while recording", tip=True)
+                    while self.k.instr:
+                        self.loop()
+                else:
+                    self.loop_instr()
             self.loop()
         self.p.stop_all_notes()
         self.d.clear()
