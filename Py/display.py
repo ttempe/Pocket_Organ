@@ -77,6 +77,10 @@ class Display:
         self.disp.framebuf.fill_rect(pos,0,len(txt)*8,8,0)
         self.disp.text(txt, pos, 0)
         self.disp.show_top8()
+    
+    def indicator_erase(self, pos, length):
+        self.disp.framebuf.fill_rect(pos,0,length,8,0)
+        self.disp.show_top8()
 
     def disp_chord(self, text):
         #Displays text using the large font
@@ -88,22 +92,21 @@ class Display:
         else:
             self.font_big.printstring(text)
         self.disp.show()
+        if board.verbose:
+            print("Playing chord:" + text)
     
     def text(self, text, line=0, tip=False, duration=None):
-        if line:
-            self.disp.framebuf.fill_rect(0,8+self.font_med.height,127,63,0)
-        else:
-            self.disp.framebuf.fill_rect(0,8,127,63,0)
+        self.disp.framebuf.fill_rect(0,8+self.font_med.height*line,127,63,0)
         self._locate(0, 8+line*self.font_med.height)
         if tip:
-            self.font_small.printstring(" ! ", True)
-            self.font_small.printstring(text, False)
+#            self.font_small.printstring(" i ", True)
+            self.font_small.printstring(text, True)
         else:
             self.font_med.printstring(text)
         self.disp.show()
         if duration:
             self.erase_time = time.ticks_ms() + duration
-        if board.verbose:
+        if board.verbose and not tip:
             print(text)
 
     def disp_slider(self, val, text):
