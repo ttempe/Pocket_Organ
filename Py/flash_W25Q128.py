@@ -36,7 +36,7 @@ class FlashError(RuntimeError):
     pass
 
 class Flash:
-    def __init__(self, nb_loops = 8):
+    def __init__(self, nb_loops = 8, disp=None):
         self.ic = W25Q128.W25Q128(board.flash_spi, board.flash_cs)
         self.nb_loops = nb_loops
         self.start = board.flash_fs_size*self.ic.erase_block_size #only start storing data after this address
@@ -50,7 +50,9 @@ class Flash:
         self.erase_start = None
         self.message = bytearray(8)
         self.read_cursors = [0]*nb_loops   #one cursor per loop
-        self.read_buffer = [None]*nb_loops #one message per loop                    
+        self.read_buffer = [None]*nb_loops #one message per loop
+        self.d = disp
+        self.indicator = False
         
     def check_erased(self, exists):
         """Check that every loop that is not recorded in the instrument is properly erased in flash, to avoid data corruption when recording on an un-erased sector.
@@ -81,6 +83,9 @@ class Flash:
             #TODO: display on the screen
             print("Erasing track", error_tracks[0])
             self.erase(error_tracks.pop())
+            if self.d:
+                self.d.indicator("flash_w", 0)
+                self.indicator = True
             return 0
         
 
@@ -148,6 +153,10 @@ class Flash:
         #Starting from the last block.
         self.erase_cursor = (length // self.ic.erase_block_size) * self.ic.erase_block_size
         self.read_buffer[loop] = None
+        if self.d:
+            self.d.indicator("flash_w", 0)
+            self.indicator = True
+
 
     def busy(self):
         "Is the flash device busy with any erase operation? (Refuse start of recording if so)"
@@ -190,6 +199,10 @@ class Flash:
         elif self.page_cursor and not self.ic.busy():
             #Midi message left to be written to memory
             self.write_page()
+        elif self.d and self.indicator:
+            #now erase the display indicator
+            self.d.indicator_erase(0,8)
+            self.indicator = False
 
     def print(self, loop, pos, len):
         "print midi messages stored in memory, for debugging purposes"
