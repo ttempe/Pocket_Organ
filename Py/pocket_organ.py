@@ -86,9 +86,9 @@ class PocketOrgan:
         #TODO: Allow to delete a track even while it's playing.
         last_tap_timestamp = 0
         if not self.l.stop_recording():
-            self.d.text("Looper", 0)
-            self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
-            self.d.text('Tap "minor" to\nset rythm', 3)
+            self.d.text("Looper")
+            self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
+            self.d.text('Tap "minor" to rythm', 2, tip=True)
         self.l.display()
         while self.k.looper:
             key = self.k.current_note_key
@@ -125,10 +125,12 @@ class PocketOrgan:
                                 released = False
                                 quick = not(quick)
                                 if quick:
-                                    self.d.text("Start recording\nquick loop ", 2000)
+                                    self.d.text("Start recording quick loop")
+                                    self.d.text("Again for normal mode", 2, tip=True)
                                     self.p.metronome.off()
                                 else:
-                                    self.d.text("Start recording\nnormal loop", 2000)
+                                    self.d.text("Start recording")
+                                    self.d.text("Press again for quick loop mode", 1, tip=True)
                                     self.p.metronome.on()
                         #Keys released. Return?
                         if quick:
@@ -142,12 +144,16 @@ class PocketOrgan:
                         
             elif self.k.minor:
                 #Set the beat by tapping it on the "minor" key
+                #Note: human beat precision & recognition is ~ 10~15ms, or around one loop.
                 now = time.ticks_ms()
                 duration = now-last_tap_timestamp
                 if last_tap_timestamp and duration < 2000 and duration >300:
                     #it's the 2nd tap
                     self.p.metronome.set_bpm(60000//duration)
-                    self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
+                    self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
+                    self.d.text("tap till it's right!", 2, tip=True)
+                else:
+                    self.d.text("...tap again", 2, tip=True)
                 last_tap_timestamp=now
                 while self.k.minor:
                     #wait for "minor" key release
@@ -156,7 +162,7 @@ class PocketOrgan:
             elif (self.k.seventh and self.p.metronome.bpm<200)or (self.k.third and self.p.metronome.bpm>30):
                 #manually adjust the BPM (+/-)
                 self.p.metronome.set_bpm( (self.p.metronome.bpm//5)*5+5*self.k.seventh - 5*self.k.third)
-                self.d.text("{} BPM".format(self.p.metronome.bpm), 2)
+                self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
                 while self.k.seventh or self.k.third:
                     #wait for both keys release
                     self.loop(freeze_display=True)
@@ -169,7 +175,7 @@ class PocketOrgan:
                     #Wait for "fifth" key release
                     self.loop(freeze_display=True)
                 
-            self.loop()
+            self.loop(freeze_display=True)
             
 
         self.l.apply_ui()
@@ -181,15 +187,14 @@ class PocketOrgan:
         """
         instr_old = None
         k1 = k1_shift = k2 = 0 #these are te successive keys pressed for instrument
-        self.d.text("Choose instr.", duration=1000)
-        self.d.text("Hold Melody key for additional families.", tip=True, line=1)
+        self.d.text("Choose family")
+        self.d.text("Hold Melody key for additional families.", 1, tip=True)
         while self.k.instr:
             #TODO: display whether the shift key is being pressed
             if self.k.current_note_key != None: #1st key pressed
                 family = self.k.current_note_key + (self.k.shift<<3)
                 self.d.text(instr_names.instrument_families[family])
-                self.d.text("Press again for next instr in family", tip=True, line=1, duration=2000)
-                #instr = family <<3
+                self.d.text("Choose instr in family", 1, tip=True)
                 instr2 = 0
                 while self.k.current_note_key != None and self.k.instr:
                     self.loop(freeze_display=True)
@@ -208,7 +213,7 @@ class PocketOrgan:
                             instr_old = self.k.current_note_key
                     instr = (family << 3) + instr2
                     self.d.text(instr_names.instrument_names[instr], 1)
-                    self.d.text("Again for next instr", tip=True, line=2, duration=2000)
+                    self.d.text("Press again for next", 2, tip=True)
                     self.p.set_instr(instr)
                     
                     #Wait for release of the note key
@@ -253,14 +258,15 @@ class PocketOrgan:
         self.b.light_none()
 
     def loop_drum(self):
+        self.d.text("Drum")
         while self.k.drum:
             for i in range(0,8):
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     name = self.p.play_drum(i)
-                    self.d.text(name, duration=1000)
+                    self.d.text(name)
             if self.k.sharp and not self.k.sharp_old:
                 name = self.p.play_drum(8)
-                self.d.text(name, duration=1000)
+                self.d.text(name)
             self.loop()
 
     def loop_waiting(self):

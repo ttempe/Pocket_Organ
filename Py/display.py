@@ -95,7 +95,7 @@ class Display:
         if board.verbose:
             print("Playing chord:" + text)
     
-    def text(self, text, line=0, tip=False, duration=None):
+    def text(self, text, line=0, tip=False):
         self.disp.framebuf.fill_rect(0,8+self.font_med.height*line,127,63,0)
         self._locate(0, 8+line*self.font_med.height)
         if tip:
@@ -104,8 +104,7 @@ class Display:
         else:
             self.font_med.printstring(text)
         self.disp.show()
-        if duration:
-            self.erase_time = time.ticks_ms() + duration
+        self.erase_time = time.ticks_ms() + 2000
         if board.verbose and not tip:
             print(text)
 
@@ -123,9 +122,7 @@ class Display:
         else:
             self._locate(val-sl-4,ht)
             self.font_med.printstring(s, True)
-
         self.disp.show()
-        self.erase_time = time.ticks_ms() + 2000 #auto-erase after 2 seconds
 
     def clear(self):
         self.disp.framebuf.fill_rect(0,8,128,56,0)
