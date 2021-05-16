@@ -203,7 +203,8 @@ class Keyboard:
 
         #Update the strum keys status
         b = self.uc3.button
-        self.strum_mute = self.uc3.button(board.keyboard_strum_mute)
+        if board.keyboard_strum_mute:
+            self.strum_mute = self.uc3.button(board.keyboard_strum_mute)
         self.strum_keys=0
         for n, k in enumerate(board.keyboard_strum_keys):
             self.strum_keys += self.uc3.button(k)<<n
