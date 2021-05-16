@@ -11,10 +11,7 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * Review the display messages.
-# * Check whether I'm missing the last strumming key
-# * Get notifications working; add a "write/erase" notification
-# * Display PocketOrgan.longest_loop on the OLED, for debugging purposes
+# * Fix display indicator extinction when track erase finishes
 # * Fix chord name for exotic chord shapes
 # * Display sharps on screen.
 # * re-do the melody mode to support key combinations for sharps
