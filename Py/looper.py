@@ -24,7 +24,7 @@ class Looper:
         self.p = None #Polyphony; Assigned by Polyphony itself, upon initializatinon
         self.b = backlight
         self.d = display
-        self.f = flash.Flash(8)
+        self.f = flash.Flash(8, display)
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number
@@ -40,16 +40,11 @@ class Looper:
         #TODO: load recorded tracks status here
 
         #Check & fix inconsitent flash disk state
-
         if self.f.check_erased(self.loop_exists):
             #Whole flash is being erased. Make sure we don't expect any tracks
             self.recorded = 0
         #TODO: rewrite
-        #indicator.Indicator(self.d, ["flash_blank", "flash_w"], self.indicator_status) #The indicator registers itself with display
-    
-    def indicator_status(self):
-        return 1 if self.f.busy() else 0
-    
+        
     def append(self, event):
         #Called by Polyphony for every Midi event
         if None != self.recording:
@@ -86,7 +81,10 @@ class Looper:
         return self.recorded & (1<<n)
 
     def delete_track(self, n):
-        if not self.f.busy():
+        if self.f.busy():
+            self.d.text("Delete failed")
+            self.d.text("Device busy. Try again in a few seconds", 1, tip=True)
+        else:
             self.f.erase(n)
             self.recorded &= ~(1<<n)
             self.durations[n] = 0
@@ -104,6 +102,9 @@ class Looper:
             #(one for chords and one for melody), and channel 9 is reserved for drums
             self.d.text("Can't record a loop on this key")
             return False
+        elif self.f.busy():
+            self.d.text("Can't record")
+            self.d.text("Device busy. Try again in a few seconds", 1, tip=True)
         else:
             self.recording = n
             self.recording_start_timestamp = None

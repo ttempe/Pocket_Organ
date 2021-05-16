@@ -18,7 +18,7 @@ import writer, font_med, font_big, font_small
 
 #Indicators:
 # Pos Width Indicator
-#   0     8 Memory Write
+#   0     9 Memory Write
 #  24    32 loop duration
 #  60    48 Battery voltage (debug)
 # 108    20 Battery

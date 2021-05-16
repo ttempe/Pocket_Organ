@@ -52,7 +52,7 @@ class Flash:
         self.read_cursors = [0]*nb_loops   #one cursor per loop
         self.read_buffer = [None]*nb_loops #one message per loop
         self.d = disp
-        self.indicator = False
+        self.disp_indicator = False
         
     def check_erased(self, exists):
         """Check that every loop that is not recorded in the instrument is properly erased in flash, to avoid data corruption when recording on an un-erased sector.
@@ -74,18 +74,17 @@ class Flash:
         #print("tracks to erase: ", error_tracks)
         if len(error_tracks)>1:
             #Assume the whole chip is unformatted. Erase everything.
-            print("Erasing whole chip. This will take 1~3 minutes")
+            if board.verbose:
+                print("Erasing whole chip. This will take 1~3 minutes")
             #TODO: display on the screen
             self.erase(self.start, self.nb_loops * self.memory_per_loop)
             return 1
         elif 1==len(error_tracks):
             #Erase the whole loop
             #TODO: display on the screen
-            print("Erasing track", error_tracks[0])
+            if board.verbose:
+                print("Erasing track", error_tracks[0])
             self.erase(error_tracks.pop())
-            if self.d:
-                self.d.indicator("flash_w", 0)
-                self.indicator = True
             return 0
         
 
@@ -121,8 +120,8 @@ class Flash:
         self.record(self.message)
         #print("recording message: ",t, msg, self.message)
 
-    def write_page(self):
-        "Write as much as possible to flash, in one go."
+    def _write_page(self):
+        "Write as much as possible from the write_buffer to flash, in one go."
         if self.ic_cursor + self.page_cursor >= self.memory_per_loop:
             #Memory overrun on the chip.
             #TODO: handle?
@@ -147,23 +146,22 @@ class Flash:
     def erase(self, loop, length=None):
         "Erase a loop from the flash chip"
         #TODO: Display on the screen
+        if self.d:
+            self.d.indicator("flash_w", 0)
+            self.display_indicator = True
         if not(length):
             length = self.memory_per_loop
         self.erase_start = loop * self.memory_per_loop
         #Starting from the last block.
         self.erase_cursor = (length // self.ic.erase_block_size) * self.ic.erase_block_size
         self.read_buffer[loop] = None
-        if self.d:
-            self.d.indicator("flash_w", 0)
-            self.indicator = True
-
 
     def busy(self):
         "Is the flash device busy with any erase operation? (Refuse start of recording if so)"
         return bool((self.erase_cursor != None) or (self.page_cursor and self.page_cursor >0) )
 
     def read_message(self, loop, cursor):
-        "Returns one message. Caches one message from each loop in memory, for speed."
+        #Returns one message. Caches one message from each loop in memory, for speed.
         #Assumes each message takes exactly 8 bytes in flash, and each MIDI payload is either 2 or 3 bytes
         if cursor != self.read_cursors[loop] or None == self.read_buffer[loop]:
             #update the read cache from flash
@@ -193,16 +191,17 @@ class Flash:
             if self.erase_cursor == self.erase_start:
                 #We just sent the last order
                 self.erase_cursor = None
-                #print("Track", self.erase_start/self.ic.erase_block_size, "erase complete")
+                if board.verbose:
+                    print("Track {} erase complete".format((self.erase_start-self.start)//self.ic.erase_block_size))
+                if self.d and self.disp_indicator:
+                    #now erase the display indicator
+                    self.d.indicator_erase(0,9)
+                    self.disp_indicator = False
             else:
                 self.erase_cursor -= self.ic.erase_block_size
         elif self.page_cursor and not self.ic.busy():
             #Midi message left to be written to memory
-            self.write_page()
-        elif self.d and self.indicator:
-            #now erase the display indicator
-            self.d.indicator_erase(0,8)
-            self.indicator = False
+            self._write_page()
 
     def print(self, loop, pos, len):
         "print midi messages stored in memory, for debugging purposes"
