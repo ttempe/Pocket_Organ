@@ -114,8 +114,12 @@ elif version >= 17:
 
     keyboard_uc2_minor  = 0 #on UC2
     keyboard_uc2_shift  = 1 #on UC2
-    keyboard_strum_mute = 6 #on UC3
-    keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7]) #on UC3
+    if 17 == version:
+        keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7]) #on UC3
+        keyboard_strum_mute = 6 #on UC3
+    else:
+        keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7, 6]) #on UC3
+        keyboard_strum_mute = None #on UC3
     keyboard_notes_thres= bytearray([10,10,12,4,7,7,4,9]) #above this value, assume the key is pressed
     keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
     keyboard_slider_keys= [2,3,4,5] #on UC2
