@@ -1,14 +1,13 @@
 import time
 import flash_W25Q128 as flash
+import ustruct
+import board
 
 #TODO:
-# * check whether the IC is free before deleting/starting recording a loop
-#
-# * allocate the channels to the loops dynamically, only use the ones you need -> extra flexibility
-# * alternately, set some channels to percussion only and/or melody only.
-# * refuse to record if some loops are recorded but none is playing?
-#
-# * save loop state to microcontroller flash
+# * when some loops are recorded but none is playing:
+#   * refuse to record (to keep them in sync)
+#   * restart playing at the beginning
+# * Queue delete operations to allow successive deletion of multiple tracks
 
 def bits(n):
     "8-bit bit map iterator"
@@ -25,6 +24,7 @@ class Looper:
         self.b = backlight
         self.d = display
         self.f = flash.Flash(8, display)
+        
         self.recorded = 0     #bit map 
         self.playing = 0      #bit map
         self.recording = None #channel number
@@ -37,14 +37,37 @@ class Looper:
         self.loop_names = ["C", "D", "E", "F", "G", "A"]
         self.quick_time = None
 
-        #TODO: load recorded tracks status here
-
+        self.load()
+        
         #Check & fix inconsitent flash disk state
         if self.f.check_erased(self.loop_exists):
             #Whole flash is being erased. Make sure we don't expect any tracks
             self.recorded = 0
-        #TODO: rewrite
+
+    def save(self):
+        #Record loops state to flash IC: self.recorded, self.durations
+        #Recording is scheduled, but may not happen immediately.
+        #If the user turns off the instrument before saving is finished, the fact that there is no data will be detected during loading.
+        print("Saving: ", self.recorded, self.durations)
+        self.f.state_erase()
+        buf= bytearray(4*(1+len(self.durations)))
+        ustruct.pack_into("I", buf, 0, self.recorded)
+        for i, d in enumerate(self.durations):
+            ustruct.pack_into("I", buf, i*4+4, d)
+        self.f.state_record(buf)
         
+    def load(self):
+        #Load back loops state from flash IC.
+        if self.f.state_read(0,1)[0] == 255:
+            if board.verbose:
+                print("Loading failed: no loops recorded")
+            #Check if there's anything written at all. Assume the flash is erased to value 0xFF, which is not a valid value for the 1st octet.
+        else:
+            self.recorded = ustruct.unpack_from("I", self.f.state_read(0, 4))[0]
+            for i in range(len(self.durations)):
+                self.durations[i] = ustruct.unpack_from("I", self.f.state_read(i*4+4, 4))[0]
+            print("Loaded:", self.recorded, self.durations)
+
     def append(self, event):
         #Called by Polyphony for every Midi event
         if None != self.recording:
@@ -57,7 +80,6 @@ class Looper:
                 t = self.quick_time
             else:
                 t = self.p.metronome.now - self.recording_start_timestamp
-            #print ("Note time: ", self.p.metronome.now/48, "-", self.recording_start_timestamp/48, "=", t/48, "note:", event);time.sleep_ms(10)
             self.f.record_message(t, event)
             self.record_lengths[self.recording]+=1
 
@@ -85,12 +107,13 @@ class Looper:
             self.d.text("Delete failed")
             self.d.text("Device busy. Try again in a few seconds", 1, tip=True)
         else:
-            self.f.erase(n)
             self.recorded &= ~(1<<n)
             self.durations[n] = 0
             self.playing &= ~(1<<n)
             self.toggle_play_waitlist &= ~(1<<n)
             self.display()
+            self.save()
+            self.f.erase(n) #Start erasing the memory prior to the next loop
             self.d.text("Loop {} deleted".format(self.loop_names[n]))
 
     def start_recording(self, n):
@@ -145,28 +168,27 @@ class Looper:
                     d = self.quick_time
                 else:
                     d = now - self.recording_start_timestamp
-                #print("Raw duration: ", d/48, "=", now/48, "-", self.recording_start_timestamp/48)
                 d = self.p.metronome.round_to_beats(d)
                 if self.playing:
                     #round up to a multiple of the shortest duration
                     #TODO: make that a sub-multiple as well?
-                    #TODO: Handle the case where I stopped playing the shortest loop before recording. Record the reference "min duration" for each loop? Mandate that at least one recorded loop is playing?
+                    #TODO: Handle the case where I stopped playing the shortest loop before recording:
+                    #      Record the reference "min duration" for each loop?
+                    #      Mandate that at least one recorded loop is playing?
                     min_duration = min([ self.durations[i] for i in bits(self.playing)])
                     #divide by 2 if possible
                     if min_duration%(self.p.metronome.beat_divider*2):
                         min_duration /= 2
                     self.durations[self.recording] = round(d/min_duration)*min_duration
-                    #print("Duration: ", d/48, ", rounded to", self.durations[self.recording]/48)
                 else:
                     #Make sure no recording is shorter than one metronome beat
-                    #print("Duration: ", d/48)
                     self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
                 self.cursors[self.recording] = 0
+                self.save()
             else:
                 self.d.text("Nothing recorded")
-            #print("Recorded", self.record_lengths[self.recording], "events")
             self.recording = None
             self.p.metronome.off()
             self.f.finish_recording()
@@ -202,13 +224,10 @@ class Looper:
         """
         for i in bits(self.toggle_play_waitlist & (~self.playing)):
             #loops to start playing now
-            #print("Now starting playing loop {}".format(i))
             self._start_playing(i)
             self.toggle_play_waitlist &= ~(1<<i)
-            #print("Loop", i, "will be starting at", self.loop_start[i])
         for i in bits(self.toggle_play_waitlist & self.playing):
             #loops to stop playing now
-            #print("Now stopping playing loop {}".format(i))
             #send an "all notes off" midi command
             self._stop_playing(i)
         self.toggle_play_waitlist = 0
@@ -219,11 +238,9 @@ class Looper:
         c = self.cursors[loop]
         if now > self.durations[loop]:
             #jump back to the start of the loop
-            #print("Restarting loop", loop, "start", self.loop_start[loop]/48, "duration: ", self.durations[loop]/48, "now: ", now/48, "ticks:", self.p.metronome.now/48)
             c=0
             self.loop_start[loop] += ((self.p.metronome.now-self.loop_start[loop])//self.durations[loop])*self.durations[loop]
             now = self.p.metronome.now - self.loop_start[loop]
-            #print("Restarted. now: ", now/48, "start", self.loop_start[loop]/48, "index: ", c, "ticks:", self.p.metronome.now/48)        
             #Stop all playing notes, just in case
             for d in self.record_channels[loop]:
                 self.p.midi.all_off(d)
@@ -240,7 +257,6 @@ class Looper:
     
     def loop(self):
         #Play active loops
-        #print("Tick: ", self.p.metronome.now/48);time.sleep_ms(100)
         for i in range(8):
             if self.recorded & (1<<i):
                 #Walk through all recorded loops

@@ -7,7 +7,9 @@
 # * writing and erasing can take a long time (up to a minute)
 
 #Strategy:
-# * Allocate fixed block for each looper track.
+# For loops:
+# * Allocate fixed block for each looper track, starting at block n. 8
+#   (to leave some free space at the beginning of the FLASH for other uses)
 # * erase a the memory immediately (in sequence, through self.loop()) when a loop is deleted
 # * check the status before reading, and suspend the write if needed
 # * block a user action that may cause a 2nd write in the UI for as long as the previous one is not finished
@@ -15,7 +17,12 @@
 # * on startup, check that each erased loops are successfully erased
 # * Buffer write operations to a local buffer. Try writing as soon as possible.
 # * Check for BUSY status before accepting to start recording a loop.
-# * Buffer the last read operations of one Midi command. If more is needed, suspend/resume the write operation, and perform a single read, to avoid disruption to the real-time playback.
+# * Buffer the last read operations of one Midi command. If more is needed, suspend/resume the write operation,
+#   and perform a single read, to avoid disruption to the real-time playback.
+#
+# For instrument state:
+# * Use the first block of memory (4kB)
+# * schedule all erase/write operations through loop()
 
 #Open loopholes:
 # * if you finish recording a loop, but the last Write operation (3ms max) did not finish before power loss, the end of the loop could be corrupted.
@@ -39,7 +46,7 @@ class Flash:
     def __init__(self, nb_loops = 8, disp=None):
         self.ic = W25Q128.W25Q128(board.flash_spi, board.flash_cs)
         self.nb_loops = nb_loops
-        self.start = board.flash_fs_size*self.ic.erase_block_size #only start storing data after this address
+        self.start = 8*self.ic.erase_block_size #only start storing loops after this address
         #Round down to an integer number of erase block sizes, to avoid erasing the beginning of the next loop
         self.memory_per_loop = ((self.ic.capacity-self.start)//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
         self.current_loop = None          #a loop here is one record (track), corresponding to one key of the looper
@@ -53,7 +60,32 @@ class Flash:
         self.read_buffer = [None]*nb_loops #one message per loop
         self.d = disp
         self.disp_indicator = False
+        self.state_write_buffer = []      #list of (address, buf) to be written to the 1st block of flash
+        self.state_erase_pending = False  #do we need to erase the 1st block?
         
+    ######################
+    # record instrument state in the 1st (4k) block of flash
+    ######################
+    def state_erase(self):
+        #To be called prior to the 1st write operation
+        self.state_erase_pending = True
+        self.state_write_index = 0
+        
+    def state_record(self, buf):
+        #Need to erase first
+        #Data is just piled in the buffer, for writing on the the next call to self.loop()
+        #if NameError: name 'state_write_index' isn't defined, that means state_record was called before state_erase
+        self.state_write_buffer.append((self.state_write_index, buf))
+        self.state_write_index += len(buf)
+    
+    def state_read(self, addr, len):
+        #can be called anytime
+        return self.ic.read(addr, len)
+        
+    ######################
+    # record and manage loops in flash (beyond the 8th 4kb block)
+    ######################
+
     def check_erased(self, exists):
         """Check that every loop that is not recorded in the instrument is properly erased in flash, to avoid data corruption when recording on an un-erased sector.
         To be called on power-up, with a function for checking whether each track exists.
@@ -76,17 +108,14 @@ class Flash:
             #Assume the whole chip is unformatted. Erase everything.
             if board.verbose:
                 print("Erasing whole chip. This will take 1~3 minutes")
-            #TODO: display on the screen
-            self.erase(self.start, self.nb_loops * self.memory_per_loop)
+            self.erase(0, self.nb_loops * self.memory_per_loop)
             return 1
         elif 1==len(error_tracks):
             #Erase the whole loop
-            #TODO: display on the screen
             if board.verbose:
                 print("Erasing track", error_tracks[0])
             self.erase(error_tracks.pop())
-            return 0
-        
+            return 0        
 
     def start_recording(self, loop):
         #Does not check the machine state or memory status
@@ -148,7 +177,7 @@ class Flash:
         #TODO: Display on the screen
         if self.d:
             self.d.indicator("flash_w", 0)
-            self.display_indicator = True
+            self.disp_indicator = True
         if not(length):
             length = self.memory_per_loop
         self.erase_start = loop * self.memory_per_loop
@@ -202,6 +231,12 @@ class Flash:
         elif self.page_cursor and not self.ic.busy():
             #Midi message left to be written to memory
             self._write_page()
+        elif self.state_erase_pending and not self.ic.busy():
+            self.ic.erase_block_4k(0)
+            self.state_erase_pending = False
+        elif len(self.state_write_buffer) and not self.ic.busy():
+            addr, data = self.state_write_buffer.pop(0)
+            self.ic.write(addr, data)
 
     def print(self, loop, pos, len):
         "print midi messages stored in memory, for debugging purposes"
