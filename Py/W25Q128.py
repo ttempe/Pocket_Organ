@@ -106,7 +106,7 @@ class W25Q128:
         
         ##if you change this, remember to adjust self.erase_block_size in __init__()
         self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
-#        self.send_command(b"\x52", addr = addr&0xFF8000) #erase 32k block
+        #self.send_command(b"\x52", addr = addr&0xFF8000) #erase 32k block
         #self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
 
     def erase_block_4k(self, addr):
@@ -146,62 +146,58 @@ class W25Q128:
                 self.last_op_was_write = False
         return False
 
-class BlockDev:
-    def __init__(self, W25Q128, nb_blocks):
-        #This object can be mounted by os.mount.
-        #block size is 4 kB
-        #Takes the first nb_blocks*4kB of memory from the flash device.
-        #Reading should be full speed
-        #Write operations are blocking, and can take hundreds of milliseconds
-        self.dev = W25Q128
-        self.nb_blocks = nb_blocks
-        self.block_size = 4096
-       
-    def readblocks(self, block_num, buf, offset=0):
-        #print("read block {}, offset={}".format(block_num, offset))
-        start = block_num * self.block_size + offset
-        self.dev.read_into(start, buf)
-
-    def wait(self):
-        while self.dev.busy():
-            time.sleep_us(100)
-
-    def writeblocks(self, block_num, buf, offset=None):
-        #print("write block {}, len={}, offset={}".format(block_num, len(buf), offset) )
-        cursor = 0
-        if offset == None:
-            a, b=divmod(len(buf), self.block_size)
-            nb_blocks = a+bool(b)
-            for b in range(nb_blocks):
-                self.dev.erase_block_4k((block_num+b)*self.block_size)
-                self.wait()
-        elif offset:
-            self.dev.write(block_num*self.block_size+offset, memoryview(buf)[0:self.block_size-offset])
-            self.wait()
-            cursor = self.block_size-offset
-        
-        while cursor<len(buf):
-            bite = min(len(buf)-cursor, self.block_size)
-            self.dev.write(block_num*self.block_size+cursor, memoryview(buf)[cursor:cursor+bite])
-            self.wait()
-            cursor += bite
-        #print("Done")
-
-    def ioctl(self, op, arg):
-        #print("ioctl {}, arg={}".format(op, arg))
-        if   4==op:
-            return self.nb_blocks
-        elif 5==op:
-            return self.block_size
-        elif 6==op:
-            #erase block
-            self.dev.erase_block_4k(arg*self.block_size)
-            self.wait()
-            return 0
-        return None
- 
-# # Test code
-# import board
-# flash = W25Q128(board.flash_spi, board.flash_cs)
+# class BlockDev:
+#     def __init__(self, W25Q128, nb_blocks):
+#         #This object can be mounted by os.mount.
+#         #block size is 4 kB
+#         #Takes the first nb_blocks*4kB of memory from the flash device.
+#         #Reading should be full speed
+#         #Write operations are blocking, and can take hundreds of milliseconds
+#         self.dev = W25Q128
+#         self.nb_blocks = nb_blocks
+#         self.block_size = 4096
+#        
+#     def readblocks(self, block_num, buf, offset=0):
+#         #print("read block {}, offset={}".format(block_num, offset))
+#         start = block_num * self.block_size + offset
+#         self.dev.read_into(start, buf)
+# 
+#     def wait(self):
+#         while self.dev.busy():
+#             time.sleep_us(100)
+# 
+#     def writeblocks(self, block_num, buf, offset=None):
+#         #print("write block {}, len={}, offset={}".format(block_num, len(buf), offset) )
+#         cursor = 0
+#         if offset == None:
+#             a, b=divmod(len(buf), self.block_size)
+#             nb_blocks = a+bool(b)
+#             for b in range(nb_blocks):
+#                 self.dev.erase_block_4k((block_num+b)*self.block_size)
+#                 self.wait()
+#         elif offset:
+#             self.dev.write(block_num*self.block_size+offset, memoryview(buf)[0:self.block_size-offset])
+#             self.wait()
+#             cursor = self.block_size-offset
+#         
+#         while cursor<len(buf):
+#             bite = min(len(buf)-cursor, self.block_size)
+#             self.dev.write(block_num*self.block_size+cursor, memoryview(buf)[cursor:cursor+bite])
+#             self.wait()
+#             cursor += bite
+#         #print("Done")
+# 
+#     def ioctl(self, op, arg):
+#         #print("ioctl {}, arg={}".format(op, arg))
+#         if   4==op:
+#             return self.nb_blocks
+#         elif 5==op:
+#             return self.block_size
+#         elif 6==op:
+#             #erase block
+#             self.dev.erase_block_4k(arg*self.block_size)
+#             self.wait()
+#             return 0
+#        return None
 
 #End
