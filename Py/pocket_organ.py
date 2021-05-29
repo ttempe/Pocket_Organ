@@ -11,15 +11,13 @@ import time
 import gc #Garbage collector
 
 #TODO:
-# * Fix display indicator extinction when track erase finishes
-# * Fix chord name for exotic chord shapes
-# * Display sharps on screen.
-# * re-do the melody mode to support key combinations for sharps
+# * Fix chord name for exotic chord shapes (incl. sharps)
+# * re-do the melody mode, incl. sharps and expression
 # * implement the Drum Lock feature
 # * Fix the volume slider
 # * review the volume and expression levels: am I playing too softly?
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
-# * Record key expression; adjust the message filtering criteria
+# * Record key expression
 # * Save the status of recorded loops and the HW revision into flash memory somewhere
 # * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
 # * Add the ability to modify the chord shape on the fly (sus, dim...)
@@ -32,7 +30,7 @@ import gc #Garbage collector
 # * Measure the time the musician has been playing. Save it to flash.
 # * implement tuning
 # * Freeze the contents of img/*.pbm
-# * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters)
+# * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ; generate it by catching the exception.
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -97,7 +95,7 @@ class PocketOrgan:
                     t = time.ticks_ms()
                     while self.k.notes[key]:
                         #While key is not released:
-                        if (time.ticks_ms()-t)>1000 and not(self.l.playing & (1<<key)):
+                        if (time.ticks_ms()-t)>1500 and not(self.l.playing & (1<<key)):
                             #Long press
                             self.l.delete_track(key)
                             while self.k.notes[key]:
