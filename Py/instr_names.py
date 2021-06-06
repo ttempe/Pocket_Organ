@@ -151,3 +151,7 @@ instrument_names = [
     ]
 
 note_names = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
+
+drums = [("Snare", 38), ("Bass drum", 36), ("Ride cymbal", 51), ("Low tom", 45), ("Mid tom", 48), ("High tom", 50), ("Open hi-hat", 46), ("Closed hi-hat", 42), ("Crash cymbal", 49) ]
+
+#End

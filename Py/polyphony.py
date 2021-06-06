@@ -2,6 +2,7 @@ import time
 import midi
 import metronome
 import board
+import instr_names
 
 # Only one chord is ever sent at once.
 # TODO:
@@ -26,14 +27,11 @@ class Polyphony:
         self.metronome = metronome.Metronome(self.midi)
         self.scale = [60, 62, 64, 65, 67, 69, 71, 72]
         self.transpose = 0
-        self.chord_names = ["C", "D", "E", "F", "G", "A", "B", "C"]
         self.melody_keys_transpose = bytearray(8) #for keeping track of how which key was played
         self.instr = 22
         self.set_instr(self.instr)
         self.volume = 64
         self.set_volume(self.volume)
-        #TODO: move the drum names to instr_names.py
-        self.drums = [("Snare", 38), ("Bass drum", 36), ("Ride cymbal", 51), ("Low tom", 45), ("Mid tom", 48), ("High tom", 50), ("Open hi-hat", 46), ("Closed hi-hat", 42), ("Crash cymbal", 49) ]
         self.chord = [] #Currently playing chord
         self.strum_chord = [] #same chord, but with enough notes to cover all strumming keys
         self.strum_mute_old = 0
@@ -41,18 +39,22 @@ class Polyphony:
         self.default_velocity = 64
         
         #For continuous expression control
-        self.playing_chord  = None
+        self.playing_chord_key  = None #Number of the key being pressed, from 0 to 7
         self.playing_notes  = 0
         self.expr1_old      = self.default_velocity
         self.expr1_time     = 0
         self.expr_bend_old  = 0
         self.expr_bend_time = 0
         self.bend_baseline  = 0
+        self.chord_shape_name = ""
+        self.chord_sharp    = 0 #-1 for bemol, +1 for sharp
+        self.chord_sharp_old= 0 #same; this value corresponds to the last one displayed
+        self.chord_disp_timestamp = 0
 
     def start_chord(self, quick_mode=False):
         def round_note(n):
             return n%12 + 60
-        self.playing_chord = self.k.current_note_key
+        self.playing_chord_key = self.k.current_note_key
         root = self.scale[self.k.current_note_key] + self.k.sharp + self.transpose #current_note_key should not be None
         
         #Here is the logic to determine the chord shape
@@ -60,39 +62,40 @@ class Polyphony:
         dim = self.k.fifth and self.k.minor
         sus4 = self.k.third and not self.k.minor
         sus2 = self.k.third and self.k.minor
+        minor = self.k.minor and not (dim or sus2)
 
         #Triad
-        self.chord = [   round_note(root),
-                         round_note(root + 4 - self.k.minor + sus4 - sus2*2),
-                         round_note(root + 7 + aug - dim)
+        self.chord = [   round_note(root),                              #The root
+                         round_note(root + 4 - minor + sus4 - sus2*2),  #The 3rd
+                         round_note(root + 7 + aug - dim)               #The 5th
                          ]
-        if self.k.current_note_key == 7:
-            #When playing Ut, Move the root key up one octave to make it sound different from Do
-            self.chord[0]=self.chord[0]+12
         #Seventh
         if self.k.seventh:
-            self.chord.append(round_note(root+10-self.k.minor))
+            self.chord.append(round_note(root+10-minor))
         if quick_mode:
             self.play_chord(self.default_velocity, 0)
         elif not self.k.strum_mute and not self.k.strum_keys:
             self.play_chord(self.default_velocity, 40)
         else:
             self.strum_keys_old = 0 #Play all keys on the next loop()
-        self.d.disp_chord(
-             self.chord_names[self.k.current_note_key] +
-             ("#" if self.k.sharp else "") +
-             ("m" if self.k.minor else "") +
-             ("7" if self.k.seventh else "")
-             )
+
         #extend that chord to cover all strumming keys
-        if len(self.chord)<len(board.keyboard_strum_keys):
-            self.strum_chord = [self.chord[1]-24, self.chord[0]-12, self.chord[1]-12, self.chord[2]-12]
-            self.strum_chord.extend(self.chord)
-            incr = 12
-            while len(self.strum_chord)<len(board.keyboard_strum_keys):
-                for n in self.chord:
-                    self.strum_chord.append(n+incr)
-                incr +=12
+        self.strum_chord = [self.chord[0]-24]
+        incr = -12
+        while len(self.strum_chord)<len(board.keyboard_strum_keys):
+            for n in self.chord:
+                self.strum_chord.append(n+incr)
+            incr +=12
+                
+        if self.playing_chord_key == 7:
+            #When playing Ut, Move the root key up one octave to make it sound different from Do
+            #Do that after preparing the strumming keys
+            self.chord[0]=self.chord[0]+12
+
+        #Prepare for display of chord name
+        self.chord_shape_name = ("m" if minor else "") + ("7" if self.k.seventh else "") + ("dim" if dim else "aug" if aug else "") + ("sus4" if sus4 else "sus2" if sus2 else "")
+        self.chord_sharp_old = None #Force re-display next time
+        #self.chord_disp_timestamp = 0 #Don't update -> display will be immediate on the next call to loop()
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -110,8 +113,9 @@ class Polyphony:
         self.pending = []
         self.d.clear()
         self.strum_chord = []
-        self.playing_chord = None
+        self.playing_chord_key = None
         self.expr1_none=-10
+        self.chord_sharp_old = None
 
     def start_note(self, i):
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + 1*self.k.sharp
@@ -128,7 +132,7 @@ class Polyphony:
         self.l.append(self.midi.all_off(self.l.melody_channel))
         
     def play_drum(self, note):
-        name, note = self.drums[note]
+        name, note = instr_names.drums[note]
         self.l.append(self.midi.note_on(self.l.drum_channel, note, self.default_velocity))
         return name
 
@@ -138,12 +142,12 @@ class Polyphony:
         self.midi.set_instr(self.l.melody_channel, instr)
         
     def set_volume(self, vol):
-        #TODO: if changing in quick succession, only append every 0.1s (requires making a queue of volume changes)
+        #TODO: time filtering?
         self.midi.set_controller(self.l.chord_channel, 7, vol)
         self.midi.set_controller(self.l.melody_channel, 7, vol)
 
     def set_master_volume(self, vol):
-        #TODO: if changing in quick succession, only append every 0.1s (requires making a queue of volume changes)
+        #TODO: time filtering?
         self.midi.set_master_volume(vol)
         
     def loop(self):
@@ -179,32 +183,40 @@ class Polyphony:
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
         
         #Update expression
-        if self.playing_chord != None:
+        if self.playing_chord_key != None:
             #Channel expression (volume): vary pressure on the key being played
-            expr1 = self.k.notes_val[self.playing_chord]
+            expr1 = self.k.notes_val[self.playing_chord_key]
             if abs(expr1 - self.expr1_old) > 10 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
                 self.midi.set_controller(self.l.chord_channel, 11, expr1)
 
             #Bending: if the next key is pressed, up to 1/2 tone, with a fast-cut-off (to make it easier to reach a sharp)
-            #TODO: Update the display with # or b as the key is bent
-            expr_up   = self.k.notes_val[(self.playing_chord+1)%8]
-            expr_down = self.k.notes_val[(self.playing_chord+7)%8]
+            #Assuming default midi sensitivity of 32 for 1/2 tone
+            expr_up   = self.k.notes_val[(self.playing_chord_key+1)%8]
+            expr_down = self.k.notes_val[(self.playing_chord_key+7)%8]
             expr_bend = 0
             if expr_up or expr_down:
-                expr_bend = min(64+int(expr_up*.6),96) if expr_up else max(64-int(expr_down*.6),32)
+                #half-tone bending (press the next key up or down). Has a fast cut-off, to allow for clear-cut sharps
+                expr_bend = min(64+int(expr_up*.6),96) if expr_up else max(64-int(expr_down*.6),32) 
             else:
-                #Bending: if the 2nd next key is pressed, up to 1 tone with a slow cut-off (to bend freely up to a full tone)
-                expr_up   = self.k.notes_val[(self.playing_chord+2)%8]
-                expr_down = self.k.notes_val[(self.playing_chord+6)%8]
-                #TODO: Understand why I can't seem to be able to bend a LA
-                #print(self.playing_chord, (self.playing_chord+2)%8, (self.playing_chord+6)%8, expr_up, expr_down);time.sleep_ms(10)
+                #full-tone bending (press the 2nd next key up or down). Has a slow cut-off, to allow for a more expressive bend
+                expr_up   = self.k.notes_val[(self.playing_chord_key+2)%8]
+                expr_down = self.k.notes_val[(self.playing_chord_key+6)%8]
+                #print(self.playing_chord_key, (self.playing_chord_key+2)%8, (self.playing_chord_key+6)%8, expr_up, expr_down);time.sleep_ms(10)
                 expr_bend = min(64+expr_up,127) if expr_up else max(64-expr_down,0)
             if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                 self.expr_bend_old = expr_bend
                 self.expr_bend_time = time.ticks_ms()
                 self.midi.pitch_bend(self.l.chord_channel, expr_bend)
 
-                
+            #Update the display if needed (depends on the bending status)
+            self.chord_sharp = (expr_bend - 48)//32
+            if self.chord_sharp != self.chord_sharp_old and (time.ticks_ms() - self.chord_disp_timestamp) > 200:
+                self.chord_sharp_old = self.chord_sharp
+                self.chord__disp_timestamp = time.ticks_ms()
+                #Don't count the "capo" in the chord display.
+                #Makes it harder to play with other musicians, but easier to follow tablatures
+                self.d.disp_chord(instr_names.note_names[(self.chord[0] + self.chord_sharp - self.transpose)%12], self.chord_shape_name) 
+                                    
 #end

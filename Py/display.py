@@ -82,18 +82,18 @@ class Display:
         self.disp.framebuf.fill_rect(pos,0,length,8,0)
         self.disp.show_top8()
 
-    def disp_chord(self, text):
+    def disp_chord(self, degree, shape):
         #Displays text using the large font
         self.disp.framebuf.fill_rect(0,8,127,63,0)
         self._locate(0, 10)
-        if self.font_big.stringlen(text)>128:
-            self.font_big.printstring(text[:2])
-            self.font_med.printstring(text[2:])
+        self.font_big.printstring(degree)
+        if self.font_big.stringlen(degree+shape)>128:
+            self.font_med.printstring(shape)
         else:
-            self.font_big.printstring(text)
+            self.font_big.printstring(shape)
         self.disp.show()
         if board.verbose:
-            print("Playing chord:" + text)
+            print("Playing chord:", degree, shape)
     
     def text(self, text, line=0, tip=False):
         self.disp.framebuf.fill_rect(0,8+self.font_med.height*line,127,63,0)
