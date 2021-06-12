@@ -121,7 +121,7 @@ class Keyboard:
         self.sharp = False
         self.current_note_key = None
         self.current_note_level = None
-        time.sleep_ms(20)
+        time.sleep_ms(100)
         self.calibrate()
         self.loop()
         self.melody_led(0)
