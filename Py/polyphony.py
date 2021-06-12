@@ -170,16 +170,16 @@ class Polyphony:
                 #Mute any key that's not being held
                 for i, k in enumerate(self.strum_chord):
                     if not((self.k.strum_keys>>i)&1):
-                        self.midi.note_off(self.l.chord_channel, k, self.default_velocity)
+                        self.l.append(self.midi.note_off(self.l.chord_channel, k, self.default_velocity))
             #update newly released strum keys
             elif self.k.strum_mute:
                 #Keys that were in _old but are no longer in _new
                 for i in bits(self.strum_keys_old & (~self.k.strum_keys), len(board.keyboard_strum_keys)):
-                    self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
 
             #update newly strummed keys
             for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
-                self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity)
+                self.l.append(self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
                 
             self.strum_mute_old = self.k.strum_mute
             self.strum_keys_old = self.k.strum_keys
@@ -197,27 +197,27 @@ class Polyphony:
         if self.playing_chord_key != None:
             #Update chord shape
             if self.third != self.k.third:
-                self.midi.note_off(self.l.chord_channel, self.chord[1], self.default_velocity)
+                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[1], self.default_velocity))
                 self.sus4 = self.k.third and not self.k.minor
                 self.sus2 = self.k.third and self.k.minor
                 self.third = self.k.third
                 self.update_chord()
-                self.midi.note_on(self.l.chord_channel, self.chord[1], self.default_velocity)
+                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[1], self.default_velocity))
             if self.fifth != self.k.fifth:
-                self.midi.note_off(self.l.chord_channel, self.chord[2], self.default_velocity)
+                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[2], self.default_velocity))
                 self.aug = self.k.fifth and not self.k.minor
                 self.dim = self.k.fifth and self.k.minor
                 self.fifth = self.k.fifth
                 self.update_chord()
-                self.midi.note_on(self.l.chord_channel, self.chord[2], self.default_velocity)
+                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[2], self.default_velocity))
             if self.seventh and not self.k.seventh:
-                self.midi.note_off(self.l.chord_channel, self.chord[3], self.default_velocity)
+                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[3], self.default_velocity))
                 self.seventh = self.k.seventh
                 self.update_chord()
             elif not self.seventh and self.k.seventh:
                 self.seventh = self.k.seventh
                 self.update_chord()
-                self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity)
+                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity))
             
             #Update expression
             #Channel expression (volume): vary pressure on the key being played
@@ -225,7 +225,7 @@ class Polyphony:
             if abs(expr1 - self.expr1_old) > 10 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
-                self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64)
+                self.l.append(self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64))
 
             #Bending: if the next key is pressed, up to 1/2 tone, with a fast-cut-off (to make it easier to reach a sharp)
             #Assuming default midi sensitivity of 32 for 1/2 tone
@@ -244,7 +244,7 @@ class Polyphony:
             if abs(expr_bend - self.expr_bend_old) > 4 and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                 self.expr_bend_old = expr_bend
                 self.expr_bend_time = time.ticks_ms()
-                self.midi.pitch_bend(self.l.chord_channel, expr_bend)
+                self.l.append(self.midi.pitch_bend(self.l.chord_channel, expr_bend))
 
             #Update the display if needed (depends on the bending status)
             self.chord_sharp = (expr_bend - 48)//32
