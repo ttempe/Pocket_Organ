@@ -179,10 +179,10 @@ class Looper:
                     #divide by 2 if possible
                     if min_duration%(self.p.metronome.beat_divider*2):
                         min_duration /= 2
-                    self.durations[self.recording] = round(d/min_duration)*min_duration
+                    self.durations[self.recording] = int(round(d/min_duration)*min_duration)
                 else:
                     #Make sure no recording is shorter than one metronome beat
-                    self.durations[self.recording] = max( d, self.p.metronome.beat_divider)
+                    self.durations[self.recording] = int(max( d, self.p.metronome.beat_divider))
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
                 self.cursors[self.recording] = 0
