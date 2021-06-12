@@ -7,13 +7,15 @@ import instr_names
 # Only one chord is ever sent at once.
 # TODO:
 # * have Midi return the MIDI message string, and have Polyphony call the looper directly
-# * update the chord shape when the user toggles the 3rd/5th/7th buttons
 
 def bits(n, range):
     "8-bit bit map iterator"
     for i in range(0, range):
         if n&(1<<i):
             yield i
+
+def round_note(n):
+    return n%12 + 60
 
 class Polyphony:
     def __init__(self, keyboard, display, looper):
@@ -50,28 +52,24 @@ class Polyphony:
         self.chord_sharp    = 0 #-1 for bemol, +1 for sharp
         self.chord_sharp_old= 0 #same; this value corresponds to the last one displayed
         self.chord_disp_timestamp = 0
-
-    def start_chord(self, quick_mode=False):
-        def round_note(n):
-            return n%12 + 60
-        self.playing_chord_key = self.k.current_note_key
-        root = self.scale[self.k.current_note_key] + self.k.sharp + self.transpose #current_note_key should not be None
         
-        #Here is the logic to determine the chord shape
-        aug = self.k.fifth and not self.k.minor
-        dim = self.k.fifth and self.k.minor
-        sus4 = self.k.third and not self.k.minor
-        sus2 = self.k.third and self.k.minor
-        minor = self.k.minor and not (dim or sus2)
+    def start_chord(self, quick_mode=False):
+        self.playing_chord_key = self.k.current_note_key
+        self.root = self.scale[self.k.current_note_key] + self.k.sharp + self.transpose #current_note_key should not be None
 
-        #Triad
-        self.chord = [   round_note(root),                              #The root
-                         round_note(root + 4 - minor + sus4 - sus2*2),  #The 3rd
-                         round_note(root + 7 + aug - dim)               #The 5th
-                         ]
-        #Seventh
-        if self.k.seventh:
-            self.chord.append(round_note(root+10-minor))
+        #Determine the chord shape
+        self.third = self.k.third
+        self.sus4 = self.k.third and not self.k.minor
+        self.sus2 = self.k.third and self.k.minor
+        self.fifth = self.k.fifth
+        self.aug = self.k.fifth and not self.k.minor
+        self.dim = self.k.fifth and self.k.minor
+        self.seventh = self.k.seventh
+        self.minor = self.k.minor and not (self.dim or self.sus2)
+
+
+        self.update_chord()
+
         if quick_mode:
             self.play_chord(self.default_velocity, 0)
         elif not self.k.strum_mute and not self.k.strum_keys:
@@ -79,7 +77,17 @@ class Polyphony:
         else:
             self.strum_keys_old = 0 #Play all keys on the next loop()
 
-        #extend that chord to cover all strumming keys
+    def update_chord(self):
+        #Triad
+        self.chord = [   round_note(self.root),                                             #The root
+                         round_note(self.root + 4 - self.minor + self.sus4 - self.sus2*2),  #The 3rd
+                         round_note(self.root + 7 + self.aug - self.dim)                    #The 5th
+                         ]
+        #Seventh
+        if self.seventh:
+            self.chord.append(round_note(self.root+10-self.minor))
+            
+        #Map the chord over the strumming keys
         self.strum_chord = [self.chord[0]-24]
         incr = -12
         while len(self.strum_chord)<len(board.keyboard_strum_keys):
@@ -91,11 +99,12 @@ class Polyphony:
             #When playing Ut, Move the root key up one octave to make it sound different from Do
             #Do that after preparing the strumming keys
             self.chord[0]=self.chord[0]+12
-
+            
         #Prepare for display of chord name
-        self.chord_shape_name = ("m" if minor else "") + ("7" if self.k.seventh else "") + ("dim" if dim else "aug" if aug else "") + ("sus4" if sus4 else "sus2" if sus2 else "")
+        self.chord_shape_name =   ("m" if self.minor else "") + ("7" if self.seventh else "") + ("dim" if self.dim else "aug" if self.aug else "") + ("sus4" if self.sus4 else "sus2" if self.sus2 else "")
         self.chord_sharp_old = None #Force re-display next time
         #self.chord_disp_timestamp = 0 #Don't update -> display will be immediate on the next call to loop()
+
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -181,15 +190,41 @@ class Polyphony:
             if next <= time.ticks_ms():
                 n = self.pending.pop(0)
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
-        
-        #Update expression
+
+
+        #Playing a chord
         if self.playing_chord_key != None:
+            #Update chord shape
+            if self.third != self.k.third:
+                self.midi.note_off(self.l.chord_channel, self.chord[1], self.default_velocity)
+                self.sus4 = self.k.third and not self.k.minor
+                self.sus2 = self.k.third and self.k.minor
+                self.third = self.k.third
+                self.update_chord()
+                self.midi.note_on(self.l.chord_channel, self.chord[1], self.default_velocity)
+            if self.fifth != self.k.fifth:
+                self.midi.note_off(self.l.chord_channel, self.chord[2], self.default_velocity)
+                self.aug = self.k.fifth and not self.k.minor
+                self.dim = self.k.fifth and self.k.minor
+                self.fifth = self.k.fifth
+                self.update_chord()
+                self.midi.note_on(self.l.chord_channel, self.chord[2], self.default_velocity)
+            if self.seventh and not self.k.seventh:
+                self.midi.note_off(self.l.chord_channel, self.chord[3], self.default_velocity)
+                self.seventh = self.k.seventh
+                self.update_chord()
+            elif not self.seventh and self.k.seventh:
+                self.seventh = self.k.seventh
+                self.update_chord()
+                self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity)
+            
+            #Update expression
             #Channel expression (volume): vary pressure on the key being played
             expr1 = self.k.notes_val[self.playing_chord_key]
             if abs(expr1 - self.expr1_old) > 10 and (time.ticks_ms() - self.expr1_time > 10):#Filtering
                 self.expr1_old = expr1
                 self.expr1_time = time.ticks_ms()
-                self.midi.set_controller(self.l.chord_channel, 11, expr1)
+                self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64)
 
             #Bending: if the next key is pressed, up to 1/2 tone, with a fast-cut-off (to make it easier to reach a sharp)
             #Assuming default midi sensitivity of 32 for 1/2 tone
