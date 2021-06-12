@@ -55,7 +55,7 @@ class Polyphony:
         
     def start_chord(self, quick_mode=False):
         self.playing_chord_key = self.k.current_note_key
-        self.root = self.scale[self.k.current_note_key] + self.k.sharp + self.transpose #current_note_key should not be None
+        self.root = round_note(self.scale[self.k.current_note_key] + self.k.sharp + self.transpose) #current_note_key should not be None
 
         #Determine the chord shape
         self.third = self.k.third
@@ -86,20 +86,21 @@ class Polyphony:
         #Seventh
         if self.seventh:
             self.chord.append(round_note(self.root+10-self.minor))
-            
-        #Map the chord over the strumming keys
-        self.strum_chord = [self.chord[0]-24]
-        incr = -12
-        while len(self.strum_chord)<len(board.keyboard_strum_keys):
-            for n in self.chord:
-                self.strum_chord.append(n+incr)
-            incr +=12
-                
         if self.playing_chord_key == 7:
             #When playing Ut, Move the root key up one octave to make it sound different from Do
-            #Do that after preparing the strumming keys
             self.chord[0]=self.chord[0]+12
-            
+
+        #Map the chord over the strumming keys
+        unrounded_chord = [ self.root, self.root + 4 - self.minor + self.sus4 - self.sus2*2, self.root + 7 + self.aug - self.dim]
+        if self.seventh:
+            unrounded_chord.append(self.root+10-self.minor)
+        self.strum_chord = [unrounded_chord[0]-24]
+        incr = -12
+        while len(self.strum_chord)<len(board.keyboard_strum_keys):
+            for n in unrounded_chord:
+                self.strum_chord.append(n+incr)
+            incr +=12
+                            
         #Prepare for display of chord name
         self.chord_shape_name =   ("m" if self.minor else "") + ("7" if self.seventh else "") + ("dim" if self.dim else "aug" if self.aug else "") + ("sus4" if self.sus4 else "sus2" if self.sus2 else "")
         self.chord_sharp_old = None #Force re-display next time
