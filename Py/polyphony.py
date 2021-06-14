@@ -6,6 +6,8 @@ import instr_names
 
 # Only one chord is ever sent at once.
 # TODO:
+# * when pressing two adjacent keys together, change the root rather than treating it as bending. (allows for bending sharps)
+# * add modulation wheel expression (channel 1)
 # * have Midi return the MIDI message string, and have Polyphony call the looper directly
 
 def bits(n, range):
@@ -234,7 +236,7 @@ class Polyphony:
             expr_bend = 0
             if expr_up or expr_down:
                 #half-tone bending (press the next key up or down). Has a fast cut-off, to allow for clear-cut sharps
-                expr_bend = min(64+int(expr_up*.6),96) if expr_up else max(64-int(expr_down*.6),32) 
+                expr_bend = min(64+int(expr_up),96) if expr_up else max(64-int(expr_down),32) 
             else:
                 #full-tone bending (press the 2nd next key up or down). Has a slow cut-off, to allow for a more expressive bend
                 expr_up   = self.k.notes_val[(self.playing_chord_key+2)%8]

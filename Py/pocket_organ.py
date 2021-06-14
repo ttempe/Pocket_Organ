@@ -10,26 +10,24 @@ import board
 import time
 import gc #Garbage collector
 
-#TODO:
-# * Fix chord name for exotic chord shapes (incl. sharps)
+# TODO:
 # * re-do the melody mode, incl. sharps and expression
 # * implement the Drum Lock feature
 # * Fix the volume slider
-# * review the volume and expression levels: am I playing too softly?
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
-# * Record key expression
-# * Save the status of recorded loops and the HW revision into flash memory somewhere
+# * Why is expression not working when playing an A chord?
 # * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
-# * Add the ability to modify the chord shape on the fly (sus, dim...)
-# * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Build a stand-alone firmware flasher program. Make it work without a button.
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
-# * Get the accelerometer working?
-# * Fix MIDI output; have it tested by experienced DAW users.
+# * MIDI USB output
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
 # * Measure the time the musician has been playing. Save it to flash.
 # * implement tuning
 # * Freeze the contents of img/*.pbm
+
+# Prospective
+# * Find a way of voiding the warranty before exposing the filesystem throught USB?
+# * Build a stand-alone firmware flasher program. Make it work without a button.
+# * Get the accelerometer working?
 # * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ; generate it by catching the exception.
 
 # Notes:
