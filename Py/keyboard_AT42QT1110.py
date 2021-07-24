@@ -48,12 +48,14 @@ class Slider:
             time.sleep_ms(200)        
 
     def calibrate(self):
+        "Calibrate slider"
         for i, e in enumerate(self.electrodes):
             self.thres[i] = self.uc.read_threshold(e)
         if self.repeat:
             self.thres[-1]=self.thres[0]        
 
     def read(self):
+        "Read slider"
         values = [0]*self.count     #For storing intermediary results
                                     #Fully pressed: ~127; fully released: ~0
         touch = 0
@@ -129,6 +131,8 @@ class Keyboard:
         self.strum_keys = 0 #Bytearray
                 
     def calibrate(self):
+        if board.verbose:
+            print("Recalibrating keyboard")
         self.uc1.recalibrate_all_keys()
         self.uc2.recalibrate_all_keys()
         self.uc3.recalibrate_all_keys()
@@ -173,19 +177,34 @@ class Keyboard:
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
         self.sharp   = self.uc1.button(board.keyboard_sharp)
 
+        #Read analog keys
+        above_thres = 0
         for note, button in enumerate(board.keyboard_note_keys):
-            a = self.notes_ref[note] - self.uc1.read_analog(button)
-            self.notes[note] = (a>= board.keyboard_notes_thres[note])
+            #Set analog value
+            v = self.uc1.read_analog(button)
+            if v > self.notes_ref[note]:
+                #Calibration: adjust ref up if value is higher.
+                #Compensates for any upward drift
+                self.notes_ref[note] = v
+            a = self.notes_ref[note] - v
+            #Determine binary value
+            self.notes[note] = ( a >= board.keyboard_notes_thres[note] + (0 if self.notes[note] else 2) ) #add a little hysteresis
             if a <= board.keyboard_notes_thres[note]:
                 self.notes_val[note] = 0
             else:
                 self.notes_val[note] = int(max(min(a - board.keyboard_notes_thres[note], board.keyboard_notes_max[note]), 0)/board.keyboard_notes_max[note]*127)
-        
-        #Re-calibrate the touch keys on "Volume" press
-        if self.volume and not self.volume_old:
+            #Calibration: re-calibrate if all keys are unpressed but lower than reference.
+            #Compensates for slow downward drift, all keys together.
+            if v>self.notes_ref[note] and v-self.notes_ref[note] <3:
+                above_thres+=1
+        if above_thres == len(self.notes_val):
             self.calibrate()
-        self.volume_old = self.volume
-        
+
+#         #Re-calibrate the touch keys on "Volume" press
+#         if self.volume and not self.volume_old:
+#             self.calibrate()
+#         self.volume_old = self.volume
+
         #Volume slider
         if self.volume:
             v=self.vol_slider.read()
@@ -227,4 +246,3 @@ class Keyboard:
 
 
 #end
-            
