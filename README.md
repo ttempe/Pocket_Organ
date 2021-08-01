@@ -42,7 +42,7 @@ I've basically restarted from scratch at the beginning of 2020. This branch has:
 
 ![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V12/V12_assembled.jpg)
 
-As of October 2020, I have a working V14 protopype, but am not fully satisfied with the touch sensors (input is noisy and a little laggy). I am working on V15, which will feature a new capacitive sensor chip, as well as a strumming comb.
+As of August 2021, V18 is giving quite good keys sensing, expression (analog input on the note keys) and responsiveness. Further improvement will require iterating over the PCB design.
 
 # Pressure-sensitive: prototypes V6 to V9
 
