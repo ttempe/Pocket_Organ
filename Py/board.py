@@ -59,6 +59,7 @@ if 16 == version:
     keyboard_notes_max  = bytearray([40]*8)#highest possible analog value
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [24,23,8,24]
+    keyboard_crosstalk  = None
     vbat = lambda : 4.2
     vusb = lambda : 5.0
     midi_rst = Pin("A15", Pin.OUT)
@@ -119,10 +120,29 @@ elif version >= 17:
     else:
         keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7, 6]) #on UC3
         keyboard_strum_mute = None #on UC3
-    keyboard_notes_thres= bytearray([10,10,12,4,7,7,4,9]) #above this value, assume the key is pressed
-    keyboard_notes_max  = bytearray([60,40,50,48,43,40,55,48])#highest possible analog value, minus the threshold
+    keyboard_notes_max  = bytearray([33,25,16,29,23,26,18,27])#highest possible analog value, minus the threshold
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [33,35,11,20]
+    keyboard_crosstalk = [ #when I put my finger on key n. <line>, this is the % of parasitic response I can read on each of the keys.
+                            [0]*8,                         #Do
+                            [0, 0, .23, 0, 0, 0, 0, 0],     #Re
+                            [0]*8,                         #Mi
+                            [0, 0, 0, 0, 0, .05, .08, .15],#Fa
+                            [0, 0, 0, 0, 0, .05, .05, .33],#Sol
+                            [0, 0, 0, 0, 0, 0, 0.39, 0],   #La
+                            [0]*8,                         #Si
+                            [0, 0, 0, 0, 0, .15, .20, 0]   #Ut
+                            ]
+                            
+#                             [0, 0.1, 0.1, 0, 0.05, 0, 0, 0],
+#                             [0.1, 0, 0.37, 0, 0.1, 0, 0, 0],
+#                             [0, 0, 0, 0, 0, 0 ,0 ,0],
+#                             [0, 0, 0, 0, 0, 0, 0, .1],
+#                             [0, 0, 0.07, .33, 0, 0, 0, 0.1],
+#                             [0, 0, 0, 0, 0, 0, 0.33, 0],
+#                             [0, 0, 0,  0, 0, 0.1, 0, 0],
+#                             [0, 0, 0, 0, 0, .16, .18, 0] ]
+                            
     midi_rst = Pin("C10", Pin.OUT, value=0)
     
     vbat_ADC = ADC(Pin("B1"))

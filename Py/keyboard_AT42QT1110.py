@@ -154,6 +154,44 @@ class Keyboard:
             return (self.key_levels[self.current_note_key]+d)%12, bool(d)
         return None, None
 
+    def read_analog_keys(self):
+        """
+        1. read analog value
+        2. substract it from the reference (the highest possible reading, obtained during auto-calibration when the key is at rest and updated automatically below)
+        3. substract values from the crosstalk matrix (eg: key n. 3 is significantly affected by key n. 2's reading) (cross talk matrix is specific to each board revision)
+        4. determine the binary (pressed/depressed) value by comparing with that key's threshold (=max * a coefficient) and adding a little histeresis from the previous reading.
+        5. if pressed, calculate an analog key value between 0 and 127 based on each key's maximum theoretical reading (specific to each board revision)
+        """
+        analog = []
+        all_keys_min = 0
+        for note, button in enumerate(board.keyboard_note_keys):
+            v = self.notes_ref[note]-self.uc1.read_analog(button)
+            if v<0: #adjust calibration
+                if board.verbose:
+                    print("keyboard calibration: adjusting {} by {}".format(note, v))
+                self.notes_ref[note] -= v
+                v=0
+            analog.append(v)
+        #Correct crosstalk
+        for note1 in range(len(self.notes)):
+            vv = v = analog[note1]
+            if board.keyboard_crosstalk:
+                for note2 in range(len(self.notes)):
+                    v -= analog[note1]*board.keyboard_crosstalk[note2][note1]
+            self.notes[note1] = ( v >= board.keyboard_notes_max[note]/10 + (0 if self.notes[note] else 2) ) #add a little hysteresis
+            self.notes_val[note1] = int(max(0, min(v - board.keyboard_notes_max[note]*.15, board.keyboard_notes_max[note]))/board.keyboard_notes_max[note]*127) if self.notes[note1] else 0
+            all_keys_min = min( all_keys_min, v)
+            ###For calibration:
+            #if self.notes[note1]: 
+            #    print("Note {}: before crosstalk removal: {}; after: {}; max: {}; value {}".format(note1, vv, v, board.keyboard_notes_max[note1], self.notes_val[note1]))
+            #    time.sleep_ms(20)
+        if all_keys_min > 1:
+            #all keys have drifted up. Let's adjust the calibration
+            for note in range(len(self.notes)):
+                self.notes_ref[note] -= all_keys_min
+            if board.verbose:
+                print("keyboard calibration: adjusted all keys by {}. New values: {}".format(all_keys_ref, self.notes_ref))
+
     def loop(self):
         
         self.notes_old = self.notes[:]
@@ -177,33 +215,13 @@ class Keyboard:
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
         self.sharp   = self.uc1.button(board.keyboard_sharp)
 
-        #Read analog keys
-        above_thres = 0
-        for note, button in enumerate(board.keyboard_note_keys):
-            #Set analog value
-            v = self.uc1.read_analog(button)
-            if v > self.notes_ref[note]:
-                #Calibration: adjust ref up if value is higher.
-                #Compensates for any upward drift
-                self.notes_ref[note] = v
-            a = self.notes_ref[note] - v
-            #Determine binary value
-            self.notes[note] = ( a >= board.keyboard_notes_thres[note] + (0 if self.notes[note] else 2) ) #add a little hysteresis
-            if a <= board.keyboard_notes_thres[note]:
-                self.notes_val[note] = 0
-            else:
-                self.notes_val[note] = int(max(min(a - board.keyboard_notes_thres[note], board.keyboard_notes_max[note]), 0)/board.keyboard_notes_max[note]*127)
-            #Calibration: re-calibrate if all keys are unpressed but lower than reference.
-            #Compensates for slow downward drift, all keys together.
-            if v>self.notes_ref[note] and v-self.notes_ref[note] <3:
-                above_thres+=1
-        if above_thres == len(self.notes_val):
-            self.calibrate()
+        self.read_analog_keys()
 
-#         #Re-calibrate the touch keys on "Volume" press
-#         if self.volume and not self.volume_old:
-#             self.calibrate()
-#         self.volume_old = self.volume
+        #Re-calibrate the touch keys on "Volume" press
+        if self.volume and not self.volume_old:
+            self.calibrate()
+            
+        self.volume_old = self.volume
 
         #Volume slider
         if self.volume:
@@ -242,7 +260,7 @@ class Keyboard:
                 a = self.notes_ref[note] - self.uc1.read_analog(button)
                 print(a, ",", end="")
             print("")
-        time.sleep_ms(400)
+            time.sleep_ms(200)
 
 
 #end
