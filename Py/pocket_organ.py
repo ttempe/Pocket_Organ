@@ -11,9 +11,12 @@ import time
 import gc #Garbage collector
 
 # TODO:
-# * re-do the melody mode, incl. sharps and expression
+# * fix the spurious bending problem, esp. on Re->Mi and on Ut->La. (Eg: don't add # between Mi&Fa and Si&Do; move the "bending up/down 1 full tone" to the next key)
+# * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
+# * leave the  last chord on the strumming comb. Start with the C major, or whatever we've transposed to
 # * implement the Drum Lock feature
 # * Fix the volume slider
+# * Make sure the logo displays for a few seconds on start-up
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Why is expression not working when playing an A chord?
 # * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
