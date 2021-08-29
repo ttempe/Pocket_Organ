@@ -120,28 +120,21 @@ elif version >= 17:
     else:
         keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7, 6]) #on UC3
         keyboard_strum_mute = None #on UC3
-    keyboard_notes_max  = bytearray([33,25,16,29,23,26,18,27])#highest possible analog value, minus the threshold
+    keyboard_notes_max  = bytearray([35,30,20,41,28,29,12,28]) #highest possible analog value (after substraction from the reference)
+                                                               #To calibrate, apply the crosstalk matrix first (and press each key individually) 
     keyboard_slider_keys= [2,3,4,5] #on UC2
     keyboard_slider_cal = [33,35,11,20]
     keyboard_crosstalk = [ #when I put my finger on key n. <line>, this is the % of parasitic response I can read on each of the keys.
-                            [0]*8,                         #Do
-                            [0, 0, .23, 0, 0, 0, 0, 0],     #Re
-                            [0]*8,                         #Mi
-                            [0, 0, 0, 0, 0, .05, .08, .15],#Fa
-                            [0, 0, 0, 0, 0, .05, .05, .33],#Sol
-                            [0, 0, 0, 0, 0, 0, 0.39, 0],   #La
-                            [0]*8,                         #Si
-                            [0, 0, 0, 0, 0, .15, .20, 0]   #Ut
+                           #To calibrate, uncomment the print() line in keyboard_AT42T1110.py, in keyboard.read_analog_keys()
+                            [0,.2,.05,.1,.05, 0, 0, 0], #Do
+                            [0.05,0,.5, 0,.1, 0, 0, 0], #Re
+                            [0]*8,                   #Mi
+                            [0, 0, 0, 0, 0, 0, 0,.1],#Fa
+                            [0, 0, 0, 0, 0,.1, 0,.1],#Sol
+                            [0, 0, 0, 0, 0, 0,.5, 0],#La
+                            [0, 0, 0, 0, 0,.2, 0, 0],#Si
+                            [0, 0, 0, 0, 0,.3,.3, 0] #Ut
                             ]
-                            
-#                             [0, 0.1, 0.1, 0, 0.05, 0, 0, 0],
-#                             [0.1, 0, 0.37, 0, 0.1, 0, 0, 0],
-#                             [0, 0, 0, 0, 0, 0 ,0 ,0],
-#                             [0, 0, 0, 0, 0, 0, 0, .1],
-#                             [0, 0, 0.07, .33, 0, 0, 0, 0.1],
-#                             [0, 0, 0, 0, 0, 0, 0.33, 0],
-#                             [0, 0, 0,  0, 0, 0.1, 0, 0],
-#                             [0, 0, 0, 0, 0, .16, .18, 0] ]
                             
     midi_rst = Pin("C10", Pin.OUT, value=0)
     

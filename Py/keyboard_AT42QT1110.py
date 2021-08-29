@@ -10,6 +10,13 @@ import board
 # * Decrease the sensitivity of the key below when the key above is detected? (finger shadow map)
 # * Cleanup: use board.py variables directly rather than copying them into class Keyboard.
 
+keys_sharp = [1, 2, None, 4, 5, 6, None, None]
+keys_flat  = [None, 0, 1, None, 3, 4, 5, None]
+key_levels = [0, 2, 4, 5, 7, 9, 11, 12]
+key_expr_up   = [3, 3, 3, 7, 7, 7, 7, 0]
+key_expr_down = [7, 7, 7, 0, 0, 0, 0, 3]
+
+
 class Slider:
     "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
     
@@ -104,7 +111,6 @@ class Keyboard:
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
         
         self.vol_slider = Slider( self.uc2, board.keyboard_slider_keys, board.keyboard_slider_cal, True) #TODO: Move this to board.py
-        self.key_levels = bytearray([0, 2, 4, 5, 7, 9, 11, 12])
 
         self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
@@ -139,6 +145,7 @@ class Keyboard:
         for note, button in enumerate(board.keyboard_note_keys):
             self.notes_ref[note] = self.uc1.read_analog(button)
 
+    #TODO: Clean up from pocket_organ. Redundant with self.current_key_level
     def current_note_key_level(self):
         """Returns a number from 0 to 12 (nb of semi-tones from C)
         depending on note keys pressed. (C=0; C#=1; D=2...)
@@ -151,7 +158,7 @@ class Keyboard:
                 d=-1
             elif self.current_note_key<7 and self.notes[self.current_note_key+1]:
                 d=1
-            return (self.key_levels[self.current_note_key]+d)%12, bool(d)
+            return (key_levels[self.current_note_key]+d)%12, bool(d)
         return None, None
 
     def read_analog_keys(self):
@@ -160,7 +167,7 @@ class Keyboard:
         2. substract it from the reference (the highest possible reading, obtained during auto-calibration when the key is at rest and updated automatically below)
         3. substract values from the crosstalk matrix (eg: key n. 3 is significantly affected by key n. 2's reading) (cross talk matrix is specific to each board revision)
         4. determine the binary (pressed/depressed) value by comparing with that key's threshold (=max * a coefficient) and adding a little histeresis from the previous reading.
-        5. if pressed, calculate an analog key value between 0 and 127 based on each key's maximum theoretical reading (specific to each board revision)
+        5. if pressed, calculate an analog key value between 0 and 127 based on each key's maximum theoretical reading
         """
         analog = []
         all_keys_min = 0
@@ -172,19 +179,21 @@ class Keyboard:
                 self.notes_ref[note] -= v
                 v=0
             analog.append(v)
-        #Correct crosstalk
+            
+        #Correct crosstalk between keys
+        ####For calibration of keyboard_crosstalk (apply first) and keyboard_notes_max (do next) in board.py
+        #time.sleep_ms(100);print("\n\nBefore: ", analog,"\nMax: ", list(board.keyboard_notes_max),"\nAfter: ", end="")
         for note1 in range(len(self.notes)):
             vv = v = analog[note1]
             if board.keyboard_crosstalk:
                 for note2 in range(len(self.notes)):
                     v -= analog[note1]*board.keyboard_crosstalk[note2][note1]
             self.notes[note1] = ( v >= board.keyboard_notes_max[note]/10 + (0 if self.notes[note] else 2) ) #add a little hysteresis
+            ####For calibration
+            #print(int(v), ", ", end="")
             self.notes_val[note1] = int(max(0, min(v - board.keyboard_notes_max[note]*.15, board.keyboard_notes_max[note]))/board.keyboard_notes_max[note]*127) if self.notes[note1] else 0
             all_keys_min = min( all_keys_min, v)
-            ###For calibration:
-            #if self.notes[note1]: 
-            #    print("Note {}: before crosstalk removal: {}; after: {}; max: {}; value {}".format(note1, vv, v, board.keyboard_notes_max[note1], self.notes_val[note1]))
-            #    time.sleep_ms(20)
+
         if all_keys_min > 1:
             #all keys have drifted up. Let's adjust the calibration
             for note in range(len(self.notes)):
@@ -237,6 +246,19 @@ class Keyboard:
                 if n:
                     self.current_note_key = i
                     break
+                
+        #is there a combination of 2 keys being pressed right now? (Sharp/flat)
+        #(honors the precedence of "1st key pressed")
+        if self.current_note_key != None:
+            self.current_key_level = key_levels[self.current_note_key]
+            if keys_sharp[self.current_note_key] != None:
+                self.current_key_level += self.notes[keys_sharp[self.current_note_key]]
+            if keys_flat[self.current_note_key] != None:
+                self.current_key_level -= self.notes[keys_flat[self.current_note_key]]
+            self.key_expr_up   = self.notes_val[key_expr_up[  self.current_note_key]]
+            self.key_expr_down = self.notes_val[key_expr_down[self.current_note_key]]
+        else:
+            self.current_key_level = None
 
         #Update the strum keys status
         b = self.uc3.button
