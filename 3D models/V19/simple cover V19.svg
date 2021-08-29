@@ -5,7 +5,7 @@
    height="315.30508"
    version="1.1"
    id="svg214"
-   sodipodi:docname="top cover V19.svg"
+   sodipodi:docname="simple cover V19.svg"
    inkscape:version="1.1 (c68e22c387, 2021-05-23)"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
@@ -23,7 +23,6 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -41,12 +40,12 @@
      id="namedview216"
      showgrid="false"
      inkscape:zoom="1.0633188"
-     inkscape:cx="472.57699"
-     inkscape:cy="158.93634"
+     inkscape:cx="151.88295"
+     inkscape:cy="143.88911"
      inkscape:window-x="-8"
      inkscape:window-y="-8"
      inkscape:window-maximized="1"
-     inkscape:current-layer="layer2"
+     inkscape:current-layer="layer1"
      inkscape:document-rotation="0"
      inkscape:pagecheckerboard="0" />
   <defs
@@ -3813,11 +3812,11 @@
      inkscape:groupmode="layer"
      id="layer1"
      inkscape:label="Contour"
-     style="display:none"
+     style="display:inline"
      transform="translate(-133.21526,-546.92418)">
     <path
        d="m 255.8607,547.12475 72.13805,-0.10608 h 357.2741 a 18.987785,18.987785 0 0 1 18.7957,21.68201 v 274.23923 a 19.184882,19.184882 0 0 1 -19.1849,19.18488 H 474.92064 l -237.69581,0.01 A 103.91084,103.91084 0 0 1 133.31163,757.60567 V 573.08812 a 27.137798,27.137798 0 0 1 27.29128,-25.96297 z"
-       style="display:inline;fill:none;stroke:#000000;marker-mid:url(#marker3966)"
+       style="display:inline;fill:none;stroke:#000000;marker-mid:"
        id="path154-4"
        inkscape:export-xdpi="600.08337"
        inkscape:export-ydpi="600.08337" />
