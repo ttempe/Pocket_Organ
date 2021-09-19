@@ -11,27 +11,23 @@ import time
 import gc #Garbage collector
 
 # TODO:
-# * fix the spurious bending problem, esp. on Re->Mi and on Ut->La. (Eg: don't add # between Mi&Fa and Si&Do; move the "bending up/down 1 full tone" to the next key)
 # * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
-# * leave the  last chord on the strumming comb. Start with the C major, or whatever we've transposed to
 # * implement the Drum Lock feature
 # * Fix the volume slider
-# * Make sure the logo displays for a few seconds on start-up
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
-# * Why is expression not working when playing an A chord?
-# * Split the volume slider into channel-specific (hold a Note key) and global (no keypress)
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
+#   -> Done for AT42QT1110 1.5M; not done for SSD1306 10M; note done for flash TBD
 # * MIDI USB output
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
-# * Measure the time the musician has been playing. Save it to flash.
+# * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
-# * Freeze the contents of img/*.pbm
 
 # Prospective
+# * Freeze the contents of img/*.pbm
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Build a stand-alone firmware flasher program. Make it work without a button.
-# * Get the accelerometer working?
-# * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ; generate it by catching the exception.
+# * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ;
+#  -> generate it by catching the exception. Use https://github.com/JASchilz/uQR
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -62,7 +58,7 @@ class PocketOrgan:
         time.sleep_ms(max(0,self.min_loop_duration-(t-self.last_t)))
         if board.verbose:
             self.longest_loop = max(self.longest_loop, t-self.last_t)
-            if t-self.last_t_disp > 2100:
+            if t-self.last_t_disp > 500:
                 self.d.indicator_txt(str(self.longest_loop)+"ms", 24)
                 self.longest_loop = 0
                 self.last_t_disp = t
@@ -84,7 +80,7 @@ class PocketOrgan:
         if not self.l.stop_recording():
             self.d.text("Looper")
             self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
-            self.d.text('Tap "minor" to rythm', 2, tip=True)
+            self.d.text('Tap "minor" to set rythm', 2, tip=True)
         self.l.display()
         while self.k.looper:
             key = self.k.current_note_key

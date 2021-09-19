@@ -4,10 +4,8 @@ import board
 
 #TODO:
 # * force a recalibration when switching between USB and battery power (instead of when pressing the Volume key)
-# * clean up and debug slider code.
-# * check the analog measurements for slight drift of all the values while none of the keys are being pressed
+# * clean up and debug slider code. Make sure it doesn't fly around while lifting the finger.
 # * Synchronize the main loop with the uc1 acquisition cycle
-# * Decrease the sensitivity of the key below when the key above is detected? (finger shadow map)
 # * Cleanup: use board.py variables directly rather than copying them into class Keyboard.
 
 keys_sharp = [1, 2, None, 4, 5, 6, None, None]

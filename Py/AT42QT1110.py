@@ -8,10 +8,6 @@
 #MOSI: reading data on the falling edge of each clock pulse
 #MISO: writing data on the rising edge
 
-#TODO:
-#The threshold gets reset after just a few seconds holding a key. Fix that.
-#Apparently only one key gets reported at a time
-
 import errno
 import time
 
@@ -27,9 +23,12 @@ class AT42QT1110:
         for i in [
             b"\x90\xE0", #Auto trigger, 11-key, parallel acquisition, edge sync, free run
             b"\x92\x18", #Don't wait 3 cycles to report a detection. Faster, but noisier.
-            b"\x97\x00", b"\x98\x00"  #Disable AKS. Allow multiple keys to be detected simultaneously
+            b"\x97\x00", b"\x98\x00",  #Disable AKS. Allow multiple keys to be detected simultaneously
+            b"\xAF\xF0", b"\xB0\xF0", b"\xB1\xF0", b"\xB2\xF0", b"\xB3\xF0", b"\xB4\xF0",
+            b"\xB5\xF0", b"\xB6\xF0", b"\xB7\xF0", b"\xB8\xF0", b"\xB9\xF0" #Turn off negative drift compensation
             ]:
             self.send_command(i)
+
 
     def send_command2(self, cmd, read=0):
         "Send a single SPI command. Optionally write data specified in 'write'. Optionally read and return 'read' bytes."
@@ -94,32 +93,5 @@ class AT42QT1110:
         self.send_command(b"\x03")
         #time.sleep_ms(160)#after reset
         time.sleep_us(150)#after a full recalibration
-
-#Debug. TODO: Remove
-#from machine import SPI, Pin
-#a = AT42QT1110(SPI(1), Pin("B8", Pin.OUT))
-#import board
-#a = AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
-#a.recalibrate_all_keys()
-#v=0
-
-#touch trigger (Sync pin)
-# from machine import Pin
-# tt = Pin("B4", Pin.OUT)
-# tt(0)
-# k=0
-#while 1:
-#    a.loop()
-#    print(a.read_analog(k), a.read_threshold(k), (a.buttons>>k)&1)
-#    time.sleep_ms(50)
-
-# while 1:
-#     a.loop()
-#     if v != a.buttons:
-#         #print("{:b}".format(a.buttons))
-#         #print("#")
-#         print(a.buttons)
-#         v = a.buttons
-
 
 #End

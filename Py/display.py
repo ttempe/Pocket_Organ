@@ -54,7 +54,7 @@ class Display:
 #        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
         self.disp.contrast(100)
         self.disp_image("logo")
-        self.erase_time = 0
+        self.erase_time = time.ticks_ms() + 2000
         self.font_big = writer.Writer(self.disp.framebuf, font_big)
         self.font_big.set_clip(False, True, False)
         self.font_med = writer.Writer(self.disp.framebuf, font_med)

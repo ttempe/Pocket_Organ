@@ -7,14 +7,15 @@ class Backlight:
     def __init__(self):
         
         self.oe_pin   = board.backlight_oe_pin
-        #TODO: Switch to PWM
+        ##Note: in case we want to switch to PWM (untested; not supported on C14)
         #from pyb import Pin, Timer
-        #tim = Timer(2, freq=1000)
+        #tim = Timer(8, freq=1000)
         #self.ch = tim.channel(1, Timer.PWM, pin=self.oe_pin)
         #self.ch.pulse_width_percent(50)
+
         self.data_pin = board.backlight_data_pin
         self.clk_pin  = board.backlight_clk_pin
-        self.intensity = 128
+        #self.intensity = 128
         self.off()
         
     def on(self):
