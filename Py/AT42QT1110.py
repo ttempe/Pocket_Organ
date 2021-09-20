@@ -24,10 +24,11 @@ class AT42QT1110:
             b"\x90\xE0", #Auto trigger, 11-key, parallel acquisition, edge sync, free run
             b"\x92\x18", #Don't wait 3 cycles to report a detection. Faster, but noisier.
             b"\x97\x00", b"\x98\x00",  #Disable AKS. Allow multiple keys to be detected simultaneously
-            b"\xAF\xF0", b"\xB0\xF0", b"\xB1\xF0", b"\xB2\xF0", b"\xB3\xF0", b"\xB4\xF0",
-            b"\xB5\xF0", b"\xB6\xF0", b"\xB7\xF0", b"\xB8\xF0", b"\xB9\xF0" #Turn off negative drift compensation
             ]:
             self.send_command(i)
+        #Turn off negative drift compensation for each of the keys
+        for i in range(0xAF, 0xB9):
+            self.send_command(bytes([i, 0xF0]))
 
 
     def send_command2(self, cmd, read=0):
