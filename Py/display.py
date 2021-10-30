@@ -19,6 +19,7 @@ import writer, font_med, font_big, font_small
 #Indicators:
 # Pos Width Indicator
 #   0     9 Memory Write
+#   9    24 SW version
 #  24    32 loop duration
 #  60    48 Battery voltage (debug)
 # 108    20 Battery
@@ -52,7 +53,7 @@ class Display:
 #        #variant: display connected through I2C bus
 #        from machine import Pin, I2C
 #        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
-        self.disp.contrast(100)
+        self.disp.contrast(100) #0~255 TODO: Test ouside in bright sunlight
         self.disp_image("logo")
         self.erase_time = time.ticks_ms() + 2000
         self.font_big = writer.Writer(self.disp.framebuf, font_big)
