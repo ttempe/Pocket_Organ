@@ -8,6 +8,9 @@ import board
 # * Synchronize the main loop with the uc1 acquisition cycle
 # * Cleanup: use board.py variables directly rather than copying them into class Keyboard.
 
+##For calibration when the USB cable is unplugged:
+#import display;d=display.Display();
+
 keys_sharp = [1, 2, None, 4, 5, 6, None, None]
 keys_flat  = [None, 0, 1, None, 3, 4, 5, None]
 key_levels = [0, 2, 4, 5, 7, 9, 11, 12]
@@ -123,7 +126,7 @@ class Keyboard:
         self.notes_ref = [0]*8 #reference value from unpressed key (from calibration)
         self.volume = False
         self.volume_old = False
-        self.volume_val =  64 #value from 0 to 100
+        self.volume_val =  100 #value from 0 to 100
         self.sharp = False
         self.current_note_key = None
         self.current_note_level = None
@@ -181,14 +184,19 @@ class Keyboard:
         #Correct crosstalk between keys
         ####For calibration of keyboard_crosstalk (apply first) and keyboard_notes_max (do next) in board.py
         #time.sleep_ms(100);print("\n\nBefore: ", analog,"\nMax: ", list(board.keyboard_notes_max),"\nAfter: ", end="")
+        ####For calibration when the USB cable is unplugged:
+        #d.disp.show();d.disp.fill(0);time.sleep_ms(200);i=0        
         for note1 in range(len(self.notes)):
-            vv = v = analog[note1]
+            v = analog[note1]
             if board.keyboard_crosstalk:
                 for note2 in range(len(self.notes)):
                     v -= analog[note1]*board.keyboard_crosstalk[note2][note1]
-            self.notes[note1] = ( v >= board.keyboard_notes_max[note]/10 + (0 if self.notes[note] else 2) ) #add a little hysteresis
             ####For calibration
             #print(int(v), ", ", end="")
+            ####For calibration when the USB cable is unplugged:
+            #d.disp.text(str(v),0,8*i);i+=1
+            
+            self.notes[note1] = ( v >= board.keyboard_notes_max[note]/10 + (0 if self.notes[note] else 2) ) #add a little hysteresis            
             self.notes_val[note1] = int(max(0, min(v - board.keyboard_notes_max[note]*.15, board.keyboard_notes_max[note]))/board.keyboard_notes_max[note]*127) if self.notes[note1] else 0
             all_keys_min = min( all_keys_min, v)
 

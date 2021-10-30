@@ -12,12 +12,15 @@ import gc #Garbage collector
 
 # TODO:
 # * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
-# * implement the Drum Lock feature
+# * Fix the Melody Lock.
+# * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m
+# * Find a way to implement Drum Lock
 # * Fix the volume slider
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
 #   -> Done for AT42QT1110 1.5M; not done for SSD1306 10M; note done for flash TBD
 # * MIDI USB output
+#   -> Not supported on Micropython (2021-09). Apparently supported on CircuitPython.
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
@@ -244,6 +247,10 @@ class PocketOrgan:
             self.loop()
             if self.k.shift or self.k.melody_lock:
                 self.loop_melody()
+                if board.verbose:
+                    #TODO: Display the pitch & velocity on the OLED display in real time
+                    pass
+                
             #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
         #root note key released. Stop chord and return
         self.p.stop_chord()
