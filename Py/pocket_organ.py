@@ -11,24 +11,25 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * Fix battery gauge display
 # * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
 # * Fix the Melody Lock.
 # * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m
 # * Find a way to implement Drum Lock
-# * Fix the volume slider
+# * Improve the volume slider (add filtering on the display, help it reach 0% and 100%, don't reset it to 50% when pressing the Vol button...)
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
-#   -> Done for AT42QT1110 1.5M; not done for SSD1306 10M; note done for flash TBD
+#   -> Done for AT42QT1110 1.5M; not done for SSD1306 10M; not done for flash TBD
 # * MIDI USB output
-#   -> Not supported on Micropython (2021-09). Apparently supported on CircuitPython.
+#   -> Not supported on Micropython (2021-09). Apparently supported on CircuitPython. Try out bluetooth first, with an external ESP32.
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
+# * Observe capacitive readings drift when unplugged
 
 # Prospective
-# * Freeze the contents of img/*.pbm
+# * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Build a stand-alone firmware flasher program. Make it work without a button.
 # * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ;
 #  -> generate it by catching the exception. Use https://github.com/JASchilz/uQR
 
