@@ -23,5 +23,19 @@ Getting started
 * http://baidu.com 搜歌曲名称加“和弦”
 * 使用专用歌曲和弦网页：
 ** https://yoopu.me/
-** http://www.tan8.com/
+** http://www.tan8.com/ 
+* 找不到就可以搜图片，快速判断好坏
+* 不要看“简化谱”，“吉他谱”，“五线谱”等
+
+== 怎么判断好坏 what to look for -- Chinese ==
+
+* 很好 Good: https://github.com/ttempe/Pocket_Organ/.img/chords_ok_zh.jpg
+* 不影响： 歌词之上有吉他的和弦图 Not a problem： https://github.com/ttempe/Pocket_Organ/.img/chords_ok2_zh.jpg
+* 可以接受：显示和弦名称的吉他谱或五线谱。虽然不是很方便，但是还是可以用。 Acceptable：https://github.com/ttempe/Pocket_Organ/.img/chords_ok3_zh.jpg https://github.com/ttempe/Pocket_Organ/.img/chords_ok4_zh.jpg https://github.com/ttempe/Pocket_Organ/.img/chords_ok5_zh.jpg 
+
+新手建议不要选择太复杂的和弦谱。同一首歌可以写成不同难度的和弦谱，如果觉得比较难，建议继续搜搜。
+* 首次体验：只有大调（单个字母）的和弦： C、D、E、F、G、A、B
+* 够简单：某些和弦是小调，如：Cm、Dm、Em等。大部分歌曲和弦谱是这样。
+* 稍微难一点：还有一些7号和弦：D7、Cm7等。（不熟悉的话可以忽略7号，直接谈D，Cm）
+* 高级专家级别，新手请换一份谱子：涵盖各种奇奇怪怪的和弦，如：C/G，Dsus2，E#，Fm4等
 
