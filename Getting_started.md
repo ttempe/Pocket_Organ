@@ -22,8 +22,8 @@ Getting started
 
 * http://baidu.com 搜歌曲名称加“和弦”
 * 使用专用歌曲和弦网页：
-* * https://yoopu.me/
-* * http://www.tan8.com/ 
+ * https://yoopu.me/
+ * http://www.tan8.com/ 
 * 找不到就可以搜图片，快速判断好坏
 * 不要看“简化谱”，“吉他谱”，“五线谱”等
 
