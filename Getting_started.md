@@ -25,6 +25,7 @@ Getting started
 * * https://yoopu.me/
 * * http://www.tan8.com/ 
 * 找不到就可以搜图片，快速判断好坏
+* 百度找不到也可以尝试http://bing.com
 * 不要看“简化谱”，“吉他谱”，“五线谱”等
 
 ## 怎么判断好坏 what to look for -- Chinese 
