@@ -71,7 +71,7 @@ You can play a lot of nice tunes on a piano; but they all require multiple finge
 
 In building the user interface, I'm trying to spare some fun for each level of play. This is why it will play chords by default. Chords are undemanding, gratifying, and you can probably find your favourite song on any tablatures repository.
 
-More advanced play (playing one note at a time, adding expression, more exotic chord shapes...) are all there waiting for you to build up your dexterity and coordination; they all take additional fingers to play.
+More advanced play (playing one note at a time, adding expression, more exotic chord shapes...) are all there waiting for you to build up your dexterity and coordination; each step takes one more finger to play.
 
 My ultimate goal is that the design of the instrument should progressively, nudge the player on the first steps of his musical path. Each successive step should bring additional challenge, and more reward. After a few months, an assiduous player should feel confident to move to his second instrument. But if I've done my job right, the pocket organ will remain the instrument of choice for certain occasions.
 
