@@ -73,7 +73,7 @@ In building the user interface, I'm trying to spare some fun for each level of p
 
 More advanced play (playing one note at a time, adding expression, more exotic chord shapes...) are all there waiting for you to build up your dexterity and coordination; each step takes one more finger to play.
 
-My ultimate goal is that the design of the instrument should progressively, nudge the player on the first steps of his musical path. Each successive step should bring additional challenge, and more reward. After a few months, an assiduous player should feel confident to move to his second instrument. But if I've done my job right, the pocket organ will remain the instrument of choice for certain occasions.
+My ultimate goal is that the design of the instrument should progressively nudge the player on the first steps of his musical path. Each successive step should bring additional challenge, and more reward. After a few months, an assiduous player should feel confident to move to his second instrument. But if I've done my job right, the pocket organ will remain an instrument of choice.
 
 # Features
 
