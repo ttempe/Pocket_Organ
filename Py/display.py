@@ -62,6 +62,8 @@ class Display:
         self.font_med.set_clip(False, True, True)
         self.font_small = writer.Writer(self.disp.framebuf, font_small)
         self.font_small.set_clip(False, True, True)
+        self.slider_last_val = 0
+        self.slider_last_time = 0
 
     def _locate(self, x, y):
         writer.Writer.set_textpos(self.disp.framebuf, y, x)
@@ -110,20 +112,23 @@ class Display:
             print(text)
 
     def disp_slider(self, val, text):
-        self.text(text)
-        h = 8+self.font_med.height + 2 #where to draw the slider box
-        ht = (h+63)//2-self.font_med.height//2 + 2 #where to draw the text inside
-        self.disp.framebuf.rect(0, h, 127, 64-h, 1)
-        self.disp.framebuf.fill_rect(0, h+1, val, 63-h, 1)
-        s = "{0}%".format(val*100//127) #% value
-        sl = self.font_med.stringlen(s) #length of that string in pixels
-        if sl + 8 > val:
-            self._locate(124-sl, ht)
-            self.font_med.printstring(s)
-        else:
-            self._locate(val-sl-4,ht)
-            self.font_med.printstring(s, True)
-        self.disp.show()
+        if abs(val - self.slider_last_val > 2) or time.ticks_ms()-self.slider_last_time > 100:
+            self.text(text)
+            h = 8+self.font_med.height + 2 #where to draw the slider box
+            ht = (h+63)//2-self.font_med.height//2 + 2 #where to draw the text inside
+            self.disp.framebuf.rect(0, h, 127, 64-h, 1)
+            self.disp.framebuf.fill_rect(0, h+1, val, 63-h, 1)
+            s = "{0}%".format(val*100//127) #% value
+            sl = self.font_med.stringlen(s) #length of that string in pixels
+            if sl + 8 > val:
+                self._locate(124-sl, ht)
+                self.font_med.printstring(s)
+            else:
+                self._locate(val-sl-4,ht)
+                self.font_med.printstring(s, True)
+            self.disp.show()
+            self.slider_last_time = time.ticks_ms()
+            self.slider_last_val = val
 
     def clear(self):
         self.disp.framebuf.fill_rect(0,8,128,56,0)
