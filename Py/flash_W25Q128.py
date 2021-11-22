@@ -28,6 +28,7 @@
 # * if you finish recording a loop, but the last Write operation (3ms max) did not finish before power loss, the end of the loop could be corrupted.
 
 #TODO:
+# * Apparently erasing track -8 at boot. Clarify.
 # * count the number of "read status" operations per cycle; add a test to only check every 40 ms?
 # * handle all exceptions raised below
 
@@ -136,7 +137,7 @@ class Flash:
     def record_message(self, t, msg):
         "Records a midi message to the current loop."
         #Assumes either 2 or 3 octets for the message payload
-        #Always writes 8 bytes per message       
+        #Always writes 8 bytes per message (4 for the timestamp, 3 for the payload, and the rest is buffering.)
         self.message[0]=(t>>24)
         self.message[1]=(t>>16)
         self.message[2]=(t>>8)
@@ -148,6 +149,7 @@ class Flash:
             self.message[4:7]=msg[:]
         self.record(self.message)
         #print("recording message: ",t, msg, self.message)
+        #print(self.page_cursor)#print("+")
 
     def _write_page(self):
         "Write as much as possible from the write_buffer to flash, in one go."
@@ -155,7 +157,7 @@ class Flash:
             #Memory overrun on the chip.
             #TODO: handle?
             #This should never happen. 2Mb is enough to store 10 MIDI messages per second for 10 hours straight
-            raise FlashError("Memory overrun while recording the loop")
+            raise FlashError("Out of flash space while recording loop")
         else:
             #Commit one write operation (as long as possible) to flash
             
@@ -171,6 +173,7 @@ class Flash:
             self.write_buffer[0:self.page_cursor-write_length] = self.write_buffer[write_length:self.page_cursor]
             self.page_cursor -= write_length
             self.ic_cursor += write_length
+            #print(self.page_cursor)#print("-"*(write_length//8))
 
     def erase(self, loop, length=None):
         "Erase a loop from the flash chip"
