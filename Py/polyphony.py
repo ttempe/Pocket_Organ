@@ -37,10 +37,11 @@ class Polyphony:
         self.set_instr(self.instr)
         self.volume = 64
         self.set_volume(self.volume)
-        self.chord = [] #Currently playing chord
+        self.chord = []       #Currently playing chord
         self.strum_chord = [] #same chord, but with enough notes to cover all strumming keys
-        self.strum_mute_old = 0
-        self.strum_keys_old = 0
+        self.strum_mute_old = False
+        self.strum_keys_old = 0   #bitmap
+        self.strum_keys_all = 0   #bitmap of all active notes
         self.default_velocity = 64
         
         #For continuous expression control
@@ -79,7 +80,7 @@ class Polyphony:
         elif not self.k.strum_mute and not self.k.strum_keys:
             self.play_chord(self.default_velocity, 40)
         else:
-            self.strum_keys_old = 0 #Play all keys on the next loop()
+            self.strum_keys_old = False #Play all keys on the next loop()
 
     def update_chord(self):
         #Triad
@@ -122,7 +123,11 @@ class Polyphony:
                 self.l.append(self.midi.note_on(self.l.chord_channel, n, velocity))                
         
     def stop_chord(self):
-        self.l.append(self.midi.all_off(self.l.chord_channel))
+        #self.l.append(self.midi.all_off(self.l.chord_channel))
+        strum = [self.strum_chord[i] for i in bits(self.k.strum_keys, len(board.keyboard_strum_keys))]
+        for n in self.chord:
+            if n not in strum:
+                self.l.append(self.midi.note_off(self.l.chord_channel, n, self.default_velocity))                
         self.pending = []
         self.d.clear()
         self.playing_chord_key = None
@@ -167,12 +172,12 @@ class Polyphony:
         
         #Are we strumming?
         if self.strum_chord:
-            #If the user just activated the strum mute:
-            if (self.k.strum_mute and not self.strum_mute_old) or (None == self.playing_chord_key):
+            #If the user just activated the strum mute or released a chord key:
+            if (self.k.strum_mute and not self.strum_mute_old):
                 #Mute any key that's not being held
-                for i, k in enumerate(self.strum_chord):
-                    if not((self.k.strum_keys>>i)&1):
-                        self.l.append(self.midi.note_off(self.l.chord_channel, k, self.default_velocity))
+                for k in bits(self.strum_keys_all & ~self.k.strum_keys, len(board.keyboard_strum_keys)):
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
+                self.strum_keys_all = 0
             #update newly released strum keys
             elif self.k.strum_mute:
                 #Keys that were in _old but are no longer in _new
@@ -185,6 +190,7 @@ class Polyphony:
                 
             self.strum_mute_old = self.k.strum_mute
             self.strum_keys_old = self.k.strum_keys
+            self.strum_keys_all |= self.k.strum_keys
         
         #scheduled chord notes:
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.

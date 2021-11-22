@@ -47,7 +47,6 @@ keyboard_uc1_cs(1)
 keyboard_uc2_cs(1)
 keyboard_uc3_cs(1)
 keyboard_melody_led = Pin("C3", Pin.OUT)
-keyboard_volume_pin = Pin("A3", Pin.IN, Pin.PULL_UP)
 keyboard_instr_pin  = Pin("A4", Pin.IN, Pin.PULL_UP)
 keyboard_looper_pin = Pin("A1", Pin.IN, Pin.PULL_UP)
 keyboard_drum_pin   = Pin("A2", Pin.IN, Pin.PULL_UP)
@@ -61,14 +60,13 @@ keyboard_uc2_minor  = 0 #on UC2
 keyboard_uc2_shift  = 1 #on UC2
 keyboard_slider_keys= [2,3,4,5] #on UC2
 keyboard_strum_keys = bytearray([5,4,3,2,1,0,10,9,8,7, 6]) #on UC3
-keyboard_strum_mute = None #on UC3
 keyboard_slider_cal = [22,30,11,25]
 if 18 == version:
     keyboard_notes_max  = bytearray([35,30,20,41,28,29,12,28]) #highest possible analog value (after substraction from the reference)
 else:
     keyboard_notes_max  = bytearray([40,27,32,42,25,29,27,33]) #highest possible analog value (after substraction from the reference)
                                                            #To calibrate, apply the crosstalk matrix first (and press each key individually) 
-if 19 == version:
+if 19 >= version:
     keyboard_crosstalk = [ #when I put my finger on key n. <line>, this is the % of parasitic response I can read on each of the keys.
                            #To calibrate, uncomment the print() line in keyboard_AT42T1110.py, in keyboard.read_analog_keys()
                             [0,.05,.05,.05,  0,  0,  0,  0], #Do
@@ -100,6 +98,6 @@ vusb_ADC = ADC(Pin("B0"))
 vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2
 vusb = lambda : vusb_ADC.read_u16()/65536*3.3*2
 
-main_startup_pin = keyboard_volume_pin
+main_startup_pin = keyboard_instr_pin
 
 #End
