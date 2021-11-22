@@ -50,7 +50,6 @@ keyboard_melody_led = Pin("C3", Pin.OUT)
 keyboard_instr_pin  = Pin("A4", Pin.IN, Pin.PULL_UP)
 keyboard_looper_pin = Pin("A1", Pin.IN, Pin.PULL_UP)
 keyboard_drum_pin   = Pin("A2", Pin.IN, Pin.PULL_UP)
-keyboard_sharp      = 4 #on UC1
 keyboard_uc2_seventh= 6 #on UC2
 keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 2, 3, 1]) #Order of the note key pads from Do to Ut. All must be on the same UC.
 keyboard_uc2_fifth  = 8 #on UC2
@@ -90,6 +89,8 @@ elif 18==version:
                             [0, 0, 0, 0, 0,.2, 0, 0],#Si
                             [0, 0, 0, 0, 0,.3,.3, 0] #Ut
                             ]
+else:
+    keyboard_crosstalk = None
                         
 midi_rst = Pin("C10", Pin.OUT, value=0)
 

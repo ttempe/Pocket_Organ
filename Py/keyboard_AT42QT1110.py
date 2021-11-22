@@ -130,7 +130,6 @@ class Keyboard:
         self.volume = False
         self.volume_old = False
         self.volume_val =  100 #value from 0 to 100
-        self.sharp = False
         self.current_note_key = None
         self.current_note_level = None
         time.sleep_ms(100)
@@ -213,7 +212,6 @@ class Keyboard:
         
         self.notes_old = self.notes[:]
         self.notes_val_old = self.notes_val[:]
-        self.sharp_old = self.sharp
         self.drum_old  = self.drum
 
         self.uc1.loop()
@@ -225,7 +223,6 @@ class Keyboard:
         self.third   = self.uc2.button(board.keyboard_uc2_third)
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
-        self.sharp   = self.uc1.button(board.keyboard_sharp)
 
         self.volume = self.vol_slider.touched()
         self.instr = not(self.instr_pin.value())

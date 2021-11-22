@@ -31,6 +31,7 @@ import gc #Garbage collector
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
 # * Optimize loop erase time
+# * display note name (Do~Ut) while playing in melody mode
 
 # Prospective
 # * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
@@ -318,29 +319,12 @@ class PocketOrgan:
                 old_sharp = sharp
             self.loop(freeze_display=True)
 
-    def loop_melody(self): #TODO
+    def loop_melody(self):
         self.d.text("Melody mode")
-        playing_note=0
-        while self.k.shift or self.k.melody_lock or self.k.current_note_key != None:
-            for i in range(0,8):
-                if self.k.notes[i] and not self.k.notes_old[i]:
-                    #start playing i
-                    self.p.start_note(i)
-                elif self.k.notes_old[i] and not self.k.notes[i]:
-                    #stop playing i
-                    self.p.stop_note(i)
-            if self.k.instr and not self.p.playing_notes:
-                if self.k.shift:
-                    self.loop_capo()
-                elif self.l.recording:
-                    self.d.text("Can't change instrument while recording", tip=True)
-                    while self.k.instr:
-                        self.loop()
-                else:
-                    self.loop_instr()
-            self.loop()
-        self.p.stop_all_notes()
-        self.d.clear()
+        self.p.start_melody()
+        while self.k.shift or self.k.melody_lock or self.k.current_note_key:
+            self.loop(freeze_display=True)
+        self.p.stop_melody()           
 
 def start():
     d = display.Display()

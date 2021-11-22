@@ -12,8 +12,9 @@ import instr_names
 
 scale = [60, 62, 64, 65, 67, 69, 71, 72]
         
-def bits(n, range):
+def bits(n, range): 
     "8-bit bit map iterator"
+    #TODO: Cleanup: the range is always 8
     for i in range(0, range):
         if n&(1<<i):
             yield i
@@ -56,6 +57,9 @@ class Polyphony:
         self.chord_sharp    = 0 #-1 for bemol, +1 for sharp
         self.chord_sharp_old= 0 #same; this value corresponds to the last one displayed
         self.chord_disp_timestamp = 0
+        
+        #For melody mode
+        self.melody = False
         
     def start_chord(self, quick_mode=False):
         self.playing_chord_key = self.k.current_note_key
@@ -134,15 +138,25 @@ class Polyphony:
         self.expr1_none=-10
         self.chord_sharp_old = None
 
-    def start_note(self, i):
-        transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + 1*self.k.sharp
+    def start_note(self, i, sharp=False):
+        transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + sharp
         self.melody_keys_transpose[i] = transpose
-        self.playing_notes += 1
         self.l.append(self.midi.note_on(self.l.melody_channel, scale[i] + self.transpose + transpose, self.default_velocity))
     
     def stop_note(self, i):
-        self.playing_notes -= 1
         self.l.append(self.midi.note_off(self.l.melody_channel, scale[i] + self.transpose + self.melody_keys_transpose[i], self.default_velocity))
+
+    def start_melody(self):
+        self.melody = True
+        self.melody_playing = 0 #bitmap of all playing notes
+        self.melody_last_key = None
+        self.melody_last_key_time = 0
+    
+    def stop_melody(self):
+        self.melody = False
+        #TODO: not exiting cleanly when releasing shift while holding a note key
+        #for i in bits(self.melody_playing):
+        #    self.stop_note(self.melody_last_key, len(board.keyboard_strum_keys))
 
     def stop_all_notes(self):
         self.playing_notes = 0
@@ -200,9 +214,27 @@ class Polyphony:
                 n = self.pending.pop(0)
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
 
+        if self.melody: #playing in melody mode
+            for i in range(8):
+                if self.k.notes[i] and not self.k.notes_old[i]: #New keypress
+                    if self.melody_last_key !=None and abs(self.melody_last_key-i)==1 and (time.ticks_ms()-self.melody_last_key_time)<40 and min(self.melody_last_key, i) not in [2, 6]:
+                        #two presses together; consider as a sharp.
+                        self.stop_note(self.melody_last_key)
+                        self.start_note(min(self.melody_last_key, i), sharp=True)
+                        self.melody_playing &= ~(1<<self.melody_last_key) #un-record note
+                        self.melody_playing |= 1<<min(self.melody_last_key, i) #record note
+                        self.melody_last_key = None
+                    else: #Single note press
+                        self.start_note(i)
+                        self.melody_playing |= 1<<i #record note
+                        self.melody_last_key = i
+                        self.melody_last_key_time = time.ticks_ms()
+                elif self.k.notes_old[i] and not self.k.notes[i]: #Key release
+                    if (self.melody_playing>>i)&1: #was playing
+                        self.stop_note(i)
+                        self.melody_playing &= ~(1<<i) #un-record note
 
-        #Playing a chord
-        if self.playing_chord_key != None:
+        elif self.playing_chord_key != None: #Playing a chord
             #Update sharp/flat status
             if self.playing_chord_level != self.k.current_key_level:
                 self.stop_chord()
@@ -232,6 +264,7 @@ class Polyphony:
                 self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity))
             
             #Update expression
+            #TODO: provide expression while playing in melody mode
             #Channel expression (volume): vary pressure on the key being played
             expr1 = self.k.notes_val[self.playing_chord_key]
             if abs(expr1 - self.expr1_old) > 10:# and (time.ticks_ms() - self.expr1_time > 10):#Filtering
