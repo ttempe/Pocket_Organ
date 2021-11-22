@@ -12,8 +12,12 @@ import gc #Garbage collector
 
 # TODO:
 # * Fix battery gauge display
+# * Configure the struming comb UC to not recalibrate during long presses
+# * Observe capacitive readings drift when battery voltage decreases
+# * Display Shift when pressing the Shift key, not "Melody mode".
+# * Display "Chords mode" when switching back.
+# * Implement melody overlay
 # * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
-# * Fix the Melody Lock.
 # * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m
 # * Find a way to implement Drum Lock
 # * Improve the volume slider (add filtering on the display, help it reach 0% and 100%, don't reset it to 50% when pressing the Vol button...)
@@ -25,7 +29,7 @@ import gc #Garbage collector
 # * Practice the looper. Is it flexible enough in handling loops of various lengths?
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
-# * Observe capacitive readings drift when unplugged
+# * Optimize loop erase time
 
 # Prospective
 # * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
@@ -37,9 +41,9 @@ import gc #Garbage collector
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
 
 class PocketOrgan:
-    def __init__(self):
-        self.min_loop_duration=12 #ms        
-        self.d = display.Display()
+    def __init__(self, d=None):
+        self.min_loop_duration=12 #ms
+        self.d = d if d else display.Display()
         self.b = backlight.Backlight()
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
@@ -338,8 +342,19 @@ class PocketOrgan:
         self.d.clear()
 
 def start():
-    o = PocketOrgan()
-    o.loop_waiting()
+    d = display.Display()
+    try:
+        o = PocketOrgan()
+        o.loop_waiting()
+    except Exception as e:
+        import sys
+        fd = open("err.txt", "w")
+        sys.print_exception(e, fd)
+        fd.close()
+        fd = open("err.txt","r")
+        d.text(fd.read(), tip=True)
+        raise(e)
+        
 start()
 
 #end
