@@ -11,6 +11,7 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
 # * Fix battery gauge display
 # * Configure the struming comb UC to not recalibrate during long presses
 # * Observe capacitive readings drift when battery voltage decreases
