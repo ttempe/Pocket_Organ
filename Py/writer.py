@@ -189,7 +189,7 @@ class Writer():
                     break
             if mc + 1 == wd:
                 break  # All done: no trailing space
-        print('Truelen', char, wd, mc + 1)  # TEST 
+#        print('Truelen', char, wd, mc + 1)  # TEST 
         return mc + 1
 
     def _get_char(self, char, recurse):
