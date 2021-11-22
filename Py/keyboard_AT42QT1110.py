@@ -62,8 +62,12 @@ class Slider:
         if self.repeat:
             self.thres[-1]=self.thres[0]        
 
+    def touched(self):
+        "Returns whether any of the slider's electrodes is pressed"
+        return max([self.uc.button(i) for i in self.electrodes])
+
     def read(self):
-        "Read slider"
+        "Read slider analog value"
         values = [0]*self.count     #For storing intermediary results
                                     #Fully pressed: ~127; fully released: ~0
         touch = 0
@@ -113,7 +117,6 @@ class Keyboard:
         
         self.vol_slider = Slider( self.uc2, board.keyboard_slider_keys, board.keyboard_slider_cal, True) #TODO: Move this to board.py
 
-        self.volume_pin = board.keyboard_volume_pin
         self.instr_pin = board.keyboard_instr_pin
         self.looper_pin = board.keyboard_looper_pin
         self.drum_pin = board.keyboard_drum_pin
@@ -134,7 +137,6 @@ class Keyboard:
         self.calibrate()
         self.loop()
         self.melody_led(0)
-        self.strum_mute = False
         self.strum_keys = 0 #Bytearray
                 
     def calibrate(self):
@@ -218,17 +220,37 @@ class Keyboard:
         self.uc2.loop()
         self.uc3.loop()        
         
-        self.volume = not(self.volume_pin.value())
-        self.instr = not(self.instr_pin.value())
-        self.looper = not(self.looper_pin.value())
-        self.drum = not(self.drum_pin.value())
-        
         self.seventh = self.uc2.button(board.keyboard_uc2_seventh)
         self.fifth   = self.uc2.button(board.keyboard_uc2_fifth)
         self.third   = self.uc2.button(board.keyboard_uc2_third)
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
         self.sharp   = self.uc1.button(board.keyboard_sharp)
+
+        self.volume = self.vol_slider.touched()
+        self.instr = not(self.instr_pin.value())
+        self.looper = not(self.looper_pin.value())
+        
+        #Play mode: Melody, chords, drum
+        #TODO: replace with a condition that the Drum key is defined in board.py
+        if 20 == board.version:
+            if self.shift:
+                if self.seventh: #Pressed the "Drum" button
+                    self.drum = True
+                    self.melody_lock = False
+                elif self.fifth: #Pressed the "Melody" button
+                    self.drum = False
+                    self.melody_lock = True
+                elif self.third:      #Pressed the "Chords" button
+                    self.drum = False
+                    self.melody_lock = False                    
+        else:
+            self.drum = not(self.drum_pin.value())        
+            if self.drum_old and not self.drum and self.shift:
+                self.melody_lock=True
+            elif self.drum and self.melody_lock:
+                self.melody_lock=False
+            self.melody_led(self.shift)
 
         self.read_analog_keys()
 
@@ -239,7 +261,7 @@ class Keyboard:
         self.volume_old = self.volume
 
         #Volume slider
-        if self.volume:
+        if self.vol_slider.touched():
             v=self.vol_slider.read()
             self.volume_val = v
 
@@ -253,6 +275,8 @@ class Keyboard:
                     self.current_note_key = i
                     break
                 
+        self.strum_mute = (None == self.current_note_key) 
+        
         #is there a combination of 2 keys being pressed right now? (Sharp/flat)
         #(honors the precedence of "1st key pressed")
         if self.current_note_key != None:
@@ -268,18 +292,9 @@ class Keyboard:
 
         #Update the strum keys status
         b = self.uc3.button
-        if board.keyboard_strum_mute:
-            self.strum_mute = self.uc3.button(board.keyboard_strum_mute)
         self.strum_keys=0
         for n, k in enumerate(board.keyboard_strum_keys):
             self.strum_keys += self.uc3.button(k)<<n
-
-        #Melody & Melody lock
-        if self.drum_old and not self.drum and self.shift:
-            self.melody_lock=True
-        elif self.drum and self.melody_lock:
-            self.melody_lock=False
-        self.melody_led(self.shift)
         
     def disp(self):#for calibration
         notes_thres = 0
