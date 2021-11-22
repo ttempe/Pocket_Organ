@@ -4,8 +4,9 @@ from time import sleep
 
 def start():
     print("Starting Pocket Organ")
-    keyboard_melody_led(1)#Flash Shift led (it will be turned off later)
+    keyboard_melody_led(1)#Flash Shift led (it will be turned off during initialization)
     import pocket_organ
+
 
 #Start if USB is disconnected
 #Otherwise, start if Vol is pressed
