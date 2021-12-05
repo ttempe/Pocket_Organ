@@ -77,12 +77,15 @@ class PocketOrgan:
     def loop_volume(self):
         #TODO: set the master and channel volumes separately
         self.d.disp_slider(self.p.volume, "Volume:")
-        volume_old=0       
+        volume_old=0
+        tmp, self.p.strum_chord = self.p.strum_chord, 0 #temporarily disable strumming
         while self.k.volume:
             if self.k.volume_val != volume_old and self.k.volume_val:
                 self.p.set_master_volume( self.k.volume_val)
                 self.d.disp_slider(self.k.volume_val, "Volume:")
+                volume_old = self.k.volume_val
             self.loop(freeze_display=True)
+        self.p.strum_chord = tmp #restore strumming
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
@@ -256,9 +259,7 @@ class PocketOrgan:
                 self.loop_melody()
                 if board.verbose:
                     #TODO: Display the pitch & velocity on the OLED display in real time
-                    pass
-                
-            #TODO: if you press the "Melody" key, enter the melody loop without breaking the chord
+                    pass                
         #root note key released. Stop chord and return
         self.p.stop_chord()
         self.b.light_none()
@@ -270,10 +271,34 @@ class PocketOrgan:
                 if self.k.notes[i] and not self.k.notes_old[i]:
                     name = self.p.play_drum(i)
                     self.d.text(name)
-            if self.k.sharp and not self.k.sharp_old:
-                name = self.p.play_drum(8)
-                self.d.text(name)
             self.loop()
+
+    def loop_capo(self):
+        print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
+        self.d.text(print_txt(self.p.transpose))
+        t = 0
+        old_sharp = 0
+        last_text=""
+        while self.k.capo or self.k.current_note_key != None:
+            level, sharp = self.k.current_note_key_level()
+            if level != None and level != self.p.transpose and ( not(old_sharp) or sharp or time.ticks_ms()-t > 400):
+                #400 ms grace period when releasing a sharp (combinaison of 2 keypresses)
+                self.p.transpose = level%12
+                text = print_txt(level)
+                if text != last_text:
+                    self.d.text(text)
+                    last_text = text
+                t = time.ticks_ms() #Grace period to allow sharps
+                old_sharp = sharp
+            self.loop(freeze_display=True)
+
+    def loop_melody(self):
+        self.d.text("Melody mode")
+        self.p.start_melody()
+        while self.k.shift or self.k.melody_lock or (self.k.current_note_key != None):
+            self.loop(freeze_display=True)
+        self.loop() #let the melody mode finish gracefully
+        self.p.stop_melody()
 
     def loop_waiting(self):
         "starting loop, waiting for 1st keypress"
@@ -299,32 +324,8 @@ class PocketOrgan:
                 self.loop_looper()
             elif self.k.drum:
                 self.loop_drum()
-
-    def loop_capo(self):
-        print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
-        self.d.text(print_txt(self.p.transpose))
-        t = 0
-        old_sharp = 0
-        last_text=""
-        while self.k.instr or self.k.current_note_key != None:
-            level, sharp = self.k.current_note_key_level()
-            if level != None and level != self.p.transpose and ( not(old_sharp) or sharp or time.ticks_ms()-t > 400):
-                #400 ms grace period when releasing a sharp (combinaison of 2 keypresses)
-                self.p.transpose = level%12
-                text = print_txt(level)
-                if text != last_text:
-                    self.d.text(text)
-                    last_text = text
-                t = time.ticks_ms() #Grace period to allow sharps
-                old_sharp = sharp
-            self.loop(freeze_display=True)
-
-    def loop_melody(self):
-        self.d.text("Melody mode")
-        self.p.start_melody()
-        while self.k.shift or self.k.melody_lock or self.k.current_note_key:
-            self.loop(freeze_display=True)
-        self.p.stop_melody()           
+            elif self.k.capo:
+                self.loop_capo()
 
 def start():
     d = display.Display()

@@ -18,89 +18,6 @@ key_expr_up   = [3, 3, 3, 7, 7, 7, 7, 0]
 key_expr_down = [7, 7, 7, 0, 0, 0, 0, 3]
 
 
-class Slider:
-    "Driver for a capacitive slider made of multiple electrodes. The 1st electrode is connected to the last."
-    
-    def __init__(self, uc, electrodes, sensitivity, repeat=False):
-        """
-        'electrodes' is a list of the electrode numbers from touch sensor 'uc' to be used by this slider
-        'sensitivity' is the maximum expected deviation in the value of each corresponding electrode, when naturally sliding a finger over it.
-        'repeat' indicates whether the last electrode is repeated at the end of the slider (in a 1/2/3/1 manner).
-        """
-        self.uc = uc
-        self.electrodes = electrodes
-        self.repeat = bool(repeat)
-        self.sens   = sensitivity                #List of expected max deviation for each electrode
-        self.count  = len(electrodes)+bool(self.repeat)
-        self.thres  = [0]*len(electrodes)        #Reference value, after calibration
-        if self.repeat:
-            self.sens.append(self.sens[0])
-        self.calibrate()
-
-    def sensitivity_detect(self):
-        """
-        to be called manually during hardware development. Evenly swipe a finger over the slider, and it will
-        display the corresponding "sensitivity" values.
-        Values need to be updated every time a new hardware iteration modifies the routing around the touch IC
-        or electrodes.
-        """
-        vmin = [2048]*len(self.electrodes)
-        vmax = [0]*len(self.electrodes)
-        while True:
-            for i, e in enumerate(self.electrodes):
-                v = self.uc.read_analog(e)
-                vmin[i]=min(vmin[i],v)
-                vmax[i]=max(vmax[i],v)
-                print(vmax[i]-vmin[i], end=",")
-            print("")
-            time.sleep_ms(200)        
-
-    def calibrate(self):
-        "Calibrate slider"
-        for i, e in enumerate(self.electrodes):
-            self.thres[i] = self.uc.read_threshold(e)
-        if self.repeat:
-            self.thres[-1]=self.thres[0]        
-
-    def touched(self):
-        "Returns whether any of the slider's electrodes is pressed"
-        return max([self.uc.button(i) for i in self.electrodes])
-
-    def read(self):
-        "Read slider analog value"
-        values = [0]*self.count     #For storing intermediary results
-                                    #Fully pressed: ~127; fully released: ~0
-        touch = 0
-        #Get a relative reading for each electrode, between 0 and 127
-        for i, e in enumerate(self.electrodes):
-            if self.uc.button(e):
-                touch+=1
-        if touch:
-            for i, e in enumerate(self.electrodes):
-                #if self.uc.button(e):
-                r = self.uc.read_analog(e)
-                values[i] = min(((self.thres[i] - r)*127)//(self.sens[i]),127)
-                #print("r", r, "; thres", self.thres[i], "; min", (self.thres[i] - r)*127, "; sens", self.sens[i], "; //", ((self.thres[i] - r)*127)//(self.sens[i]),"; value", values[i])
-            if self.repeat:
-                values[-1]=values[0]
-            v_sum = []
-            for e in range(self.count-1):
-                v_sum.append(values[e]+values[e+1])
-            #Find the value with the highest reading
-            highest_val, highest = max( (v, i) for i, v in enumerate(v_sum) )
-            #print("Highest point is between electrodes", highest, "and", highest+1, "value", highest)
-            if highest_val<60:
-                #none of the key is pressed hard enough. Reading will be very fragile. Ignore
-                return None
-            else:
-                slice = 127//(self.count-1)
-                res = highest*slice
-                res += int(slice*(values[highest+1]/(values[highest]+values[highest+1])))#interpolate
-                #print(0, 127, slice, highest*slice, res, highest_val)
-                return min(res, 127)
-        else:
-            return None
-
 class Keyboard:
     """
     This is the abstraction layer responsible for collecting all user input,
@@ -115,8 +32,6 @@ class Keyboard:
         self.uc2 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc2_cs)
         self.uc3 = AT42QT1110.AT42QT1110(board.keyboard_spi, board.keyboard_uc3_cs)
         
-        self.vol_slider = Slider( self.uc2, board.keyboard_slider_keys, board.keyboard_slider_cal, True) #TODO: Move this to board.py
-
         self.instr_pin = board.keyboard_instr_pin
         self.looper_pin = board.keyboard_looper_pin
         self.drum_pin = board.keyboard_drum_pin
@@ -224,9 +139,10 @@ class Keyboard:
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
 
-        self.volume = self.vol_slider.touched()
-        self.instr = not(self.instr_pin.value())
-        self.looper = not(self.looper_pin.value())
+        self.volume = sum([ self.uc2.button(i) for i in board.keyboard_slider_keys])#self.vol_slider.touched()
+        self.instr  = not(self.instr_pin())
+        self.looper = not(self.looper_pin())
+        self.capo   = not(board.keyboard_capo_pin())
         
         #Play mode: Melody, chords, drum
         #TODO: replace with a condition that the Drum key is defined in board.py
@@ -242,7 +158,7 @@ class Keyboard:
                     self.drum = False
                     self.melody_lock = False                    
         else:
-            self.drum = not(self.drum_pin.value())        
+            self.drum = not(self.drum_pin())        
             if self.drum_old and not self.drum and self.shift:
                 self.melody_lock=True
             elif self.drum and self.melody_lock:
@@ -252,15 +168,9 @@ class Keyboard:
         self.read_analog_keys()
 
         #Re-calibrate the touch keys on "Volume" press
-        if self.volume and not self.volume_old:
-            self.calibrate()
+        #if self.volume and not self.volume_old:
+        #    self.calibrate()
             
-        self.volume_old = self.volume
-
-        #Volume slider
-        if self.vol_slider.touched():
-            v=self.vol_slider.read()
-            self.volume_val = v
 
         #is there a key being pressed right now?
         if self.current_note_key!=None:
@@ -292,6 +202,16 @@ class Keyboard:
         self.strum_keys=0
         for n, k in enumerate(board.keyboard_strum_keys):
             self.strum_keys += self.uc3.button(k)<<n
+            
+        #Volume slider
+        self.volume_old = self.volume
+        if self.volume:
+            #Average position of strummed keys
+            n, t = 0, 0
+            for i in range(len(board.keyboard_strum_keys)):
+                n += (self.strum_keys >> i)&1
+                t += ((self.strum_keys >> i)&1) * i
+                self.volume_val = int( t / n * 127 / len(board.keyboard_strum_keys) ) if n else 0
         
     def disp(self):#for calibration
         notes_thres = 0

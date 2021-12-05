@@ -49,7 +49,12 @@ keyboard_uc3_cs(1)
 keyboard_melody_led = Pin("C3", Pin.OUT)
 keyboard_instr_pin  = Pin("A4", Pin.IN, Pin.PULL_UP)
 keyboard_looper_pin = Pin("A1", Pin.IN, Pin.PULL_UP)
-keyboard_drum_pin   = Pin("A2", Pin.IN, Pin.PULL_UP)
+if 20 >= version:
+    keyboard_drum_pin = lambda : False
+    keyboard_capo_pin = Pin("A2", Pin.IN, Pin.PULL_UP)
+else:
+    keyboard_drum_pin = Pin("A2", Pin.IN, Pin.PULL_UP)
+    keyboard_capo_pin = lambda : False
 keyboard_uc2_seventh= 6 #on UC2
 keyboard_note_keys  = bytearray([6, 7, 8, 0, 9, 2, 3, 1]) #Order of the note key pads from Do to Ut. All must be on the same UC.
 keyboard_uc2_fifth  = 8 #on UC2

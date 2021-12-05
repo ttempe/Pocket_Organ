@@ -154,9 +154,6 @@ class Polyphony:
     
     def stop_melody(self):
         self.melody = False
-        #TODO: not exiting cleanly when releasing shift while holding a note key
-        #for i in bits(self.melody_playing):
-        #    self.stop_note(self.melody_last_key, len(board.keyboard_strum_keys))
 
     def stop_all_notes(self):
         self.playing_notes = 0
@@ -183,29 +180,7 @@ class Polyphony:
         
     def loop(self):
         self.metronome.loop()
-        
-        #Are we strumming?
-        if self.strum_chord:
-            #If the user just activated the strum mute or released a chord key:
-            if (self.k.strum_mute and not self.strum_mute_old):
-                #Mute any key that's not being held
-                for k in bits(self.strum_keys_all & ~self.k.strum_keys, len(board.keyboard_strum_keys)):
-                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
-                self.strum_keys_all = 0
-            #update newly released strum keys
-            elif self.k.strum_mute:
-                #Keys that were in _old but are no longer in _new
-                for i in bits(self.strum_keys_old & (~self.k.strum_keys), len(board.keyboard_strum_keys)):
-                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
-
-            #update newly strummed keys
-            for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
-                self.l.append(self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
                 
-            self.strum_mute_old = self.k.strum_mute
-            self.strum_keys_old = self.k.strum_keys
-            self.strum_keys_all |= self.k.strum_keys
-        
         #scheduled chord notes:
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
         if len(self.pending):
@@ -234,58 +209,81 @@ class Polyphony:
                         self.stop_note(i)
                         self.melody_playing &= ~(1<<i) #un-record note
 
-        elif self.playing_chord_key != None: #Playing a chord
-            #Update sharp/flat status
-            if self.playing_chord_level != self.k.current_key_level:
-                self.stop_chord()
-                self.start_chord()
-            #Update chord shape
-            if self.third != self.k.third:
-                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[1], self.default_velocity))
-                self.sus4 = self.k.third and not self.k.minor
-                self.sus2 = self.k.third and self.k.minor
-                self.third = self.k.third
-                self.update_chord()
-                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[1], self.default_velocity))
-            if self.fifth != self.k.fifth:
-                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[2], self.default_velocity))
-                self.aug = self.k.fifth and not self.k.minor
-                self.dim = self.k.fifth and self.k.minor
-                self.fifth = self.k.fifth
-                self.update_chord()
-                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[2], self.default_velocity))
-            if self.seventh and not self.k.seventh:
-                self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[3], self.default_velocity))
-                self.seventh = self.k.seventh
-                self.update_chord()
-            elif not self.seventh and self.k.seventh:
-                self.seventh = self.k.seventh
-                self.update_chord()
-                self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity))
+        else: #Not melody
             
-            #Update expression
-            #TODO: provide expression while playing in melody mode
-            #Channel expression (volume): vary pressure on the key being played
-            expr1 = self.k.notes_val[self.playing_chord_key]
-            if abs(expr1 - self.expr1_old) > 10:# and (time.ticks_ms() - self.expr1_time > 10):#Filtering
-                self.expr1_old = expr1
-                #self.expr1_time = time.ticks_ms()
-                self.l.append(self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64))
+            if self.strum_chord: #Are we strumming?
+                #If the user just activated the strum mute or released a chord key:
+                if (self.k.strum_mute and not self.strum_mute_old):
+                    #Mute any key that's not being held
+                    for k in bits(self.strum_keys_all & ~self.k.strum_keys, len(board.keyboard_strum_keys)):
+                        self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
+                    self.strum_keys_all = 0
+                #update newly released strum keys
+                elif self.k.strum_mute:
+                    #Keys that were in _old but are no longer in _new
+                    for i in bits(self.strum_keys_old & (~self.k.strum_keys), len(board.keyboard_strum_keys)):
+                        self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
 
-             #full-tone bending (press the 1st key of the previous/next line).
-            expr_bend = (self.k.key_expr_up - self.k.key_expr_down)//2+64
-            if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
-                self.expr_bend_old = expr_bend
-                #self.expr_bend_time = time.ticks_ms()
-                self.l.append(self.midi.pitch_bend(self.l.chord_channel, expr_bend))
+                #update newly strummed keys
+                for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
+                    self.l.append(self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
+                    
+                self.strum_mute_old = self.k.strum_mute
+                self.strum_keys_old = self.k.strum_keys
+                self.strum_keys_all |= self.k.strum_keys
 
-            #Update the display if needed (depends on the bending status)
-            self.chord_sharp = (expr_bend - 48)//32
-            if self.chord_sharp != self.chord_sharp_old and (time.ticks_ms() - self.chord_disp_timestamp) > 200:
-                self.chord_sharp_old = self.chord_sharp
-                self.chord__disp_timestamp = time.ticks_ms()
-                #Don't count the "capo" in the chord display.
-                #Makes it harder to play with other musicians, but easier to follow tablatures
-                self.d.disp_chord(instr_names.note_names[(self.chord[0] + self.chord_sharp - self.transpose)%12], self.chord_shape_name) 
-                                    
+            if self.playing_chord_key != None: #Playing a chord
+                #Update sharp/flat status
+                if self.playing_chord_level != self.k.current_key_level:
+                    self.stop_chord()
+                    self.start_chord()
+                #Update chord shape
+                if self.third != self.k.third:
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[1], self.default_velocity))
+                    self.sus4 = self.k.third and not self.k.minor
+                    self.sus2 = self.k.third and self.k.minor
+                    self.third = self.k.third
+                    self.update_chord()
+                    self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[1], self.default_velocity))
+                if self.fifth != self.k.fifth:
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[2], self.default_velocity))
+                    self.aug = self.k.fifth and not self.k.minor
+                    self.dim = self.k.fifth and self.k.minor
+                    self.fifth = self.k.fifth
+                    self.update_chord()
+                    self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[2], self.default_velocity))
+                if self.seventh and not self.k.seventh:
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.chord[3], self.default_velocity))
+                    self.seventh = self.k.seventh
+                    self.update_chord()
+                elif not self.seventh and self.k.seventh:
+                    self.seventh = self.k.seventh
+                    self.update_chord()
+                    self.l.append(self.midi.note_on(self.l.chord_channel, self.chord[3], self.default_velocity))
+                
+                #Update expression
+                #TODO: provide expression while playing in melody mode
+                #Channel expression (volume): vary pressure on the key being played
+                expr1 = self.k.notes_val[self.playing_chord_key]
+                if abs(expr1 - self.expr1_old) > 10:# and (time.ticks_ms() - self.expr1_time > 10):#Filtering
+                    self.expr1_old = expr1
+                    #self.expr1_time = time.ticks_ms()
+                    self.l.append(self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64))
+
+                 #full-tone bending (press the 1st key of the previous/next line).
+                expr_bend = (self.k.key_expr_up - self.k.key_expr_down)//2+64
+                if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
+                    self.expr_bend_old = expr_bend
+                    #self.expr_bend_time = time.ticks_ms()
+                    self.l.append(self.midi.pitch_bend(self.l.chord_channel, expr_bend))
+
+                #Update the display if needed (depends on the bending status)
+                self.chord_sharp = (expr_bend - 48)//32
+                if self.chord_sharp != self.chord_sharp_old and (time.ticks_ms() - self.chord_disp_timestamp) > 200:
+                    self.chord_sharp_old = self.chord_sharp
+                    self.chord__disp_timestamp = time.ticks_ms()
+                    #Don't count the "capo" in the chord display.
+                    #Makes it harder to play with other musicians, but easier to follow tablatures
+                    self.d.disp_chord(instr_names.note_names[(self.chord[0] + self.chord_sharp - self.transpose)%12], self.chord_shape_name) 
+                                        
 #end

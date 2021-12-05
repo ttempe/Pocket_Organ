@@ -68,7 +68,7 @@ class Midi:
 #         self.uart.write(n)
 #         return n
 # 
-#     def polyphonic_aftertouch(self, note, channel, value):
+#    def polyphonic_aftertouch(self, channel, note, value):
 #         #No effect on the SAM2695
 #         n = bytearray([0xA0+(channel&0x0F), note&127, value&127])
 #         self.uart.write(n)
