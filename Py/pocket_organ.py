@@ -11,17 +11,14 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * Melody mode bending: review and improve
 # * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
 # * Fix battery gauge display
 # * Configure the struming comb UC to not recalibrate during long presses
 # * Observe capacitive readings drift when battery voltage decreases
-# * Display Shift when pressing the Shift key, not "Melody mode".
-# * Display "Chords mode" when switching back.
-# * Implement melody overlay
-# * re-do the melody mode, incl. sharps and expression, and keep the strumming comb working. Fix the UT key, and try using it in real life
+# * Display "Shift", "Chords mode", "Drums mode" when switching modes
+# * melody mode expression (partial keypress)
 # * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m
-# * Find a way to implement Drum Lock
-# * Improve the volume slider (add filtering on the display, help it reach 0% and 100%, don't reset it to 50% when pressing the Vol button...)
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Add a reinit() call to each of the SPI chip drivers, to setup the bus for itself with optimal speed. Takes ~150 us.
 #   -> Done for AT42QT1110 1.5M; not done for SSD1306 10M; not done for flash TBD
@@ -32,12 +29,14 @@ import gc #Garbage collector
 # * implement tuning
 # * Optimize loop erase time
 # * display note name (Do~Ut) while playing in melody mode
+# * Exception display: clip to the letter, not word, to display file name.
 
 # Prospective
 # * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ;
 #  -> generate it by catching the exception. Use https://github.com/JASchilz/uQR
+# * Midi MPE controller
 
 # Notes:
 # * using a custom Micropython build, see: https://forum.micropython.org/viewtopic.php?t=4673
@@ -50,6 +49,7 @@ class PocketOrgan:
         self.k = keyboard.Keyboard()
         self.l = looper.Looper(self.b, self.d)
         self.p = polyphony.Polyphony(self.k, self.d, self.l)
+        self.l.p = self.p
         self.bat = battery.Battery(self.d)
         self.last_t = time.ticks_ms()
         self.last_t_disp = 0
@@ -75,17 +75,19 @@ class PocketOrgan:
         self.last_t = t
 
     def loop_volume(self):
-        #TODO: set the master and channel volumes separately
-        self.d.disp_slider(self.p.volume, "Volume:")
-        volume_old=0
-        tmp, self.p.strum_chord = self.p.strum_chord, 0 #temporarily disable strumming
+        #TODO: set the channel volume
+        master = not(self.k.shift)
+        vname = lambda: "Master volume:" if master else "Channel volume:"
+        self.d.disp_slider(self.p.volume, vname())
+        slider_old=0
+        self.p.strumming = False #temporarily disable strumming
         while self.k.volume:
-            if self.k.volume_val != volume_old and self.k.volume_val:
-                self.p.set_master_volume( self.k.volume_val)
-                self.d.disp_slider(self.k.volume_val, "Volume:")
-                volume_old = self.k.volume_val
+            if self.k.slider_val != slider_old and (self.k.slider_val != None):
+                self.p.set_master_volume(self.k.slider_val)
+                self.d.disp_slider(self.k.slider_val, vname())
+                slider_old = self.k.slider_val
             self.loop(freeze_display=True)
-        self.p.strum_chord = tmp #restore strumming
+        self.p.strumming = True
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
@@ -293,9 +295,12 @@ class PocketOrgan:
             self.loop(freeze_display=True)
 
     def loop_melody(self):
-        self.d.text("Melody mode")
+        lock_old = False
         self.p.start_melody()
         while self.k.shift or self.k.melody_lock or (self.k.current_note_key != None):
+            if self.k.melody_lock and not lock_old:
+                self.d.text("Melody mode")
+                lock_old = True            
             self.loop(freeze_display=True)
         self.loop() #let the melody mode finish gracefully
         self.p.stop_melody()
@@ -305,7 +310,6 @@ class PocketOrgan:
         while 1:
             self.loop()
             if self.k.shift or self.k.melody_lock:
-                #Melody mode.
                 self.loop_melody()
             elif self.k.current_note_key != None:
                 #Note keys: play chords

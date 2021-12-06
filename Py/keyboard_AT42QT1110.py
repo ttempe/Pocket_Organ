@@ -44,7 +44,7 @@ class Keyboard:
         self.notes_ref = [0]*8 #reference value from unpressed key (from calibration)
         self.volume = False
         self.volume_old = False
-        self.volume_val =  100 #value from 0 to 100
+        self.slider_val =  127 #value from 0 to 127
         self.current_note_key = None
         self.current_note_level = None
         time.sleep_ms(100)
@@ -139,7 +139,8 @@ class Keyboard:
         self.minor   = self.uc2.button(board.keyboard_uc2_minor)
         self.shift   = self.uc2.button(board.keyboard_uc2_shift)
 
-        self.volume = sum([ self.uc2.button(i) for i in board.keyboard_slider_keys])#self.vol_slider.touched()
+        self.volume = sum([ self.uc2.button(i) for i in board.keyboard_slider_keys])
+        self.volume_old = self.volume
         self.instr  = not(self.instr_pin())
         self.looper = not(self.looper_pin())
         self.capo   = not(board.keyboard_capo_pin())
@@ -203,15 +204,12 @@ class Keyboard:
         for n, k in enumerate(board.keyboard_strum_keys):
             self.strum_keys += self.uc3.button(k)<<n
             
-        #Volume slider
-        self.volume_old = self.volume
-        if self.volume:
-            #Average position of strummed keys
-            n, t = 0, 0
-            for i in range(len(board.keyboard_strum_keys)):
-                n += (self.strum_keys >> i)&1
-                t += ((self.strum_keys >> i)&1) * i
-                self.volume_val = int( t / n * 127 / len(board.keyboard_strum_keys) ) if n else 0
+        #Strumming comb as an analog slider
+        n, t = 0, 0
+        for i in range(len(board.keyboard_strum_keys)):
+            n += (self.strum_keys >> i)&1
+            t += ((self.strum_keys >> i)&1) * i
+            self.slider_val = int( t / n * 127 / len(board.keyboard_strum_keys) ) if n else None
         
     def disp(self):#for calibration
         notes_thres = 0

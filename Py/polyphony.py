@@ -29,7 +29,6 @@ class Polyphony:
         self.k = keyboard
         self.d = display
         self.l = looper
-        self.l.p = self
         self.midi = midi.Midi()
         self.metronome = metronome.Metronome(self.midi)
         self.transpose = 0
@@ -38,8 +37,9 @@ class Polyphony:
         self.set_instr(self.instr)
         self.volume = 64
         self.set_volume(self.volume)
-        self.chord = []       #Currently playing chord
-        self.strum_chord = [] #same chord, but with enough notes to cover all strumming keys
+        self.chord = []        #Currently playing chord
+        self.strumming = False #Enable strumming?
+        self.strum_chord = []  #same chord, but with enough notes to cover all strumming keys
         self.strum_mute_old = False
         self.strum_keys_old = 0   #bitmap
         self.strum_keys_all = 0   #bitmap of all active notes
@@ -114,6 +114,7 @@ class Polyphony:
         self.chord_shape_name =   ("m" if self.minor else "") + ("7" if self.seventh else "") + ("dim" if self.dim else "aug" if self.aug else "") + ("sus4" if self.sus4 else "sus2" if self.sus2 else "")
         self.chord_sharp_old = None #Force re-display next time
         #self.chord_disp_timestamp = 0 #Don't update -> display will be immediate on the next call to loop()
+        self.strumming = True
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -177,10 +178,11 @@ class Polyphony:
     def set_master_volume(self, vol):
         #TODO: time filtering?
         self.midi.set_master_volume(vol)
+        self.volume = vol
         
     def loop(self):
         self.metronome.loop()
-                
+        
         #scheduled chord notes:
         #Check if a note is due for playing, and play it. Assumes the notes are listed chronologycally.
         if len(self.pending):
@@ -208,10 +210,14 @@ class Polyphony:
                     if (self.melody_playing>>i)&1: #was playing
                         self.stop_note(i)
                         self.melody_playing &= ~(1<<i) #un-record note
-
+            expr_bend = self.k.slider_val if self.k.slider_val != None else 0
+            if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
+                self.expr_bend_old = expr_bend
+                #self.expr_bend_time = time.ticks_ms()
+                self.l.append(self.midi.pitch_bend(self.l.melody_channel, expr_bend))
         else: #Not melody
             
-            if self.strum_chord: #Are we strumming?
+            if self.strum_chord and self.strumming: #Are we strumming?
                 #If the user just activated the strum mute or released a chord key:
                 if (self.k.strum_mute and not self.strum_mute_old):
                     #Mute any key that's not being held
@@ -271,7 +277,7 @@ class Polyphony:
                     self.l.append(self.midi.set_controller(self.l.chord_channel, 11, expr1//2+64))
 
                  #full-tone bending (press the 1st key of the previous/next line).
-                expr_bend = (self.k.key_expr_up - self.k.key_expr_down)//2+64
+                expr_bend = (self.k.key_expr_up - self.k.key_expr_down)//2+64            
                 if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                     self.expr_bend_old = expr_bend
                     #self.expr_bend_time = time.ticks_ms()
