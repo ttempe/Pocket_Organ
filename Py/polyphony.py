@@ -210,7 +210,7 @@ class Polyphony:
                     if (self.melody_playing>>i)&1: #was playing
                         self.stop_note(i)
                         self.melody_playing &= ~(1<<i) #un-record note
-            expr_bend = self.k.slider_val if self.k.slider_val != None else 0
+            expr_bend = self.k.slider_val if self.k.slider_val != None else 64
             if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
                 self.expr_bend_old = expr_bend
                 #self.expr_bend_time = time.ticks_ms()
