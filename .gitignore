@@ -42,3 +42,5 @@ Doc/2020-07-30 HOPE 2020/~$2020-07 Pocket Organ - Hope deck v3 - complete.pptx
 Doc/~$BOM cost estimate (mass production).xlsx
 Project_Pocket_Organ_20210515215729.zip
 *.cfg
+Py/test_kb.py
+Py/test_key_disp.py
