@@ -103,6 +103,8 @@ class Looper:
         return self.recorded & (1<<n)
 
     def delete_track(self, n):
+        if self.playing & (1<<n):
+            self._stop_playing(n)
         if self.f.busy():
             self.d.text("Delete failed")
             self.d.text("Device busy. Try again in a few seconds", 1, tip=True)
@@ -204,9 +206,7 @@ class Looper:
             #Loop was not playing. Start it.
             self.d.text("Start playing loop {}".format(self.loop_names[key]))
         self.toggle_play_waitlist ^= 1<<key
-        if not(self.playing & (1<<key)):
-            #loop was really not playing.
-            self.d.text("Hold to delete",2, tip=True)
+        self.d.text("Hold to delete",2, tip=True)
         self.display()
 
     def _start_playing(self, i):
