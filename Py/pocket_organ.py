@@ -11,6 +11,7 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * Add a "build date": a date string in version.py
 # * Melody mode bending: review and improve
 # * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
 # * Fix battery gauge display
@@ -274,6 +275,8 @@ class PocketOrgan:
                     name = self.p.play_drum(i)
                     self.d.text(name)
             self.loop()
+            if self.k.current_note_key == None:
+                self.check_function_keys()
 
     def loop_capo(self):
         print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
@@ -294,15 +297,25 @@ class PocketOrgan:
                 old_sharp = sharp
             self.loop(freeze_display=True)
 
+    def loop_tune(self):
+        self.d.text("Not implemented")
+        while self.k.loop:
+            self.loop(freeze_display=True)
+
     def loop_melody(self):
         lock_old = False
+        if self.k.melody_lock and not lock_old:
+            self.d.text("Melody mode")
+            lock_old = True
+
         self.p.start_melody()
+        
         while self.k.shift or self.k.melody_lock or (self.k.current_note_key != None):
-            if self.k.melody_lock and not lock_old:
-                self.d.text("Melody mode")
-                lock_old = True            
+            self.p.update_melody()
             self.loop(freeze_display=True)
-        self.loop() #let the melody mode finish gracefully
+            if self.k.current_note_key == None and self.p.playing_chord_key == None:
+                self.check_function_keys()
+        self.p.update_melody() #let the melody mode finish gracefully
         self.p.stop_melody()
 
     def loop_waiting(self):
@@ -314,22 +327,30 @@ class PocketOrgan:
             elif self.k.current_note_key != None:
                 #Note keys: play chords
                 self.loop_chord() #returns when the chord is released
-            elif self.k.instr:
-                if self.l.recording:
-                    self.d.text("Can't change instrument while recording", tip=True)
-                    while self.k.instr:
-                        self.loop()
-                else:
-                    #MIDI instrument selection loop
-                    self.loop_instr()
-            elif self.k.volume:
-                self.loop_volume()
-            elif self.k.looper:
-                self.loop_looper()
-            elif self.k.drum:
-                self.loop_drum()
-            elif self.k.capo:
-                self.loop_capo()
+            else:
+                self.check_function_keys()
+                
+    def check_function_keys(self):
+        if self.k.instr:
+            if self.l.recording:
+                self.d.text("Can't change instrument while recording", tip=True)
+                while self.k.instr:
+                    self.loop() #wait for key release
+            else:
+                #MIDI instrument selection loop
+                self.loop_instr()
+        elif self.k.volume:
+            self.loop_volume()
+        elif self.k.looper:
+            if self.k.shift:
+                self.loop_tune()
+            else:
+                self.loop_looper()            
+        elif self.k.drum and not self.k.drum_old:
+            self.loop_drum()
+        elif self.k.capo:
+            self.loop_capo()
+
 
 def start():
     d = display.Display()

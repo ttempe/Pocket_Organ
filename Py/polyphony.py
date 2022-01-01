@@ -60,6 +60,8 @@ class Polyphony:
         
         #For melody mode
         self.melody = False
+        self.melody_last_key = None
+        self.melody_last_key_time = 0
         
     def start_chord(self, quick_mode=False):
         self.playing_chord_key = self.k.current_note_key
@@ -150,11 +152,35 @@ class Polyphony:
     def start_melody(self):
         self.melody = True
         self.melody_playing = 0 #bitmap of all playing notes
-        self.melody_last_key = None
-        self.melody_last_key_time = 0
-    
+
     def stop_melody(self):
         self.melody = False
+
+    def update_melody(self):
+        for i in range(8):
+            if self.k.notes[i] and not self.k.notes_old[i]: #New keypress
+                if self.melody_last_key !=None and abs(self.melody_last_key-i)==1 and (time.ticks_ms()-self.melody_last_key_time)<40 and min(self.melody_last_key, i) not in [2, 6]:
+                    #two presses together; consider as a sharp.
+                    self.stop_note(self.melody_last_key)
+                    self.start_note(min(self.melody_last_key, i), sharp=True)
+                    self.melody_playing &= ~(1<<self.melody_last_key) #un-record note
+                    self.melody_playing |= 1<<min(self.melody_last_key, i) #record note
+                    self.melody_last_key = None
+                else: #Single note press
+                    self.start_note(i)
+                    self.melody_playing |= 1<<i #record note
+                    self.melody_last_key = i
+                    self.melody_last_key_time = time.ticks_ms()
+            elif self.k.notes_old[i] and not self.k.notes[i]: #Key release
+                if (self.melody_playing>>i)&1: #was playing
+                    self.stop_note(i)
+                    self.melody_playing &= ~(1<<i) #un-record note
+        expr_bend = self.k.slider_val if self.k.slider_val != None else 64
+        if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
+            self.expr_bend_old = expr_bend
+            #self.expr_bend_time = time.ticks_ms()
+            self.l.append(self.midi.pitch_bend(self.l.melody_channel, expr_bend))
+
 
     def stop_all_notes(self):
         self.playing_notes = 0
@@ -191,32 +217,7 @@ class Polyphony:
                 n = self.pending.pop(0)
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
 
-        if self.melody: #playing in melody mode
-            for i in range(8):
-                if self.k.notes[i] and not self.k.notes_old[i]: #New keypress
-                    if self.melody_last_key !=None and abs(self.melody_last_key-i)==1 and (time.ticks_ms()-self.melody_last_key_time)<40 and min(self.melody_last_key, i) not in [2, 6]:
-                        #two presses together; consider as a sharp.
-                        self.stop_note(self.melody_last_key)
-                        self.start_note(min(self.melody_last_key, i), sharp=True)
-                        self.melody_playing &= ~(1<<self.melody_last_key) #un-record note
-                        self.melody_playing |= 1<<min(self.melody_last_key, i) #record note
-                        self.melody_last_key = None
-                    else: #Single note press
-                        self.start_note(i)
-                        self.melody_playing |= 1<<i #record note
-                        self.melody_last_key = i
-                        self.melody_last_key_time = time.ticks_ms()
-                elif self.k.notes_old[i] and not self.k.notes[i]: #Key release
-                    if (self.melody_playing>>i)&1: #was playing
-                        self.stop_note(i)
-                        self.melody_playing &= ~(1<<i) #un-record note
-            expr_bend = self.k.slider_val if self.k.slider_val != None else 64
-            if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
-                self.expr_bend_old = expr_bend
-                #self.expr_bend_time = time.ticks_ms()
-                self.l.append(self.midi.pitch_bend(self.l.melody_channel, expr_bend))
-        else: #Not melody
-            
+        if not self.melody: #Melody mode takes precedence
             if self.strum_chord and self.strumming: #Are we strumming?
                 #If the user just activated the strum mute or released a chord key:
                 if (self.k.strum_mute and not self.strum_mute_old):
