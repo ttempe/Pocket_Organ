@@ -1,6 +1,9 @@
 from board import vbat, vusb, verbose, version
 from time import ticks_ms
 
+if verbose:
+    import os
+
 bat_levels = [(4.15, "bat_100"),
               (3.7, "bat_70"),
               (3.6, "bat_20"),
@@ -36,10 +39,14 @@ class Battery:
                     self.disp_bat(lvl)
                     self.last_lvl = lvl
             if verbose:
-                if (self.disp_update//4)&1:
-                    self.d.indicator_txt("-\|/"[self.disp_update%4] + str(vbat())[0:4]+"V", 58)
+                if self.disp_update//4 == 0:
+                    self.d.indicator_txt("-\|/"[self.disp_update%4] + str(vbat())[0:4]+"V", 57)
+                elif self.disp_update//4 == 1:
+                    self.d.indicator_txt("-\|/"[self.disp_update%4] + "v"+str(version) + "  ", 57)
+                elif self.disp_update//4 == 2:
+                    self.d.indicator_txt("-\|/"[self.disp_update%4] + os.uname()[3][-8:-6]+os.uname()[3][-5:-3]+os.uname()[3][-2:], 57)
                 else:
-                    self.d.indicator_txt("-\|/"[self.disp_update%4] + "v"+str(version) + "  ", 58)
+                    self.disp_update = -1
                 self.disp_update += 1
             self.last_time = ticks_ms()
 

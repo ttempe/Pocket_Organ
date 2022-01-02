@@ -11,8 +11,6 @@ import time
 import gc #Garbage collector
 
 # TODO:
-# * Add a "build date": a date string in version.py
-# * Melody mode bending: review and improve
 # * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
 # * Fix battery gauge display
 # * Configure the struming comb UC to not recalibrate during long presses
@@ -31,6 +29,7 @@ import gc #Garbage collector
 # * Optimize loop erase time
 # * display note name (Do~Ut) while playing in melody mode
 # * Exception display: clip to the letter, not word, to display file name.
+# * Melody mode bending: review and improve
 
 # Prospective
 # * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
