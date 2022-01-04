@@ -105,6 +105,7 @@ class Polyphony:
         unrounded_chord = [ self.root, self.root + 4 - self.minor + self.sus4 - self.sus2*2, self.root + 7 + self.aug - self.dim]
         if self.seventh:
             unrounded_chord.append(self.root+10-self.minor)
+        self.stop_trumming()
         self.strum_chord = [unrounded_chord[0]-24]
         incr = -12
         while len(self.strum_chord)<len(board.keyboard_strum_keys):
@@ -140,6 +141,13 @@ class Polyphony:
         self.playing_chord_key = None
         self.expr1_none=-10
         self.chord_sharp_old = None
+        
+    def stop_strumming(self):
+        if self.strum_chord: #Are we strumming?
+            #Mute any key that's not being held
+            for k in bits(self.strum_keys_all, len(board.keyboard_strum_keys)):
+                self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
+                self.strum_keys_all = 0        
 
     def start_note(self, i, sharp=False):
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third - 12*self.k.minor + sharp
@@ -175,6 +183,7 @@ class Polyphony:
                 if (self.melody_playing>>i)&1: #was playing
                     self.stop_note(i)
                     self.melody_playing &= ~(1<<i) #un-record note
+        #TODO: Add monophonic velocity expression
         expr_bend = self.k.slider_val if self.k.slider_val != None else 64
         if abs(expr_bend - self.expr_bend_old) > 4:# and (time.ticks_ms() - self.expr_bend_time > 10):#Filtering
             self.expr_bend_old = expr_bend
