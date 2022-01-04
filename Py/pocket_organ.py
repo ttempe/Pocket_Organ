@@ -11,8 +11,11 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * After pressing down a 2nd chord key while holding the strumming comb, the strum keys get stuck
+# * When changing the chord shape while holding the strum keys, some strum keys get stuck
 # * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
 # * Fix battery gauge display
+# * Make the instrument still work even when there's no images
 # * Configure the struming comb UC to not recalibrate during long presses
 # * Observe capacitive readings drift when battery voltage decreases
 # * Display "Shift", "Chords mode", "Drums mode" when switching modes
@@ -29,7 +32,7 @@ import gc #Garbage collector
 # * Optimize loop erase time
 # * display note name (Do~Ut) while playing in melody mode
 # * Exception display: clip to the letter, not word, to display file name.
-# * Melody mode bending: review and improve
+# * Implement monophonic expression on the Melody mode
 
 # Prospective
 # * Freeze the contents of img/*.pbm. (Add it to .py files directly?)

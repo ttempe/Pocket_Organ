@@ -44,7 +44,7 @@ class Battery:
                 elif self.disp_update//4 == 1:
                     self.d.indicator_txt("-\|/"[self.disp_update%4] + "v"+str(version) + "  ", 57)
                 elif self.disp_update//4 == 2:
-                    self.d.indicator_txt("-\|/"[self.disp_update%4] + os.uname()[3][-8:-6]+os.uname()[3][-5:-3]+os.uname()[3][-2:], 57)
+                    self.d.indicator_txt("-\|/"[self.disp_update%4] + os.uname()[3][-7:-6]+os.uname()[3][-5:-3]+os.uname()[3][-2:], 57)
                 else:
                     self.disp_update = -1
                 self.disp_update += 1
