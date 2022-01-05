@@ -11,6 +11,8 @@ import time
 import gc #Garbage collector
 
 # TODO:
+# * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
+# * Add more info in the error log. (Store multiple errors?)
 # * After pressing down a 2nd chord key while holding the strumming comb, the strum keys get stuck
 # * When changing the chord shape while holding the strum keys, some strum keys get stuck
 # * Write to flash: Don't wait for loop(), attempt to start writing on each message (time message writes to determine a minimum queue size)
@@ -35,7 +37,6 @@ import gc #Garbage collector
 # * Implement monophonic expression on the Melody mode
 
 # Prospective
-# * Freeze the contents of img/*.pbm. (Add it to .py files directly?)
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Handle crashes: error codes, displaying a QR code with instrument unique ID, timestamp, link to documentation/support (25*25 -> 47 characters) ;
 #  -> generate it by catching the exception. Use https://github.com/JASchilz/uQR
@@ -360,12 +361,18 @@ def start():
         o = PocketOrgan()
         o.loop_waiting()
     except Exception as e:
-        import sys
+        import sys, os, pyb
         fd = open("err.txt", "w")
+        fd.write(str(os.uname()))
+        fd.write("\nBattery: {:1.3}V; USB: {:1.3}V\n".format(board.vbat(), board.vusb()))
+        fd.write("USB connected\n" if pyb.USB_VCP().isconnected() else "USB NOT connected\n")
+        t=time.ticks_ms()//1000
+        fd.write("Uptime: {:02}h{:02}m{:02}s\n".format(t//3600, t%3600//60, t%60))
+        fd.write("HW version: {}\n".format(board.version))
         sys.print_exception(e, fd)
         fd.close()
         fd = open("err.txt","r")
-        d.text(fd.read(), tip=True)
+        d.text(fd.read()[-300:-1], err=True)
         raise(e)
         
 start()

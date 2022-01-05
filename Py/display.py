@@ -23,7 +23,7 @@ import writer, font_med, font_big, font_small
 #  24    32 loop duration
 #  60    48 Battery voltage (debug)
 # 108    20 Battery
-
+    
 #TODO: Move the icons to frozen storage.
 
 def load_image(name):
@@ -54,7 +54,10 @@ class Display:
 #        from machine import Pin, I2C
 #        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
         self.disp.contrast(100) #0~255 TODO: Test ouside in bright sunlight
-        self.disp_image("logo")
+        try:
+            self.disp_image("logo")
+        except:
+            pass
         self.erase_time = time.ticks_ms() + 2000
         self.font_big = writer.Writer(self.disp.framebuf, font_big)
         self.font_big.set_clip(False, True, False)
@@ -98,12 +101,15 @@ class Display:
         if board.verbose:
             print("Playing chord:", degree, shape)
     
-    def text(self, text, line=0, tip=False):
+    def text(self, text, line=0, tip=False, err=False):
         self.disp.framebuf.fill_rect(0,8+self.font_med.height*line,127,63,0)
         self._locate(0, 8+line*self.font_med.height)
         if tip:
 #            self.font_small.printstring(" i ", True)
             self.font_small.printstring(text, True)
+        elif err:
+            self.font_small.set_clip(False, False, False)
+            self.font_small.printstring(text, False)
         else:
             self.font_med.printstring(text)
         self.disp.show()
