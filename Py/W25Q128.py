@@ -34,7 +34,7 @@ class W25Q128:
         self.rate = 50000000#50MHz
         self.last_op_was_write = False
         self.page_length = 256 #for writing
-        self.erase_block_size = 4096 #needs to match the instructions in erase_block()
+        self.erase_block_size = 65536 #needs to match the instructions in self.erase_block() below
 
         #Start communicating with the device
         self.reinit()
@@ -105,9 +105,9 @@ class W25Q128:
         self.send_command(b"\x06") #Write enable
         
         ##if you change this, remember to adjust self.erase_block_size in __init__()
-        self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
+        #self.send_command(b"\x20", addr = addr&0xFFF000) #erase 4k sector
         #self.send_command(b"\x52", addr = addr&0xFF8000) #erase 32k block
-        #self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
+        self.send_command(b"\xD8", addr = addr&0xFF0000) #erase 64k block
 
     def erase_block_4k(self, addr):
         "erase a block"
