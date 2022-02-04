@@ -31,6 +31,7 @@
 # * Apparently erasing track -8 at boot. Clarify.
 # * count the number of "read status" operations per cycle; add a test to only check every 40 ms?
 # * handle all exceptions raised below
+# * UI: Allow to erase while a loop is playing
 
 import W25Q128
 import errno
@@ -51,7 +52,7 @@ class Flash:
         #Round down to an integer number of erase block sizes, to avoid erasing the beginning of the next loop
         self.memory_per_loop = ((self.ic.capacity-self.start)//nb_loops//self.ic.erase_block_size)*self.ic.erase_block_size 
         self.current_loop = None          #a loop here is one record (track), corresponding to one key of the looper
-        self.write_buffer = bytearray(64) #small in-memory write buffer
+        self.write_buffer = bytearray(128)#small in-memory write buffer
         self.page_cursor = None           #cursor inside self.write_buffer. (Points to the end of valid data inside write_buffer)
         self.ic_cursor = 0                #cursor for writing in the flash IC. Position is relative to the start of that loop
         self.erase_cursor = None
@@ -177,7 +178,6 @@ class Flash:
 
     def erase(self, loop, length=None):
         "Erase a loop from the flash chip"
-        #TODO: Display on the screen
         if self.d:
             self.d.indicator("flash_w", 0)
             self.disp_indicator = True
@@ -185,6 +185,7 @@ class Flash:
             length = self.memory_per_loop
         self.erase_start = loop * self.memory_per_loop
         #Starting from the last block.
+        #TODO: Does this miss the last block if the length is not a whole number of blocks?
         self.erase_cursor = (length // self.ic.erase_block_size) * self.ic.erase_block_size
         self.read_buffer[loop] = None
 
@@ -216,15 +217,22 @@ class Flash:
     def loop(self):
         if (self.erase_cursor != None) and not self.ic.busy():
             #Erase the next block
-            if (self.ic.read(self.erase_cursor + self.start, 7)[0] != 0xFF):
+            #TODO: check multiple blocks at once
+            #TODO: erase in 64k-blocks instead
+            if (self.ic.read(self.erase_cursor + self.start + 8, 1)[0] != 0xFF):
                 #Only erase if there's data written, to go faster.
-                #0x00 gets written as the last byte of each record
+                #0xFF is not a valid 
                 self.ic.erase_block(self.erase_cursor + self.start)
-            if self.erase_cursor == self.erase_start:
-                #We just sent the last order
+                if board.verbose:
+                    print("Erasing block {} of loop {} (len={}, {} blocks)".format((self.erase_cursor-self.erase_start)//self.ic.erase_block_size ,(self.erase_start)//self.memory_per_loop, (self.erase_cursor-self.erase_start), (self.erase_cursor-self.erase_start)/self.ic.erase_block_size))
+            else:
+                 if board.verbose:
+                    print("Skipping erasure of block {} of loop {} (clean)".format((self.erase_cursor-self.erase_start)//self.ic.erase_block_size ,(self.erase_start)//self.memory_per_loop))
+            if self.erase_cursor <= self.erase_start:
+                #We just sent the last erase command
                 self.erase_cursor = None
                 if board.verbose:
-                    print("Track {} erase complete".format((self.erase_start-self.start)//self.ic.erase_block_size))
+                    print("Loop {} erase complete".format((self.erase_start-self.start)//self.memory_per_loop))
                 if self.d and self.disp_indicator:
                     #now erase the display indicator
                     self.d.indicator_erase(0,9)
