@@ -63,6 +63,9 @@ class Polyphony:
         self.melody_last_key = None
         self.melody_last_key_time = 0
         
+        for n in range(0, 15):
+            self.midi.set_controller(n, 7, 127) #Set channel volumes to max
+        
     def start_chord(self, quick_mode=False):
         self.playing_chord_key = self.k.current_note_key
         self.playing_chord_level = self.k.current_key_level
@@ -105,7 +108,7 @@ class Polyphony:
         unrounded_chord = [ self.root, self.root + 4 - self.minor + self.sus4 - self.sus2*2, self.root + 7 + self.aug - self.dim]
         if self.seventh:
             unrounded_chord.append(self.root+10-self.minor)
-        self.stop_trumming()
+        self.stop_strumming()
         self.strum_chord = [unrounded_chord[0]-24]
         incr = -12
         while len(self.strum_chord)<len(board.keyboard_strum_keys):
