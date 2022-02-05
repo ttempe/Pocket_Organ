@@ -111,7 +111,7 @@ class PocketOrgan:
                     t = time.ticks_ms()
                     while self.k.notes[key]:
                         #While key is not released:
-                        if (time.ticks_ms()-t)>1500 and not(self.l.playing & (1<<key)):
+                        if (time.ticks_ms()-t)>1500: #and not(self.l.playing & (1<<key)):
                             #Long press
                             self.l.delete_track(key)
                             while self.k.notes[key]:

@@ -199,6 +199,7 @@ class Looper:
             return False
 
     def toggle_play(self, key):
+        "Process UI orders. The actual toggling is done by self.apply_ui()"
         if (self.playing ^ self.toggle_play_waitlist) & (1<<key):
             #loop was playing. Stop it.
             self.d.text("Stop playing loop {}".format(self.loop_names[key]))
