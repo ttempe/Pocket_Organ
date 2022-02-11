@@ -1,5 +1,6 @@
 from board import vbat, vusb, verbose, version
 from time import ticks_ms
+import images
 
 if verbose:
     import os
@@ -29,7 +30,7 @@ class Battery:
                 if self.last_lvl != None:
                     if verbose:
                         print("battery level changing to 'charging'")
-                    self.d.indicator("bat_chrg", 108)
+                    self.d.indicator(images.bat_chrg, 108)
                     self.last_lvl = None
             else:
                 lvl = min(int(14*(vbat()-3.3)/1.0),14)

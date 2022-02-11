@@ -36,6 +36,7 @@
 import W25Q128
 import errno
 import board
+import images
 
 def roundup(x, y):
     "Round a number up to the next end of page"
@@ -179,7 +180,7 @@ class Flash:
     def erase(self, loop, length=None):
         "Erase a loop from the flash chip"
         if self.d:
-            self.d.indicator("flash_w", 0)
+            self.d.indicator(images.flash_w, 0)
             self.disp_indicator = True
         if not(length):
             length = self.memory_per_loop

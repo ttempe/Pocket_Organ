@@ -3,6 +3,7 @@ import time
 import framebuf
 import board
 import writer, font_med, font_big, font_small
+import images
 
 #Instructions for creating files:
 #in Gimp, image->mode->indexed, "use black-and-white (1-bit) palette"
@@ -26,22 +27,6 @@ import writer, font_med, font_big, font_small
     
 #TODO: Move the icons to frozen storage.
 
-def load_image(name):
-    "takes a filename, returns a framebuffer"
-    filename = "img/"+name+".pbm"
-    try:
-        f = open(filename, 'rb')
-    except:
-        raise ImportError("Error opening file: " + filename)
-    if b'P4\n' != f.readline():                         # Magic number
-        pass
-        raise ImportError("Invalid file: " + filename)
-    f.readline()                                       # Creator comment
-    width, height = list(int(j) for j in f.readline()[:-1].decode().split(" ")) # Dimensions
-    data = bytearray(f.read())
-    f = framebuf.FrameBuffer(data, width, height, framebuf.MONO_HLSB)
-    return f, width, height
-
 class Display:
     def __init__(self):
         #Display connected through SPI bus
@@ -54,10 +39,7 @@ class Display:
 #        from machine import Pin, I2C
 #        self.disp = ssd1306.SSD1306_I2C(128, 64, I2C(1))
         self.disp.contrast(100) #0~255 TODO: Test ouside in bright sunlight
-        try:
-            self.disp_image("logo")
-        except:
-            pass
+        self.disp_image(images.logo)
         self.erase_time = time.ticks_ms() + 2000
         self.font_big = writer.Writer(self.disp.framebuf, font_big)
         self.font_big.set_clip(False, True, False)
@@ -70,13 +52,18 @@ class Display:
 
     def _locate(self, x, y):
         writer.Writer.set_textpos(self.disp.framebuf, y, x)
-    
+
+    def _disp_image(self, img, x=0, y=0):
+        #Wastes a lot of RAM. At least the bytearray duplicates the image into memory.
+        #TODO: write a function to blit the image directly into the framebuffer, without creating a bytearray in memory, based on writer.py
+        self.disp.framebuf.blit(framebuf.FrameBuffer(bytearray(img[0]), img[1], img[2], framebuf.MONO_HLSB), x, y)
+
     def disp_image(self, img):
-        self.disp.framebuf.blit(load_image(img)[0], 0, 0)
+        self._disp_image(img)
         self.disp.show()
 
     def indicator(self, img, pos):
-        self.disp.framebuf.blit(load_image(img)[0], pos, 0)
+        self._disp_image(img, pos, 0)
         self.disp.show_top8() #Takes <1ms
     
     def indicator_txt(self, txt, pos):
