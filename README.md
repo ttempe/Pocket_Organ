@@ -24,25 +24,32 @@ The aim of this project is to develop a real musical instrument that:
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
 
-![3D rendering of Pocket Organ V7](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V7/V7_rendering_small.png)
 
 # Hardware design
 
 * The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
  * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though). 
- * It has a LiPo battery that lasts a few hours, and a USB port for charging, and for MIDI over USB.
+ * It has a LiPo battery that lasts a few hours, and a USB port for charging, and ultimately for MIDI over USB.
 * The enclosure is published on: https://a360.co/2Yl1HuQ
+
+# Hall effect keys: prototypes V23+
+
+I've restarted on a different principle again end-2023.
+* the keys are now 3D-printed mechanical keys with a magnet inside
+* precise, fast key height is read with an SMT Hall effect sensor under each key
+* a combination of spring + rubber band allows to have a nice 2-step pressure curve
+* I switched to an RP2040 microrontroller, and am now debating whether to switch to CircuitPython
 
 # capacitive touch keys: prototypes V10+
 
-I've basically restarted from scratch at the beginning of 2020. This branch has:
+I've restarted from scratch at the beginning of 2020. This branch has:
 * capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
 * a STM32F405 microcontroller
 * I've re-written the whole code in Micropython. See the "Py" directory
 
-![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V12/V12_assembled.jpg)
+![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V20/pocket_organ_V20.jpg)
 
-As of August 2021, V18 is giving quite good keys sensing, expression (analog input on the note keys) and responsiveness.
+I've given up this path, as it was difficult to obtain consistent performance on all keys (especially when pressing multiple keys at once), and sourcing sensor ICs was a pain.
 
 # Pressure-sensitive: prototypes V6 to V9
 
