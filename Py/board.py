@@ -4,6 +4,7 @@
 
 from machine import Pin, SPI, ADC, UART
 import version as ver
+from pyb import ADCAll
 
 #This is the version number of the board.
 #Starting with version 18, all version-specific software (eg: choice of driver) should refer to this variable
@@ -101,8 +102,9 @@ midi_rst = Pin("C10", Pin.OUT, value=0)
 
 vbat_ADC = ADC(Pin("B1"))
 vusb_ADC = ADC(Pin("B0"))
-vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2
-vusb = lambda : vusb_ADC.read_u16()/65536*3.3*2
+adcAll=ADCAll(12, 0x70000)
+vbat = lambda : vbat_ADC.read_u16()/65536*3.3*2*1.21/adcAll.read_core_vref()
+vusb = lambda : vusb_ADC.read_u16()/65536*3.3*2*1.21/adcAll.read_core_vref()
 
 main_startup_pin = keyboard_instr_pin
 
