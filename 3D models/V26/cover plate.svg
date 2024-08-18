@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.1 (c68e22c387, 2021-05-23)"
+   sodipodi:docname="cover plate.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="1.526922"
+     inkscape:cx="488.23712"
+     inkscape:cy="288.16141"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs2" />
+  <g
+     inkscape:label="图层 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="opacity:1;fill:#000000;fill-opacity:0;stroke:#020000;stroke-width:0.0996816;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       id="rect850"
+       width="39.700321"
+       height="25.700319"
+       x="50.049843"
+       y="50.049843" />
+    <rect
+       style="opacity:1;fill:#000000;fill-opacity:0;stroke:#020000;stroke-width:0.1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       id="rect1420"
+       width="24"
+       height="12"
+       x="57.950001"
+       y="59.849998" />
+    <path
+       style="opacity:1;fill:#000000;fill-opacity:0.96234304;stroke:#020000;stroke-width:0.0618815;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:markers stroke fill"
+       d="m 189.51525,237.73317 v -48.21792 h 74.74186 74.74187 v 48.21792 48.21791 h -74.74187 -74.74186 z m 120.50386,11.13351 v -23.0038 h -45.59827 -45.59827 v 23.0038 23.00379 h 45.59827 45.59827 z"
+       id="path1641"
+       transform="scale(0.26458333)" />
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-weight:normal;font-size:4.5px;line-height:1.25;font-family:sans-serif;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.264583"
+       x="52.590137"
+       y="56.142353"
+       id="text3555"><tspan
+         sodipodi:role="line"
+         id="tspan3553"
+         style="font-weight:bold;font-size:4.5px;fill:#ffffff;stroke-width:0.264583"
+         x="52.590137"
+         y="56.142353">Pocket Organ</tspan></text>
+  </g>
+</svg>
