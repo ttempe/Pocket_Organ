@@ -2,6 +2,8 @@
 
 A modern musical instrument instrument that fits in your pocket
 
+[Youtube short demo](https://youtu.be/zmRsJwuGusI)
+
 https://www.facebook.com/Thomass-pocket-organ-109581037453852
 
 https://archive.org/details/hopeconf2020/20200730_0900_The_Pocket_Organ.mp4
@@ -18,12 +20,11 @@ It doesn't have to be that way, though.
 The aim of this project is to develop a real musical instrument that:
 * is easier to learn and play than most instruments out there
 * is so affordable that aspiring musicians would consider it
-* has enough depth and expessivity that experienced musicians might appreciate it
-* is convenient and versatile, fitting in your pocket and playable over a headphone (includes a synthetizer) or a MIDI workstation.
+* is designed to meet the expectations of real musicians (low latency, continuous expression, advanced features...)
+* is convenient and versatile, fitting in your pocket and playable over headphones (includes a synthetizer) or a MIDI workstation.
 * is widely available, ideally from multiple manufacturers, under the generic term "pocket organ".
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
-
 
 # Hardware design
 
