@@ -2,7 +2,7 @@
 
 A modern musical instrument instrument that fits in your pocket
 
-[Youtube short demo](https://youtu.be/zmRsJwuGusI)
+[![Youtube short demo](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V26/V26_video_thumb.png)](https://youtu.be/zmRsJwuGusI)
 
 https://www.facebook.com/Thomass-pocket-organ-109581037453852
 
