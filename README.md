@@ -2,7 +2,7 @@
 
 A modern musical instrument instrument that fits in your pocket
 
-[![Youtube short demo](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V26/V26_video_thumb.png)](https://youtu.be/zmRsJwuGusI)
+[![Main features](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V26/V26_video_thumb.png)](https://youtu.be/aTIo758k2n8)
 
 https://www.facebook.com/Thomass-pocket-organ-109581037453852
 
@@ -31,7 +31,7 @@ See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master
 * The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
  * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though). 
  * It has a LiPo battery that lasts a few hours, and a USB port for charging, and ultimately for MIDI over USB.
-* The enclosure is published on: https://a360.co/2Yl1HuQ
+* The V26 enclosure is published on: https://a360.co/3xhmZ2Z and https://a360.co/4cuE1t9
 
 # Hall effect keys: prototypes V23+
 
