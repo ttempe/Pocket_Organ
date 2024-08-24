@@ -29,9 +29,13 @@ See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master
 # Hardware design
 
 * The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
- * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though). 
+ * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though).
  * It has a LiPo battery that lasts a few hours, and a USB port for charging, and ultimately for MIDI over USB.
-* The enclosure is published on: https://a360.co/2Yl1HuQ
+* The enclosure design is published on: https://a360.co/2Yl1HuQ
+
+## Additional resources
+
+* A video walk-through of how to assemble the instrument: https://youtu.be/AYvCeNSxtIc
 
 # Hall effect keys: prototypes V23+
 
