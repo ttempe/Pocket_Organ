@@ -26,55 +26,6 @@ The aim of this project is to develop a real musical instrument that:
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
 
-# Hardware design
-
-* The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
- * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though).
- * It has a LiPo battery that lasts a few hours, and a USB port for charging, and ultimately for MIDI over USB.
-* The enclosure design is published on: https://a360.co/2Yl1HuQ
-
-## Additional resources
-
-* A video walk-through of how to assemble the instrument: https://youtu.be/AYvCeNSxtIc
-
-# Hall effect keys: prototypes V23+
-
-I've restarted on a different principle again end-2023.
-* the keys are now 3D-printed mechanical keys with a magnet inside
-* precise, fast key height is read with an SMT Hall effect sensor under each key
-* a combination of spring + rubber band allows to have a nice 2-step pressure curve
-* I switched to an RP2040 microrontroller, and am now debating whether to switch to CircuitPython
-
-# capacitive touch keys: prototypes V10+
-
-I've restarted from scratch at the beginning of 2020. This branch has:
-* capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
-* a STM32F405 microcontroller
-* I've re-written the whole code in Micropython. See the "Py" directory
-
-![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V20/pocket_organ_V20.jpg)
-
-I've given up this path, as it was difficult to obtain consistent performance on all keys (especially when pressing multiple keys at once), and sourcing sensor ICs was a pain.
-
-# Pressure-sensitive: prototypes V6 to V9
-
-This branch of the project culminated in functional prototypes.
-The analog keys use a sheet of Velostat (a pressure-sensitive, conductive plastic) and a silicone keypad.
-
-* The device is built around a micro-controller (currently AtMEGA 32u4) and single-chip MIDI synth (SAM2695).
-* code is written in C++, for the Arduino IDE. See the "src" directory.
-* It is smaller but thicker than a smartphone (12.5*6*1.5cm)
-* The device uses a silicone keypad for all push buttons
- * You can find a 3D model together with the enclosure, and 3D-print it, then use it to cast silicone
- * The process is partly documented here: https://www.instructables.com/id/Analog-Pressure-sensitive-Push-button/
- 
-![Photo of V8 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V7/V8_proto_small.PNG)
- 
-I've decided to move away from this principle, after:
-* realizing that it would be a significant challenge to further lower the key mechanical resistance
-* experiencing the Sylphyo's amazingly expressive capacitive touch keys.
-
-
 # Musical design
 
 This is still work in progress; and probably the most interesting part of the project.
@@ -107,3 +58,58 @@ My objective is to put 1 million devices in the hands of prospective players. Th
 I see myself as the person who will develop a product, then set the conditions right so that others may do the manufacturing and distribution. That means building a community, building the word-of-mouth, generating enthusiasthm and possibly looking for partners for distribution and marketing. And then, let them run away with it, and hopefully make money. The product will not reach its users unless someone makes money at every step of the process. I'm the only one who is expected to work for free. And maybe you, the supporter, the enthusiast, the player.
 
 The project's open source nature may be a boon, or a hindrance. I might close back the source, strategically, if I think it can help someone else sell the product. Ultimately, it is better for it to be universally available as black-box commodity than open source on a dusty Github page.
+
+
+# Hardware design
+
+## Principle
+
+Versions V23 (end-2023) and later rely on Hall effect sensors for the keys
+* the key mechanism is 3D-printed.
+* Each key has a magnet inside
+* A silicone pad under the keys creates a smooth tactile feedback, while allowing for over- or under-pressing.
+* precise, fast key height is read with an SMT Hall effect sensor under each key
+
+These versions use an RP2040 microrontroller running CircuitPython
+
+## Resources
+
+* A video walk-through of how to assemble the instrument: https://youtu.be/AYvCeNSxtIc
+
+## Main components
+
+* The PCB design is published on: https://lceda.cn/ThomasTempe/Pocket_Musical_Instrument
+ * The PCB is two-sided, but all the solderable components are on the same side. It is designed to use 0402 and QFN components, and is unfortunately not practical to home-etch or hand-solder ; however, you can order the PCB for a low price directly from https://szlcsc.com. If you have a China address, you can even have them do prototype pick-and-place soldering for most components (still requires SMT hand-soldering skills to finish, though).
+ * It has a LiPo battery that lasts a few hours, and a USB port for charging, and ultimately for MIDI over USB.
+* The enclosure design is published on: https://a360.co/2Yl1HuQ
+
+# Older versions
+
+## capacitive touch keys: prototypes V10+
+
+I've restarted from scratch at the beginning of 2020. This branch has:
+* capacitive touch keys, which I'm trying to make somehow analog (currently under experimentation)
+* a STM32F405 microcontroller
+* I've re-written the whole code in Micropython. See the "Py" directory
+
+![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V20/pocket_organ_V20.jpg)
+
+I've given up this path, as it was difficult to obtain consistent performance on all keys (especially when pressing multiple keys at once), and sourcing sensor ICs was a pain.
+
+## Pressure-sensitive: prototypes V6 to V9
+
+This branch of the project culminated in functional prototypes.
+The analog keys use a sheet of Velostat (a pressure-sensitive, conductive plastic) and a silicone keypad.
+
+* The device is built around a micro-controller (currently AtMEGA 32u4) and single-chip MIDI synth (SAM2695).
+* code is written in C++, for the Arduino IDE. See the "src" directory.
+* It is smaller but thicker than a smartphone (12.5*6*1.5cm)
+* The device uses a silicone keypad for all push buttons
+ * You can find a 3D model together with the enclosure, and 3D-print it, then use it to cast silicone
+ * The process is partly documented here: https://www.instructables.com/id/Analog-Pressure-sensitive-Push-button/
+ 
+![Photo of V8 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V7/V8_proto_small.PNG)
+ 
+I've decided to move away from this principle, after:
+* realizing that it would be a significant challenge to further lower the key mechanical resistance
+* experiencing the Sylphyo's amazingly expressive capacitive touch keys.
