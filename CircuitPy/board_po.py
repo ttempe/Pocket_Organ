@@ -6,7 +6,6 @@ from version import version
 #TODO:
 # * If no version.py file, exit gracefully with an error message displayed on the OLED screen
 # * address bits A and C are swapped. Correct them, and correct the keyb_map as well to make all the keys work the same
-# * Move the MUX code to a separate module, called by both keyboard.py and battery.py
 
 verbose = False
 
@@ -51,27 +50,13 @@ keyb_muxB = pinOut(board.GP2)
 keyb_muxC = pinOut(board.GP3)
 keyb_ADC = [analogio.AnalogIn(board.A0),
             analogio.AnalogIn(board.A1)]
+# Hall sensor supply: GP4 high = off, low = on (V31+ only; GP4 is display CS on older boards)
+keyb_vbus = pinOut(board.GP4, value=True) #Power supply for the hall sensors
 vbat_addr = 9
 vusb_addr = 13
 
-def mux_set_addr(addr):
-    keyb_muxA.value = addr & 0x2
-    keyb_muxB.value = addr & 0x4
-    keyb_muxC.value = addr & 0x8
-
-def vbat_read():
-    "Return Volts"
-    mux_set_addr(vbat_addr)
-    return keyb_ADC[vbat_addr&1].value / .32 * 3.3 / 65535 #compensate for the voltage divider
-
-def vusb_read():
-    "Return Volts"
-    mux_set_addr(vusb_addr)
-    return keyb_ADC[vusb_addr&1].value / .32 * 3.3 / 65535 #compensate for the voltage divider
-
-
 #Anolog key addresses
-#keyb_map = [ 5, 9,  1, 13,  4,  8,  0,  12,   2,    15,  11,      6,  14,  10,   3,  7]
+#keyb_map = [ 5,  9,  1, 13,  4,  8,  0,  12,   2,    15,  11,      6,  14,  10,   3,  7]
 keyb_map = [ 5,  3,  1,  7,  4,  2,  0,   6,   8,    15,  11,     12,  14, 10,   9,      13] # address of each key
 key_names =["C","D","E","F","G","A","B","CC","SUS","Aug","7th","Shift","#","m","vBat", "vUSB"]
 #Index       0,  1,  2,  3,  4,  5,  6,   7,   8,    9,   10,     11,  12, 13,  14,      15 
@@ -79,4 +64,5 @@ key_names =["C","D","E","F","G","A","B","CC","SUS","Aug","7th","Shift","#","m","
 #Analog keys calibration, obtained with calibrate() in keyboard.py
 keyb_range=[8533, 11101, 6973, 10148, 8379, 7749, 9178, 9209, 13845, 1, 6650, 6496, 9801, 16, 8079, 11016]; keyb_min=[10743, 11616, 10599, 11937, 10209, 9583, 10570, 10315, 16538, 6786, 10458, 9972, 10507, 288, 10725, 12413] #V31-1
 #keyb_range=[10291, 10674, 14523, 24, 8730, 7090, 17060, 32, 7786, 8434, 7754, 9563, 8034, 7658, 8818, 8858]; keyb_min=[10946, 9290, 12459, 6890, 9618, 10290, 13835, 488, 9346, 8626, 8866, 11026, 9394, 9602, 10234, 9282] #V31-2
+
 #End

@@ -1,5 +1,6 @@
 import time, array
-from board_po import keyb_map, key_vol, key_loop, key_instr, key_capo, keyb_ADC, keyb_min, keyb_range, mux_set_addr
+from board_po import keyb_map, key_vol, key_loop, key_instr, key_capo, keyb_ADC, keyb_min, keyb_range
+import mux
 import micropython
 
 #TODO:
@@ -62,21 +63,15 @@ class Keyboard:
 #             return (key_levels[self.current_note_key]+d)%12, bool(d)
 #         return None, None
 
-    def _read_addr(self, addr):
-        "For calibration"
-        mux_set_addr(addr)
-        adc = keyb_ADC[addr&0x1]
-        time.sleep(0.00001)
-        return abs(((adc.value+adc.value)>>1)-32768)
-
     def _read(self):
         "Read all values"
         self.bitmap=0
-        
+        mux.power_on()
+
         #Read all the sensor values.
         for i in range(8):
             # Set address
-            mux_set_addr(i*2)
+            mux.set_addr(i*2)
             time.sleep(0.00001)#let it settle, 10us
             # Read both ADCs
             for adc_num in range(2):
@@ -90,6 +85,8 @@ class Keyboard:
             self.notes_val[addr] = r = max(0, min(127,self._v[i]))
             self.bitmap |= (r>(0 if (self.bitmap&addr) else 5))<<addr #incl. hysteresis
 
+        mux.power_off()
+
     def _re_calibrate(self, count = 30):
         """Poll each key multiple times, to check their current range in a rested state, and fine-tune the calibration imported from board_po accordingly.
         Assumes all analog keys are released.
@@ -98,7 +95,7 @@ class Keyboard:
         vmin = [66000]*16
         for c in range(count):
             for i in range(16):
-                r = self._read_addr(i)
+                r = mux.read_addr(i)
                 vmin[i] = min(r, vmin[i])
         for i in range(16):
             ##TODO：if one key is off, ignore it.
@@ -201,7 +198,7 @@ def calibrate(threshold=5):
         for nn in range(200):
             for i in range(16):
                 #Measure the maximum value 
-                vi = k._read_addr(i)
+                vi = abs(mux.read_addr(i)-32768)
                 vmin[i] = max(vi, vmin[i]) #see how high it goes at rest. We'll add a bit of buffer later.
 
         
@@ -209,7 +206,7 @@ def calibrate(threshold=5):
     while True:
         for n in range(500):
             for i in range(16):
-                vi = k._read_addr(i)
+                vi = abs(mux.read_addr(i)-32768)
                 vmax[i] = max(vi, vmax[i]) #if the key is pressed deeper than previous readings
         
         # Output calibration data in one line
@@ -223,16 +220,15 @@ def monitor_readings(val = range(14), bits=16):
     "Print raw 16-bit values for all [listed] keys in order"
     k = Keyboard()
     while True:
-        print([k._read_addr(k.keymap[i])>>(16-bits) for i in val])
+        print([abs(mux.read_addr(k.keymap[i])-32768)>>(16-bits) for i in val])
         time.sleep(0.1)
 
 def monitor_readings_no_keymap(addr, bits=16):
     "Print raw 16-bit values for both ADCs on the specified MUX address (0~7)"
     k = Keyboard()
-    mux_set_addr(addr)
     time.sleep(0.001)
     while True:
-        print(keyb_ADC[addr&0x1].value-32768)
+        print(abs(mux.read_addr(addr)-32768))
         time.sleep(0.1)
 
 
@@ -261,5 +257,29 @@ def monitor_status_with_names():
         k.loop()
         print([key_names[i] for i in range(14) if bits(k.bitmap, i)])
         time.sleep(.5)
+
+def test_power_settle():
+    """Measure how long the ADC signal takes to stabilize after hall power-on.
+    2026-06-28 test on V31: settling time is less that the time to read the 1st sample"""
+
+    readings = [0]*100
+    mux.power_off()
+    time.sleep(0.2)
+    r0, r1, r2, r3 = 0, 0, 0, 0 # Unroll the loop to go faster
+    mux.power_on()
+    adc = keyb_ADC[0]    
+    start = time.monotonic_ns()
+    mux.set_addr(0)
+    r0= adc.value 
+    r1= adc.value 
+    r2= adc.value 
+    r3= adc.value 
+    for i in range(100):
+        readings[i] = adc.value
+    
+    print("Total sampling time: ", time.monotonic_ns() - start)
+    print(r0, "\n", r1, "\n", r2, "\n", r3)
+    for i in readings:
+        print(i)
 
 #end
