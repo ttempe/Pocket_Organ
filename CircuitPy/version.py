@@ -1,4 +1,4 @@
 #Electronic board revision
-version=26
+version=31
 
 #End

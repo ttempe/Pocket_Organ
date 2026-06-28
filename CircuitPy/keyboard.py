@@ -1,6 +1,9 @@
-import time
-from board_po import keyb_map, key_vol, key_loop, key_instr, key_capo, keyb_muxA, keyb_muxB, keyb_muxC, keyb_ADC, keyb_min, keyb_max
+import time, array
+from board_po import keyb_map, key_vol, key_loop, key_instr, key_capo, keyb_ADC, keyb_min, keyb_range, mux_set_addr
 import micropython
+
+#TODO:
+# * Measure in low/high temperature environment, determine need to re-calibrate
 
 chord  = micropython.const(0)
 melody = micropython.const(1)
@@ -34,6 +37,8 @@ class Keyboard:
         self.current_note_key = None
         self.current_note_level = None
         self.mode = chord
+        self._v = array.array('l', (0 for _ in range(16))) #pre-allocation, for storing intermediary sensor readings
+        #self._re_calibrate()
         self.loop()
 
     def pressed(self, key):
@@ -56,26 +61,48 @@ class Keyboard:
 #                 d=1
 #             return (key_levels[self.current_note_key]+d)%12, bool(d)
 #         return None, None
+
     def _read_addr(self, addr):
         "For calibration"
-        keyb_muxA.value = addr&0x8
-        keyb_muxB.value = addr&0x4
-        keyb_muxC.value = addr&0x2
-        #time.sleep(0.001)
-        keyb_ADC[addr&0x1].value
-        return keyb_ADC[addr&0x1].value
+        mux_set_addr(addr)
+        adc = keyb_ADC[addr&0x1]
+        time.sleep(0.00001)
+        return abs(((adc.value+adc.value)>>1)-32768)
 
     def _read(self):
         "Read all values"
         self.bitmap=0
+        
+        #Read all the sensor values.
         for i in range(8):
-            keyb_muxA.value = i&0x4
-            keyb_muxB.value = i&0x2
-            keyb_muxC.value = i&0x1
-            for j in range(2):
-                addr=self.keymap[(i<<1)+j]
-                self.notes_val[addr] = r = max(0, min(127,127-(((keyb_ADC[j].value-keyb_min[(i<<1)+j])<<7)//keyb_max[(i<<1)+j])))
-                self.bitmap |= (r>0)<<addr #Min value: 0
+            # Set address
+            mux_set_addr(i*2)
+            time.sleep(0.00001)#let it settle, 10us
+            # Read both ADCs
+            for adc_num in range(2):
+                adc = keyb_ADC[adc_num]
+                val = abs(((adc.value+adc.value+adc.value+adc.value)>>2)-32768)
+                self._v[i*2 + adc_num] = ((val-keyb_min[i*2 + adc_num])*127)//keyb_range[i*2 + adc_num] 
+
+        #and finalize calculation
+        for i in range(16):
+            addr=self.keymap[i]
+            self.notes_val[addr] = r = max(0, min(127,self._v[i]))
+            self.bitmap |= (r>(0 if (self.bitmap&addr) else 5))<<addr #incl. hysteresis
+
+    def _re_calibrate(self, count = 30):
+        """Poll each key multiple times, to check their current range in a rested state, and fine-tune the calibration imported from board_po accordingly.
+        Assumes all analog keys are released.
+        Each iteration takes ~1ms. Only suitable for initial fine-tuning of the calibration when powered on."""
+        return #TODO: update
+        vmin = [66000]*16
+        for c in range(count):
+            for i in range(16):
+                r = self._read_addr(i)
+                vmin[i] = min(r, vmin[i])
+        for i in range(16):
+            ##TODO：if one key is off, ignore it.
+            keyb_max[i] = vmin[i]-200 ##TODO: This is grossly arbitrary
 
     def loop(self):
         self.notes_val, self.notes_val_old = self.notes_val_old, self.notes_val
@@ -156,37 +183,56 @@ class Keyboard:
 #             time.sleep(0.200)
 
 
-def calibrate(threshold = 10):
-    "Press each key all the way down in turn, then copy-paste the output into board_po.py, variables keyb_min and keyb_max"
-    "threshold = value (out of 127) below which the keypress is not registered"
+def calibrate(threshold=5):
+    """
+    Press each key all the way down in turn, then copy-paste the output into board_po.py, variables keyb_min, keyb_range
+    Suited for manual calibration of each instrument.
+    threshold = value (out of 127) below which the keypress is not registered.
+    """
+
     k = Keyboard()
-    vmin = [66000]*16
-    vmax = [1] * 16
+    vmin    = [0] * 16  # highest value of unpressed keys
+    vmax    = [0] * 16
+
+    print("Starting calibration.\nPlease don't press the keys, reading the background noise level.")
+    #We have quite a bit of jitter in the readings. Compensate for that by first sampling some unpressed values, and using the lower bound as a threshold.
+    for n in range(20):
+        print(".", end="")
+        for nn in range(200):
+            for i in range(16):
+                #Measure the maximum value 
+                vi = k._read_addr(i)
+                vmin[i] = max(vi, vmin[i]) #see how high it goes at rest. We'll add a bit of buffer later.
+
+        
+    print("\nThank you.\nNow press each key all the way down. Press hard, and hold for a short moment.")
     while True:
-        for i in range(16):
-            r = k._read_addr(i)
-            vmax[i] = max(r, vmax[i])            
-            vmin[i] = min(r, vmin[i])
-        #print("keyb_min2=",[vmin[i]-threshold*127//(vmax[i]-vmin[i]+1) for i in range(16)], ";keyb_max=",[vmax[i]-vmin[i] for i in range(16)])
-        print("keyb_min=",[vmin[i] for i in range(16)], ";keyb_max=",[int((vmax[i]-vmin[i])*(1-threshold/127)) for i in range(16)])
-        time.sleep(0.2)
+        for n in range(500):
+            for i in range(16):
+                vi = k._read_addr(i)
+                vmax[i] = max(vi, vmax[i]) #if the key is pressed deeper than previous readings
+        
+        # Output calibration data in one line
+        vmin_t = [vmin[i]+(vmax[i]-vmin[i])*threshold//127 for i in range(16)] #Add threshold
+        keyb_range = [max(1,int(vmax[i] - vmin_t[i])) for i in range(16)] #don't let it be zero
+        print(f"keyb_range={keyb_range}; keyb_min={vmin_t}")
+        time.sleep(0.1)
+
 
 def monitor_readings(val = range(14), bits=16):
     "Print raw 16-bit values for all [listed] keys in order"
     k = Keyboard()
     while True:
-        print([k._read_addr(keyb_map[i])>>(16-bits) for i in val])
+        print([k._read_addr(k.keymap[i])>>(16-bits) for i in val])
         time.sleep(0.1)
 
 def monitor_readings_no_keymap(addr, bits=16):
     "Print raw 16-bit values for both ADCs on the specified MUX address (0~7)"
     k = Keyboard()
-    keyb_muxA.value = addr&0x4
-    keyb_muxB.value = addr&0x2
-    keyb_muxC.value = addr&0x1
+    mux_set_addr(addr)
     time.sleep(0.001)
     while True:
-        print(keyb_ADC[0].value, keyb_ADC[1].value)
+        print(keyb_ADC[addr&0x1].value-32768)
         time.sleep(0.1)
 
 
@@ -195,7 +241,7 @@ def monitor_values(val = range(14)):
     k = Keyboard()
     while True:
         k.loop()
-        print([k.notes_val[i] for i in val], k.current_note_key)
+        print([k.notes_val[i] for i in val])
         #print([v for i, v in bits(i)])
         time.sleep(.1)
 
@@ -206,5 +252,14 @@ def monitor_status():
         k.loop()
         print([v for i, v in bits(k.bitmap, 14)])
         time.sleep(.1)
+
+def monitor_status_with_names():
+    "Print the status (pressed/released) for each key with names"
+    from board_po import key_names
+    k = Keyboard()
+    while True:
+        k.loop()
+        print([key_names[i] for i in range(14) if bits(k.bitmap, i)])
+        time.sleep(.5)
 
 #end

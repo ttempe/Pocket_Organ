@@ -5,37 +5,57 @@ import looper
 import polyphony
 import instr_names
 import battery
+import midi
 import board_po as board
 
 from supervisor import ticks_ms
 from time import sleep
 import gc #Garbage collector
+import sys
 
-#from microcontroller import watchdog
+# TODO V31:
+# Audit the code, module by module
+# Check battery voltage
+# test all features
+# Check the looper -> make it work from memory
 
+# TODO V32:
+# Strumming
+# Test force_on, and force_off
 
-# TODO:
-# * Auto-off (separate timeout if plugged off from USB)
-# * Is it possible to move "down" to the "shift" key instead? if so, use up/down to move the capo as well.
-# * Fix battery gauge
-# * TODO: expand the chords when pressing additional (unused) note keys
-# * What do I do with Shift+7 in melody mode?
-# * Display "Shift", "Chords mode", "Drums mode" when switching modes
+# TODO Later:
+# Turn off keyb_vbus when not reading the keys
+# Save the loops in .mid format to the filesystem
+# Force_off when battery is low, and USB is unplugged, or when the instrument is not being played for a long time (make it configurable?)
+# QR code for diagnostics: instrument unique ID, version, link to documentation/support, total play time, error code (25*25 -> 47 characters) Use https://github.com/JASchilz/uQR
+# Fix battery gauge
+# Display the drum and melody notes on the screen in real time
+# * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
+
+# TODO Prospective:
 # * melody mode expression (partial keypress)
+# * expand the chords when pressing additional (unused) note keys
+# * What do I do with Shift+7 in melody mode?
+# * Load faster by fixing the fond loading
+# * manage the "out of memory" risk
+# * play loops directly from flash?
+# * Display "Shift", "Chords mode", "Drums mode" when switching modes
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
-# * display note name (Do~Ut) while playing in melody mode
-# * Auto-off after 30 minutes without playing
-# * Todo: implement watchdog to turn off when loop stalls
-#
-# Prospective
+# * implement watchdog to turn off when loop stalls
 # * Optimize the MCU settings for low-voltage operation: https://docs.micropython.org/en/latest/library/pyb.ADC.html#pyb-adc after read_vref()
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Handle crashes: error codes, displaying a QR code with instrument unique ID, version, timestamp, link to documentation/support (25*25 -> 47 characters) ;
-#  -> generate it by catching the exception. Use https://github.com/JASchilz/uQR
-# * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
 # * Midi MPE controller
+# * optimize loop time
+
+# import supervisor
+# import microcontroller as mc
+# 
+# if not supervisor.runtime.serial_connected:
+#     mc.watchdog.timeout = 8 # seconds
+#     mc.watchdog.mode = mc.watchdog.WatchDogMode.RAISE #or mc.watchdog.WatchDogMode.RESET
+
 
 def on_bits(num):
     for i in range(8):
@@ -102,15 +122,15 @@ class PocketOrgan:
     def loop(self, freeze_display=False):
         self.l.loop()
         self.p.loop()
-        self.d.loop(freeze_display)
+        if not freeze_display:
+            self.d.loop() 
         self.bat.loop()
         gc.collect()
         self.k.loop()
-        if board.key_power.value:
-            self.off()
-        #TODO:watchdog
-        #w.feed()
-
+        #if board.key_power.value: #Todo
+        #    self.off()
+        #TODO:
+        #mc.watchdog.feed()
         
         #measure & display max loop time
         t=ticks_ms()
@@ -415,32 +435,20 @@ class PocketOrgan:
             self.loop_capo()
 
 def start():
-#    watchdog.timeout=2 # seconds
-#    watchdog.mode = watchdog.WatchDogMode.RAISE
-    
-#     try:
-    o = PocketOrgan()
-    o.loop_waiting()
-#TODO:
-#    except watchdog.WatchDogTimeout:
-#        print("Watchdog timeout. Turning off")
-#        board.power_off.value = False #Turn off. Only works if no USB power supply.
-#TODO: re-enable, add QR code?
-#     except Exception as e:
-#         import sys, os, pyb
-#         fd = open("err.txt", "w")
-#         fd.write(str(os.uname()))
-#         fd.write("\nBattery: {:1.3}V; USB: {:1.3}V\n".format(board.vbat(), board.vusb()))
-#         fd.write("USB connected\n" if pyb.USB_VCP().isconnected() else "USB NOT connected\n")
-#         t=ticks_ms()//1000
-#         fd.write("Uptime: {:02}h{:02}m{:02}s\n".format(t//3600, t%3600//60, t%60))
-#         fd.write("HW version: {}\n".format(board.version))
-#         sys.print_exception(e, fd)
-#         fd.close()
-#         fd = open("err.txt","r")
-#         d.text(fd.read()[-300:-1], err=True)
-#         raise(e)
-        
+    "Start and catch exception"
+    organ = None
+    try:
+        organ = PocketOrgan()
+        organ.loop_waiting()
+    except Exception as e:
+        try:
+            for channel in range(16):
+                organ.midi.all_off(channel)
+            #organ.d.display_error(e) #TODO
+        except Exception:
+            pass
+        raise
+
 start()
 
 #end
