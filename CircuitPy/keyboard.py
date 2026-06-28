@@ -1,5 +1,5 @@
 import time, array
-from board_po import keyb_map, key_vol, key_loop, key_instr, key_capo, keyb_ADC, keyb_min, keyb_range
+import board_po as board
 import mux
 import micropython
 
@@ -33,7 +33,7 @@ class Keyboard:
         self.notes_val_old = bytearray(16) #analog value
 #        self.notes = bytearray(8) #binary output #Replaced by self.pressed()
         #NOTE: Some of the state variables are created on the 1st execution of self.loop() and not mentioned here
-        self.keymap = [keyb_map.index(i) for i in range(16)]#pre-compute the reverse map once for faster reading
+        self.keymap = [board.keyb_map.index(i) for i in range(16)]#pre-compute the reverse map once for faster reading
         self.bitmap = 0 #binary map of button press states
         self.current_note_key = None
         self.current_note_level = None
@@ -75,9 +75,9 @@ class Keyboard:
             time.sleep(0.00001)#let it settle, 10us
             # Read both ADCs
             for adc_num in range(2):
-                adc = keyb_ADC[adc_num]
+                adc = board.keyb_ADC[adc_num]
                 val = abs(((adc.value+adc.value+adc.value+adc.value)>>2)-32768)
-                self._v[i*2 + adc_num] = ((val-keyb_min[i*2 + adc_num])*127)//keyb_range[i*2 + adc_num] 
+                self._v[i*2 + adc_num] = ((val-board.keyb_min[i*2 + adc_num])*127)//board.keyb_range[i*2 + adc_num] 
 
         #and finalize calculation
         for i in range(16):
@@ -117,10 +117,10 @@ class Keyboard:
         self.down 	 = self.sharp
         
 
-        self.volume = not(key_vol.value)
-        self.looper = not(key_loop.value)
-        self.instr  = not(key_instr.value)
-        self.capo   = not(key_capo.value)
+        self.volume = not(board.key_vol.value)
+        self.looper = not(board.key_loop.value)
+        self.instr  = not(board.key_instr.value)
+        self.capo   = not(board.key_capo.value)
 
         #Change mode?
         if self.shift and (self.third ^ self.fifth ^ self.seventh):
@@ -251,11 +251,10 @@ def monitor_status():
 
 def monitor_status_with_names():
     "Print the status (pressed/released) for each key with names"
-    from board_po import key_names
     k = Keyboard()
     while True:
         k.loop()
-        print([key_names[i] for i in range(14) if bits(k.bitmap, i)])
+        print([board.key_names[i] for i in range(14) if bits(k.bitmap, i)])
         time.sleep(.5)
 
 def test_power_settle():
@@ -267,7 +266,7 @@ def test_power_settle():
     time.sleep(0.2)
     r0, r1, r2, r3 = 0, 0, 0, 0 # Unroll the loop to go faster
     mux.power_on()
-    adc = keyb_ADC[0]    
+    adc = board.keyb_ADC[0]    
     start = time.monotonic_ns()
     mux.set_addr(0)
     r0= adc.value 

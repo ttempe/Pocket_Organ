@@ -15,7 +15,6 @@ import sys
 
 # TODO V31:
 # Audit the code, module by module
-# Check battery voltage
 # test all features
 # Check the looper -> make it work from memory
 
@@ -24,13 +23,11 @@ import sys
 # Test force_on, and force_off
 
 # TODO Later:
-# Turn off keyb_vbus when not reading the keys
 # Save the loops in .mid format to the filesystem
 # Force_off when battery is low, and USB is unplugged, or when the instrument is not being played for a long time (make it configurable?)
 # QR code for diagnostics: instrument unique ID, version, link to documentation/support, total play time, error code (25*25 -> 47 characters) Use https://github.com/JASchilz/uQR
-# Fix battery gauge
 # Display the drum and melody notes on the screen in real time
-# * Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
+# Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
 
 # TODO Prospective:
 # * melody mode expression (partial keypress)

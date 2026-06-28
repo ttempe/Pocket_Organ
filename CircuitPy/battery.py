@@ -1,4 +1,4 @@
-from board_po import verbose
+import board_po as board
 import mux
 from supervisor import ticks_ms
 
@@ -48,7 +48,7 @@ class Battery:
             self.vbat = self.vbat * 0.5 + mux.vbat_read() * 0.5
             lvl = state_of_charge(self.vbat)
             if lvl != self.last_lvl:
-                if verbose:
+                if board.verbose:
                     print("battery level changing to", lvl)
                 self.d.disp_bat(lvl)
             self.last_lvl = lvl
