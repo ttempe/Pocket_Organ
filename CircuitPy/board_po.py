@@ -37,8 +37,8 @@ backlight_map = [6, 5, 4, 7, 3, 2, 0, 1, 10, 9, 8, 11, 12, 13, 14, 15, 16, 17, 1
 backlight = neopixel.NeoPixel(board.GP0 if version>=25 else board.GP8, len(backlight_map), brightness=.25)#, auto_write=False) #Actually V24 doesn't have backlight. Using a dummy port
 
 #Buttons
-power_off = pinOut(board.GP13)#, value=True)
-key_power = digitalio.DigitalInOut(board.GP14)
+power_off = pinOut(board.GP13, value=False) #Set to high to turn off
+force_on  = pinOut(board.GP14, value=False) #Set to high to keep the user from turning off the instrument
 key_vol   = pinIn(board.GP18, pull=digitalio.Pull.UP)
 key_loop  = pinIn(board.GP19, pull=digitalio.Pull.UP)
 key_instr = pinIn(board.GP20, pull=digitalio.Pull.UP)
