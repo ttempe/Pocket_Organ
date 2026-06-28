@@ -17,6 +17,11 @@ import sys
 # Audit the code, module by module
 # test all features
 # Check the looper -> make it work from memory
+# Write documentation for the instrument
+# Implement channel volume
+# Melody mode + Sus + C -> bug
+# Check if transposition is working in melody mode (and not in drum mode)
+
 
 # TODO V32:
 # Strumming
@@ -60,6 +65,8 @@ def on_bits(num):
         if (num>>i)&1:
             yield i
 
+_MODE_NAMES = ("Chords mode", "Melody mode", "Drums mode")
+
 class PocketOrgan:
     def __init__(self):
         #Keep on
@@ -77,6 +84,7 @@ class PocketOrgan:
         self.last_t = ticks_ms()
         self.last_t_disp = 0
         self.longest_loop = 0
+        self.last_mode = self.k.mode
 
     def off(self):
         #TODO: wait for end of disk write operation
@@ -125,7 +133,9 @@ class PocketOrgan:
         self.bat.loop()
         gc.collect()
         self.k.loop()
-                
+        if self.k.mode != self.last_mode:
+            self.last_mode = self.k.mode
+            self.d.text(_MODE_NAMES[self.k.mode])
         #if board.key_power.value: #Todo
         #    self.off()
         #TODO:
@@ -352,16 +362,20 @@ class PocketOrgan:
         self.b.light_none()
 
     def loop_melody(self):
-        self.d.text("Melody mode")
         self.p.start_melody()
         self.p.update_melody()
+        shown = ()
         while None != self.k.current_note_key:
-            self.loop()
+            self.loop(freeze_display=True)
             self.p.update_melody()
+            names = self.p.melody_note_names()
+            if names != shown:
+                shown = names
+                self.d.text(" ".join(names) if names else "")
         self.p.stop_melody()
 
     def loop_drum(self):
-        self.d.text("Drum mode")
+        self.d.text("Drum")
         while None != self.k.current_note_key:
             for i in on_bits(self.k.bitmap&~self.k.bitmap_old):
                 self.d.text(self.p.play_drum(i))

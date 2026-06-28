@@ -165,7 +165,7 @@ class Polyphony:
     def start_note(self, i, sharp=False):
         #Third/Fifth/7th buttons are also used to play an octave up/down in melody mode. TODO: create specific variables in keyboard.py
         transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third + sharp
-        print("Debug: transpose", transpose) #TODO
+       #print("Debug: transpose", transpose) #TODO
         self.melody_keys_transpose[i] = transpose
         self.l.append(self.midi.note_on(self.l.melody_channel, scale[i] + self.transpose + transpose, self.default_velocity))
     
@@ -178,6 +178,15 @@ class Polyphony:
 
     def stop_melody(self):
         self.melody = False
+
+    def melody_note_names(self):
+        "Pitch names of all keys currently sounding in melody mode, low to high."
+        names = []
+        for i in on_bits(self.melody_playing):
+            midi = scale[i] + self.transpose + self.melody_keys_transpose[i]
+            names.append((midi, instr_names.note_names[midi % 12]))
+        names.sort()
+        return tuple(n for _, n in names)
 
     def update_melody(self):
         for i in on_bits(self.k.bitmap ^ self.k.bitmap_old): #iterate over note key changes
