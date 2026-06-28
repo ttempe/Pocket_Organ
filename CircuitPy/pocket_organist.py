@@ -20,11 +20,12 @@ import sys
 
 # TODO V32:
 # Strumming
-# Test force_on, and force_off
+# Test force_on, and force_off. 
+# Turn off when battery is low.
+# Turn off when idle for a long time, or when USB is unplugged after not playing for a long time.
 
 # TODO Later:
 # Save the loops in .mid format to the filesystem
-# Force_off when battery is low, and USB is unplugged, or when the instrument is not being played for a long time (make it configurable?)
 # QR code for diagnostics: instrument unique ID, version, link to documentation/support, total play time, error code (25*25 -> 47 characters) Use https://github.com/JASchilz/uQR
 # Display the drum and melody notes on the screen in real time
 # Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
@@ -124,6 +125,7 @@ class PocketOrgan:
         self.bat.loop()
         gc.collect()
         self.k.loop()
+                
         #if board.key_power.value: #Todo
         #    self.off()
         #TODO:
@@ -359,7 +361,7 @@ class PocketOrgan:
         self.p.stop_melody()
 
     def loop_drum(self):
-        self.d.text("Drum")
+        self.d.text("Drum mode")
         while None != self.k.current_note_key:
             for i in on_bits(self.k.bitmap&~self.k.bitmap_old):
                 self.d.text(self.p.play_drum(i))

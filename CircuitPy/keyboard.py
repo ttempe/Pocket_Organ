@@ -9,7 +9,6 @@ import micropython
 chord  = micropython.const(0)
 melody = micropython.const(1)
 drum   = micropython.const(2)
-drum   = micropython.const(2)
 expr_bend_up   = micropython.const(13)
 
 keys_sharp = [1, 2, None, 4, 5, 6, None, None]
