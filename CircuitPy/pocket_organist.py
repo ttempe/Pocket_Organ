@@ -19,8 +19,6 @@ import sys
 # Make the looper work from memory
 # Write documentation for the instrument
 # Implement channel volume
-# Melody mode + Sus + C -> bug
-# Check if transposition is working in melody mode (and not in drum mode)
 
 # TODO V32:
 # Strumming
@@ -31,33 +29,19 @@ import sys
 # TODO Later:
 # Save the loops in .mid format to the filesystem
 # QR code for diagnostics: instrument unique ID, version, link to documentation/support, total play time, error code (25*25 -> 47 characters) Use https://github.com/JASchilz/uQR
-# Display the drum and melody notes on the screen in real time
 # Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
 
 # TODO Prospective:
 # * melody mode expression (partial keypress)
 # * expand the chords when pressing additional (unused) note keys
-# * What do I do with Shift+7 in melody mode?
-# * Load faster by fixing the fond loading
 # * manage the "out of memory" risk
-# * play loops directly from flash?
-# * Display "Shift", "Chords mode", "Drums mode" when switching modes
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Measure the total time the musician has been playing. Save it to flash.
 # * implement tuning
-# * implement watchdog to turn off when loop stalls
 # * Optimize the MCU settings for low-voltage operation: https://docs.micropython.org/en/latest/library/pyb.ADC.html#pyb-adc after read_vref()
 # * Find a way of voiding the warranty before exposing the filesystem throught USB?
 # * Midi MPE controller
 # * optimize loop time
-
-# import supervisor
-# import microcontroller as mc
-# 
-# if not supervisor.runtime.serial_connected:
-#     mc.watchdog.timeout = 8 # seconds
-#     mc.watchdog.mode = mc.watchdog.WatchDogMode.RAISE #or mc.watchdog.WatchDogMode.RESET
-
 
 def on_bits(num):
     for i in range(8):
@@ -137,8 +121,6 @@ class PocketOrgan:
             self.d.text(_MODE_NAMES[self.k.mode])
         #if board.key_power.value: #Todo
         #    self.off()
-        #TODO:
-        #mc.watchdog.feed()
         
         #measure & display max loop time
         t=ticks_ms()

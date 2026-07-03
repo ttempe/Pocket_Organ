@@ -1,9 +1,10 @@
+import array
 import midi
 import metronome
 import board_po as board
 import instr_names
 from supervisor import ticks_ms
-from keyboard import expr_bend_up
+from keyboard import melody_bend_up, melody_bend_down
 
 # Only one chord is ever sent at once.
 # TODO:
@@ -42,7 +43,7 @@ class Polyphony:
         self.midi = midi.Midi()
         self.metronome = metronome.Metronome(self.midi)
         self.transpose = 0
-        self.melody_keys_transpose = bytearray(8) #for keeping track of how which key was played
+        self.melody_keys_transpose = array.array("b", [0]*8) #for keeping track of how which key was played
         self.instr = 22
         self.set_instr(self.instr)
         self.volume = 48
@@ -72,6 +73,7 @@ class Polyphony:
         self.melody = False
         self.melody_last_key = None
         self.melody_last_key_time = 0
+        self.melody_expr_bend_old = 0
         
         for n in range(0, 15):
             self.midi.set_controller(n, 7, 127) #Set channel volumes to max
@@ -164,8 +166,7 @@ class Polyphony:
 
     def start_note(self, i, sharp=False):
         #Third/Fifth/7th buttons are also used to play an octave up/down in melody mode. TODO: create specific variables in keyboard.py
-        transpose = 12*self.k.fifth + 12*self.k.seventh - 12*self.k.third + sharp
-       #print("Debug: transpose", transpose) #TODO
+        transpose = 12*self.k.fifth + 12*self.k.shift - 12*self.k.third + sharp #Move up or down based on the left-hand keys 
         self.melody_keys_transpose[i] = transpose
         self.l.append(self.midi.note_on(self.l.melody_channel, scale[i] + self.transpose + transpose, self.default_velocity))
     
@@ -175,9 +176,13 @@ class Polyphony:
     def start_melody(self):
         self.melody = True
         self.melody_playing = 0 #bitmap of all playing notes
+        self.melody_expr_bend_old = 0
+        self.l.append(self.midi.pitch_bend(self.l.melody_channel, 0))
 
     def stop_melody(self):
         self.melody = False
+        self.melody_expr_bend_old = 0
+        self.l.append(self.midi.pitch_bend(self.l.melody_channel, 0))
 
     def melody_note_names(self):
         "Pitch names of all keys currently sounding in melody mode, low to high."
@@ -207,11 +212,9 @@ class Polyphony:
                 if (self.melody_playing>>i)&1: #was playing
                     self.stop_note(i)
                     self.melody_playing &= ~(1<<i) #un-record note
-        #TODO: Add monophonic velocity expression
-        expr_bend = self.k.notes_val[expr_bend_up] * (-1 if self.k.shift else 1)
-        if abs(expr_bend - self.expr_bend_old) > 4:# and (ticks_ms() - self.expr_bend_time > 10):#Filtering
-            self.expr_bend_old = expr_bend
-            #self.expr_bend_time = ticks_ms()
+        expr_bend = (self.k.notes_val[melody_bend_up] - self.k.notes_val[melody_bend_down]) // 2
+        if abs(expr_bend - self.melody_expr_bend_old) > 4:
+            self.melody_expr_bend_old = expr_bend
             self.l.append(self.midi.pitch_bend(self.l.melody_channel, expr_bend))
 
     def stop_all_notes(self):
