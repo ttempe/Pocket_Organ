@@ -16,12 +16,11 @@ import sys
 # TODO V31:
 # Audit the code, module by module
 # test all features
-# Check the looper -> make it work from memory
+# Make the looper work from memory
 # Write documentation for the instrument
 # Implement channel volume
 # Melody mode + Sus + C -> bug
 # Check if transposition is working in melody mode (and not in drum mode)
-
 
 # TODO V32:
 # Strumming
@@ -155,22 +154,26 @@ class PocketOrgan:
     def loop_volume(self):
         #TODO: set the channel volume
         master = not(self.k.shift)
-        print("Volume!")
         vname = "Master volume:" if master else "Channel volume:"
         self.d.disp_slider(self.p.volume, vname)
-        while self.k.volume and (self.k.up or self.k.down): #make sure both are released before starting
+        while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)): #make sure both are released before starting
             self.loop(freeze_display=True)
         peg = 0
         pressed = 0
+        print("Starting")
         vol = self.p.volume if master else 0 #TODO: channel volume
-        while self.k.volume or self.k.up or self.k.down:
+        while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_up):
             if 0==pressed:
-                if self.k.up:
+                if self.k.pressed(board.key_up):
                     pressed=1
-                elif self.k.down:
+                    key = board.key_up
+                    print(1)
+                elif self.k.pressed(board.key_down):
                     pressed=2
+                    key = board.key_down
+                    print(2)
             if 0 != pressed:
-                pressure = (self.k.notes_val[[None, 13, 12][pressed]])>>4 #level of either "up" or "down", depending on which one is pressed
+                pressure = (self.k.notes_val[key])//16 #level of either "up" or "down", depending on which one is pressed
                 if pressure>peg: #TODO: add time/value filtering?
                     peg=pressure
                     vol = min(127, max(0, self.p.volume + (peg if 1==pressed else -peg)))
@@ -180,10 +183,11 @@ class PocketOrgan:
                         pass #TODO: channel volume?
                     self.d.disp_slider(vol, vname)
             self.loop(freeze_display=True)
-            if 0 != pressed and not (self.k.up or self.k.down):
+            if 0 != pressed and not (self.k.pressed(board.key_up) or self.k.pressed(board.key_up)):
                 self.p.volume = vol
                 peg = 0
                 pressed = 0
+                print(0)
 
 
     def loop_looper(self):
