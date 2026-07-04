@@ -142,18 +142,15 @@ class PocketOrgan:
             self.loop(freeze_display=True)
         peg = 0
         pressed = 0
-        print("Starting")
         vol = self.p.volume if master else 0 #TODO: channel volume
         while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_up):
             if 0==pressed:
                 if self.k.pressed(board.key_up):
                     pressed=1
                     key = board.key_up
-                    print(1)
                 elif self.k.pressed(board.key_down):
                     pressed=2
                     key = board.key_down
-                    print(2)
             if 0 != pressed:
                 pressure = (self.k.notes_val[key])//16 #level of either "up" or "down", depending on which one is pressed
                 if pressure>peg: #TODO: add time/value filtering?
@@ -169,7 +166,6 @@ class PocketOrgan:
                 self.p.volume = vol
                 peg = 0
                 pressed = 0
-                print(0)
 
 
     def loop_looper(self):
@@ -420,8 +416,7 @@ class PocketOrgan:
         if self.k.volume:
             self.loop_volume()
         elif self.k.looper:
-            print("Looper not implemented")
-#            self.loop_looper()  #TODO          
+            self.loop_looper()
         elif self.k.instr:
             if self.l.recording:
                 self.d.text("Can't change instrument while recording", tip=True)

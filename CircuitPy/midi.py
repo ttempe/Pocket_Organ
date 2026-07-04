@@ -1,4 +1,4 @@
-from board_po import midi
+import board_po as board
 from adafruit_midi.note_off import NoteOff
 from adafruit_midi.note_on import NoteOn
 from adafruit_midi.control_change import ControlChange
@@ -16,15 +16,18 @@ class Midi:
         pass
 
     def inject(self, midi_code):
-        "For use by the looper"
-        for m in midi:
-            m.send(midi_code)
+        "For use by the looper; raw wire-format bytes (channel in status nibble)."
+        n = len(midi_code)
+        if not n:
+            return
+        for m in board.midi:
+            m._send(midi_code, n)
 
     def note_on(self, channel, note, vel=64):
         n = bytearray([0x90| (channel & 0x0F),
                        note & 0x7F,
                        vel & 0x7F])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)
         return n
 
@@ -33,31 +36,31 @@ class Midi:
         n = bytearray([0x80| (channel & 0x0F),
                        note & 0x7F,
                        vel & 0x7F])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)
         return n
 
     def all_off(self, channel):
         n = bytearray([0xB0| (channel & 0x0F), 123, 0])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)    
         return n
 
     def set_instr(self, channel, instr):
         n = bytearray([0xC0| (channel & 0x0F), 0, instr & 0x7F])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)
         return n
     
     def set_controller(self, channel, controller, value):
         n = bytearray([0xB0| (channel & 0x0F), controller & 0x7F, value & 0x7F])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)
         return n
             
     def set_master_volume(self, volume):
         n = bytearray([0xF0, 0x7F, 0x7F, 0x04, 0x01, 0x00, volume&127, 0xF7])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 8)
         return n
     
@@ -76,7 +79,7 @@ class Midi:
     def pitch_bend(self, channel, value):
         "value is an integer from -127 to -127"
         n = bytearray([0xE0+(channel&0x0F), 0, 64+value//2])
-        for m in midi:
+        for m in board.midi:
             m._send(n, 3)
         return n
     
