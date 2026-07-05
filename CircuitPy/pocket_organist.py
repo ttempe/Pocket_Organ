@@ -14,11 +14,13 @@ import gc #Garbage collector
 import sys
 
 # TODO V31:
+# Fix the channel volume inconsistency between 0 and the looper
 # Audit the code, module by module
-# test all features
-# Make the looper work from memory
 # Write documentation for the instrument
 # Implement channel volume
+# Backlight potential other keys (hints) when pressing volume, capo, instr...
+# Turn off all midi sounds when turning on the instrument, and on interrupt
+# 
 
 # TODO V32:
 # Strumming
@@ -32,8 +34,12 @@ import sys
 # Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
 
 # TODO Prospective:
+# * dual expression
+#   now: sending CC11 signals, which are supported by SAM2695) 
+#   later: add Channel Pressure (0xD0) that are better supported on computers.
+#   make it configurable, somehow...
 # * melody mode expression (partial keypress)
-# * expand the chords when pressing additional (unused) note keys
+# * Left-key button backlight on press?
 # * manage the "out of memory" risk
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Measure the total time the musician has been playing. Save it to flash.
@@ -350,10 +356,12 @@ class PocketOrgan:
         while None != self.k.current_note_key:
             self.loop(freeze_display=True)
             self.p.update_melody()
+            self.b.light_keys(self.k.bitmap & 0xFF)
             names = self.p.melody_note_names()
             if names != shown:
                 shown = names
                 self.d.text(" ".join(names) if names else "")
+        self.b.light_none()
         self.p.stop_melody()
 
     def loop_drum(self):
@@ -362,8 +370,10 @@ class PocketOrgan:
             for i in on_bits(self.k.bitmap&~self.k.bitmap_old):
                 self.d.text(self.p.play_drum(i))
             self.loop()
+            self.b.light_keys(self.k.bitmap & 0xFF)
             if self.k.current_note_key == None:
                 self.check_function_keys()
+        self.b.light_none()
 
     def loop_capo(self):
         print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
