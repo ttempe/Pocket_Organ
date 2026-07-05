@@ -144,12 +144,12 @@ class Looper:
         self.record_lengths[n] = 0
         self.chord_channel, self.melody_channel = self.record_channels[n]
         self.p.set_instr(self.p.instr)
-        self.p.set_volume(self.p.volume)
+        self.store.start_recording(self.recording)
+        self.p.bake_loop_channel_volume()
 
         self.display()
         self.d.text("Start recording loop {}".format(self.loop_names[n]))
         self.p.metronome.on()
-        self.store.start_recording(self.recording)
         self.quick_time = None
         return True
 

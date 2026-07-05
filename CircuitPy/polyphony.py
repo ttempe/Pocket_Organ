@@ -17,6 +17,9 @@ from keyboard import melody_bend_up, melody_bend_down
 
 scale = [60, 62, 64, 65, 67, 69, 71, 72]
 
+LIVE_CHORD = 0
+LIVE_MELODY = 1
+
 # def bits(n): 
 #     "8-bit bit map iterator"
 #     for i in range(0, 8):
@@ -46,8 +49,10 @@ class Polyphony:
         self.melody_keys_transpose = array.array("b", [0]*8) #for keeping track of how which key was played
         self.instr = 22
         self.set_instr(self.instr)
-        self.volume = 48
-        self.set_volume(self.volume)
+        self.channel_volume = 100
+        self.master_volume = 127
+        self.set_channel_volume(self.channel_volume)
+        self.set_master_volume(self.master_volume)
         self.chord = []        #Currently playing chord
         self.strumming = False #Enable strumming?
 #         self.strum_chord = []  #same chord, but with enough notes to cover all strumming keys
@@ -74,9 +79,7 @@ class Polyphony:
         self.melody_last_key = None
         self.melody_last_key_time = 0
         self.melody_expr_bend_old = 0
-        
-        for n in range(0, 15):
-            self.midi.set_controller(n, 7, 127) #Set channel volumes to max
+        self.melody_expr_old = self.default_velocity
         
     def start_chord(self, quick_mode=False):
         self.playing_chord_key = self.k.current_note_key
@@ -177,12 +180,15 @@ class Polyphony:
         self.melody = True
         self.melody_playing = 0 #bitmap of all playing notes
         self.melody_expr_bend_old = 0
+        self.melody_expr_old = self.default_velocity
         self.l.append(self.midi.pitch_bend(self.l.melody_channel, 0))
 
     def stop_melody(self):
         self.melody = False
         self.melody_expr_bend_old = 0
+        self.melody_expr_old = -10
         self.l.append(self.midi.pitch_bend(self.l.melody_channel, 0))
+        self.l.append(self.midi.set_controller(self.l.melody_channel, 11, 127))
 
     def melody_note_names(self):
         "Pitch names of all keys currently sounding in melody mode, low to high."
@@ -216,6 +222,11 @@ class Polyphony:
         if abs(expr_bend - self.melody_expr_bend_old) > 4:
             self.melody_expr_bend_old = expr_bend
             self.l.append(self.midi.pitch_bend(self.l.melody_channel, expr_bend))
+        if self.k.current_note_key is not None:
+            expr = self.k.notes_val[self.k.current_note_key]
+            if abs(expr - self.melody_expr_old) > 10:
+                self.melody_expr_old = expr
+                self.l.append(self.midi.set_controller(self.l.melody_channel, 11, expr // 2 + 64))
 
     def stop_all_notes(self):
         self.playing_notes = 0
@@ -231,15 +242,22 @@ class Polyphony:
         self.midi.set_instr(self.l.chord_channel,  instr)
         self.midi.set_instr(self.l.melody_channel, instr)
         
-    def set_volume(self, vol):
-        #TODO: time filtering?
-        self.midi.set_controller(self.l.chord_channel, 7, vol)
-        self.midi.set_controller(self.l.melody_channel, 7, vol)
+    def set_channel_volume(self, vol):
+        self.channel_volume = vol
+        self.midi.set_controller(LIVE_CHORD, 7, vol)
+        self.midi.set_controller(LIVE_MELODY, 7, vol)
+
+    def bake_loop_channel_volume(self):
+        "CC7 on loop channels at t=0; monitor level matches playback."
+        saved = self.l.quick_time
+        self.l.quick_time = 0
+        for ch in (self.l.chord_channel, self.l.melody_channel):
+            self.l.append(self.midi.set_controller(ch, 7, self.channel_volume))
+        self.l.quick_time = saved
 
     def set_master_volume(self, vol):
-        #TODO: time filtering?
+        self.master_volume = vol
         self.midi.set_master_volume(vol)
-        self.volume = vol
         
     def loop(self):
         self.metronome.loop()

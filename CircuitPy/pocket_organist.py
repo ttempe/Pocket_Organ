@@ -14,19 +14,20 @@ import gc #Garbage collector
 import sys
 
 # TODO V31:
-# Fix the channel volume inconsistency between 0 and the looper
-# Audit the code, module by module
 # Write documentation for the instrument
-# Implement channel volume
 # Backlight potential other keys (hints) when pressing volume, capo, instr...
 # Turn off all midi sounds when turning on the instrument, and on interrupt
-# 
+# How much memory do I have? How fast will the looper run out? What happens then?
+# Audit the code, module by module
+
 
 # TODO V32:
 # Strumming
 # Test force_on, and force_off. 
 # Turn off when battery is low.
 # Turn off when idle for a long time, or when USB is unplugged after not playing for a long time.
+# Measure and tune power consumption
+# Measure and tune loop time
 
 # TODO Later:
 # Save the loops in .mid format to the filesystem
@@ -34,20 +35,15 @@ import sys
 # Message to press and hold when the user releases the vol/instr/loop/drum/shift/3,5,7,m too fast
 
 # TODO Prospective:
-# * dual expression
+# * Improved MIDI expression compatibility
 #   now: sending CC11 signals, which are supported by SAM2695) 
 #   later: add Channel Pressure (0xD0) that are better supported on computers.
 #   make it configurable, somehow...
-# * melody mode expression (partial keypress)
-# * Left-key button backlight on press?
-# * manage the "out of memory" risk
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Measure the total time the musician has been playing. Save it to flash.
-# * implement tuning
-# * Optimize the MCU settings for low-voltage operation: https://docs.micropython.org/en/latest/library/pyb.ADC.html#pyb-adc after read_vref()
-# * Find a way of voiding the warranty before exposing the filesystem throught USB?
-# * Midi MPE controller
-# * optimize loop time
+# * implement tuning (Shift+Capo)
+# * Build a firmware image, including the instrument code?
+# * Find a way of voiding the warranty before allowing to flash the firmware.
 
 def on_bits(num):
     for i in range(8):
@@ -140,16 +136,21 @@ class PocketOrgan:
         self.last_t = ticks_ms()
 
     def loop_volume(self):
-        #TODO: set the channel volume
         master = not(self.k.shift)
+        if not master and self.l.recording is not None:
+            self.d.text("Can't change channel vol while recording")
+            while self.k.volume:
+                self.loop(freeze_display=True)
+            return
         vname = "Master volume:" if master else "Channel volume:"
-        self.d.disp_slider(self.p.volume, vname)
-        while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)): #make sure both are released before starting
+        base = self.p.master_volume if master else self.p.channel_volume
+        self.d.disp_slider(base, vname)
+        while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
             self.loop(freeze_display=True)
         peg = 0
         pressed = 0
-        vol = self.p.volume if master else 0 #TODO: channel volume
-        while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_up):
+        vol = base
+        while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
             if 0==pressed:
                 if self.k.pressed(board.key_up):
                     pressed=1
@@ -158,18 +159,18 @@ class PocketOrgan:
                     pressed=2
                     key = board.key_down
             if 0 != pressed:
-                pressure = (self.k.notes_val[key])//16 #level of either "up" or "down", depending on which one is pressed
-                if pressure>peg: #TODO: add time/value filtering?
+                pressure = (self.k.notes_val[key])//16
+                if pressure>peg:
                     peg=pressure
-                    vol = min(127, max(0, self.p.volume + (peg if 1==pressed else -peg)))
+                    vol = min(127, max(0, base + (peg if 1==pressed else -peg)))
                     if master:
                         self.p.set_master_volume(vol)
                     else:
-                        pass #TODO: channel volume?
+                        self.p.set_channel_volume(vol)
                     self.d.disp_slider(vol, vname)
             self.loop(freeze_display=True)
-            if 0 != pressed and not (self.k.pressed(board.key_up) or self.k.pressed(board.key_up)):
-                self.p.volume = vol
+            if 0 != pressed and not (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
+                base = self.p.master_volume if master else self.p.channel_volume
                 peg = 0
                 pressed = 0
 
