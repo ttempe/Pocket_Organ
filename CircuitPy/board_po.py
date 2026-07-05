@@ -32,9 +32,11 @@ midi = [ adafruit_midi.MIDI(midi_out=usb_midi.ports[1]),
          adafruit_midi.MIDI(midi_out=busio.UART(tx=board.GP16, baudrate=31250), debug=False)
          ]
 
-#Backlight
-backlight_map = [6, 5, 4, 7, 3, 2, 0, 1, 10, 9, 8, 11, 12, 13, 14, 15, 16, 17, 18]#All note keys in order, then all left-hand analog keys in reading order.
-backlight = neopixel.NeoPixel(board.GP0 if version>=25 else board.GP8, len(backlight_map), brightness=.25)#, auto_write=False) #Actually V24 doesn't have backlight. Using a dummy port
+# Backlight
+# pixel sequence: [6, 7, 5, 4, 2, 1, 0, 3, 10, 9, 8, 11, 12, 13]
+# index            0  1  2  3  4  5  6  7   8  9 10  11  12  13
+backlight_map = [6, 5, 4, 7, 3, 2, 0, 1, 10, 9, 8, 11, 12, 13] 
+backlight = neopixel.NeoPixel(board.GP0, len(backlight_map), brightness=.25, auto_write=False)
 
 #Buttons
 power_off = pinOut(board.GP13, value=False) #Set to high to turn off
@@ -60,6 +62,8 @@ vusb_addr = 13
 keyb_map = [ 5,  3,  1,  7,  4,  2,  0,   6,   8,    15,  11,     12,  14, 10,   9,      13] # address of each key
 key_names =["C","D","E","F","G","A","B","CC","SUS","Aug","7th","Shift","#","m","vBat", "vUSB"]
 #Index       0,  1,  2,  3,  4,  5,  6,   7,   8,    9,   10,     11,  12, 13,  14,      15 
+key_up   = 10
+key_down = 13
 
 #Analog keys calibration, obtained with calibrate() in keyboard.py
 keyb_range=[8533, 11101, 6973, 10148, 8379, 7749, 9178, 9209, 13845, 1, 6650, 6496, 9801, 16, 8079, 11016]; keyb_min=[10743, 11616, 10599, 11937, 10209, 9583, 10570, 10315, 16538, 6786, 10458, 9972, 10507, 288, 10725, 12413] #V31-1

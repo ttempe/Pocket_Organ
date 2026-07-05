@@ -1,5 +1,16 @@
 import board_po as board
 import gc
+import json
+from supervisor import ticks_ms
+
+# #region agent log
+def _dbg(hypothesis_id, location, message, data):
+    try:
+        with open("debug-a292cf.log", "a") as f:
+            f.write(json.dumps({"sessionId": "a292cf", "hypothesisId": hypothesis_id, "location": location, "message": message, "data": data, "timestamp": ticks_ms()}) + "\n")
+    except Exception:
+        pass
+# #endregion
 
 #TODO:
 # * when some loops are recorded but none is playing:
@@ -118,6 +129,9 @@ class Looper:
         self.display()
         self.store.erase(n)
         self.d.text("Loop {} deleted".format(self.loop_names[n]))
+        # #region agent log
+        _dbg("H3", "looper.delete_track", "deleted", {"track": n, "recorded": self.recorded, "durations": self.durations[:]})
+        # #endregion
         gc.collect()
 
     def start_recording(self, n):
@@ -168,6 +182,9 @@ class Looper:
                     self.durations[self.recording] = int(round(d/min_duration)*min_duration)
                 else:
                     self.durations[self.recording] = int(max( d, self.p.metronome.beat_divider))
+                # #region agent log
+                _dbg("H1", "looper.stop_recording", "duration set", {"track": self.recording, "d": d, "playing": self.playing, "duration": self.durations[self.recording], "recorded": self.recorded})
+                # #endregion
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
                 self.cursors[self.recording] = 0
@@ -208,6 +225,10 @@ class Looper:
         self.b.light_none()
 
     def pop_notes(self, loop):
+        # #region agent log
+        if self.durations[loop] == 0:
+            _dbg("H2", "looper.pop_notes", "zero duration", {"loop": loop, "recorded": self.recorded, "playing": self.playing, "now_rel": self.p.metronome.now - self.loop_start[loop]})
+        # #endregion
         now = self.p.metronome.now - self.loop_start[loop]
         c = self.cursors[loop]
         if now > self.durations[loop]:
