@@ -21,6 +21,7 @@ class Metronome:
     
     def off(self):
         self.enable = False
+        self.paused = False
         
     def pause(self):
         self.paused = True
@@ -40,7 +41,7 @@ class Metronome:
         if d:
             self.last_beat += d * self.beat_duration #last start of beat (ms)
             self.beats += d * self.beat_divider      #last start of beat (fixed-point)
-            if self.enable:
+            if self.enable and not self.paused:
                 self.midi.note_on(9, 76, 64)
         self.now = self.beats + ((t-self.last_beat)*self.beat_divider)//self.beat_duration
  

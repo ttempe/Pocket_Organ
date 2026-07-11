@@ -248,12 +248,16 @@ class Polyphony:
         self.midi.set_controller(LIVE_MELODY, 7, vol)
 
     def bake_loop_channel_volume(self):
-        "CC7 on loop channels at t=0; monitor level matches playback."
-        saved = self.l.quick_time
-        self.l.quick_time = 0
+        "CC7 on loop channels for live monitoring while armed."
         for ch in (self.l.chord_channel, self.l.melody_channel):
-            self.l.append(self.midi.set_controller(ch, 7, self.channel_volume))
-        self.l.quick_time = saved
+            self.midi.set_controller(ch, 7, self.channel_volume)
+
+    def prepend_loop_channel_volume(self):
+        "CC7 baked into the loop at t=0 on first musical event."
+        for ch in (self.l.chord_channel, self.l.melody_channel):
+            msg = bytearray([0xB0 | (ch & 0x0F), 7, self.channel_volume & 0x7F])
+            self.l.store.record_message(0, bytes(msg))
+            self.l.record_lengths[self.l.recording] += 1
 
     def set_master_volume(self, vol):
         self.master_volume = vol

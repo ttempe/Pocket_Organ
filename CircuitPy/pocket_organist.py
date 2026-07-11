@@ -229,6 +229,9 @@ class PocketOrgan:
                         if quick:
                             self.l.start_recording_quick()
                             self.loop_quick()
+                            if self.l.recording != None:
+                                self.l.stop_recording()
+                            self.l.leave_looper()
                             return
                     else:
                         #Recording start failed
@@ -271,6 +274,7 @@ class PocketOrgan:
             self.loop(freeze_display=True)
             
 
+        self.l.leave_looper()
         self.l.apply_ui()
 
     def loop_instr(self):
