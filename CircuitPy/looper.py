@@ -149,6 +149,24 @@ class Looper:
     def quick_increment(self):
         self.quick_time += self.p.metronome.beat_divider
 
+    def _round_to_loop_fraction(self, d, min_duration):
+        "Nearest L/n (n int) in metronome ticks; never zero; beat-aligned."
+        q = self.p.metronome.beat_divider
+        L = max(q, min_duration)
+        n_max = L // q
+        best = L
+        best_err = abs(d - best)
+        best_n = 1
+        for n in range(1, n_max + 1):
+            raw = (L + n // 2) // n
+            cand = ((raw + q // 2) // q) * q
+            if cand <= 0:
+                continue
+            err = abs(d - cand)
+            if err < best_err or (err == best_err and n < best_n):
+                best, best_err, best_n = cand, err, n
+        return max(q, best)
+
     def stop_recording(self):
         "Returns whether recording was in progress"
         if self.recording != None:
@@ -168,9 +186,9 @@ class Looper:
                     min_duration = min([ self.durations[i] for i in bits(self.playing)])
                     if min_duration%(self.p.metronome.beat_divider*2):
                         min_duration //= 2
-                    self.durations[self.recording] = int(round(d/min_duration)*min_duration)
+                    self.durations[self.recording] = self._round_to_loop_fraction(d, min_duration)
                 else:
-                    self.durations[self.recording] = int(max( d, self.p.metronome.beat_divider))
+                    self.durations[self.recording] = max(d, self.p.metronome.beat_divider)
                 self.loop_start[self.recording] = self.recording_start_timestamp+self.durations[self.recording]
                 self._start_playing(self.recording)
                 self.cursors[self.recording] = 0
@@ -220,9 +238,9 @@ class Looper:
     def pop_notes(self, loop):
         now = self.p.metronome.now - self.loop_start[loop]
         c = self.cursors[loop]
-        if self.durations[loop] == 0:
-            raise Exception(f"duration is 0 for loop {loop}")
-        elif now > self.durations[loop]:
+        if self.durations[loop] <= 0:
+            raise Exception(f"duration is 0 for loop {loop}") #TODO: should never happen, remove
+        if now > self.durations[loop]:
             c=0
             self.loop_start[loop] += ((self.p.metronome.now-self.loop_start[loop])//self.durations[loop])*self.durations[loop]
             now = self.p.metronome.now - self.loop_start[loop]
