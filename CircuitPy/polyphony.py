@@ -50,7 +50,7 @@ class Polyphony:
         self.instr = 22
         self.set_instr(self.instr)
         self.channel_volume = 100
-        self.master_volume = 127
+        self.master_volume = 127 * 75 // 100
         self.set_channel_volume(self.channel_volume)
         self.set_master_volume(self.master_volume)
         self.global_tuning_tenths = 0
