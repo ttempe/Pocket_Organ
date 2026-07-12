@@ -41,7 +41,6 @@ import sys
 #   make it configurable, somehow...
 # * Record loop->Stop loop->Start loop=> the loop should restart at the beginning.
 # * Measure the total time the musician has been playing. Save it to flash.
-# * implement tuning (Shift+Capo)
 # * Build a firmware image, including the instrument code?
 # * Find a way of voiding the warranty before allowing to flash the firmware.
 
@@ -138,42 +137,105 @@ class PocketOrgan:
     def loop_volume(self):
         master = not(self.k.shift)
         if not master and self.l.recording is not None:
-            self.d.text("Can't change channel vol while recording")
-            while self.k.volume:
-                self.loop(freeze_display=True)
+            self.k.ui_lock = True
+            try:
+                self.d.text("Can't change channel vol while recording")
+                while self.k.volume:
+                    self.loop(freeze_display=True)
+            finally:
+                self.k.ui_lock = False
             return
-        vname = "Master volume:" if master else "Channel volume:"
-        base = self.p.master_volume if master else self.p.channel_volume
-        self.d.disp_slider(base, vname)
-        while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
-            self.loop(freeze_display=True)
-        peg = 0
-        pressed = 0
-        vol = base
-        while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
-            if 0==pressed:
-                if self.k.pressed(board.key_up):
-                    pressed=1
-                    key = board.key_up
-                elif self.k.pressed(board.key_down):
-                    pressed=2
-                    key = board.key_down
-            if 0 != pressed:
-                pressure = (self.k.notes_val[key])//16
-                if pressure>peg:
-                    peg=pressure
-                    vol = min(127, max(0, base + (peg if 1==pressed else -peg)))
-                    if master:
-                        self.p.set_master_volume(vol)
-                    else:
-                        self.p.set_channel_volume(vol)
-                    self.d.disp_slider(vol, vname)
-            self.loop(freeze_display=True)
-            if 0 != pressed and not (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
-                base = self.p.master_volume if master else self.p.channel_volume
-                peg = 0
-                pressed = 0
+        self.k.ui_lock = True
+        try:
+            vname = "Master volume:" if master else "Channel volume:"
+            base = self.p.master_volume if master else self.p.channel_volume
+            self.d.disp_slider(base, vname)
+            while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
+                self.loop(freeze_display=True)
+            peg = 0
+            pressed = 0
+            vol = base
+            while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
+                if 0==pressed:
+                    if self.k.pressed(board.key_up):
+                        pressed=1
+                        key = board.key_up
+                    elif self.k.pressed(board.key_down):
+                        pressed=2
+                        key = board.key_down
+                if 0 != pressed:
+                    pressure = (self.k.notes_val[key])//16
+                    if pressure>peg:
+                        peg=pressure
+                        vol = min(127, max(0, base + (peg if 1==pressed else -peg)))
+                        if master:
+                            self.p.set_master_volume(vol)
+                        else:
+                            self.p.set_channel_volume(vol)
+                        self.d.disp_slider(vol, vname)
+                self.loop(freeze_display=True)
+                if 0 != pressed and not (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
+                    base = self.p.master_volume if master else self.p.channel_volume
+                    peg = 0
+                    pressed = 0
+        finally:
+            self.k.ui_lock = False
 
+    def loop_tune(self):
+        self.k.ui_lock = True
+        try:
+            while self.k.capo and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
+                self.loop(freeze_display=True)
+            base = self.p.global_tuning_tenths
+            t = base
+            label = "Tuning {:+d}.{}".format(t // 10, abs(t) % 10) if t % 10 else "Tuning {:+d}".format(t // 10)
+            self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), label)
+            peg = 0
+            pressed = 0
+            frozen = False
+            tenths = base
+            while self.k.capo or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
+                up = self.k.pressed(board.key_up)
+                down = self.k.pressed(board.key_down)
+                if up and down:
+                    if not frozen:
+                        self.p.set_global_tuning(0)
+                        base = 0
+                        peg = 0
+                        pressed = 0
+                        self.d.disp_slider(64, "Tuning +0")
+                    frozen = True
+                elif frozen:
+                    if not up and not down:
+                        frozen = False
+                        base = self.p.global_tuning_tenths
+                        peg = 0
+                        pressed = 0
+                else:
+                    if 0==pressed:
+                        if up:
+                            pressed=1
+                            key = board.key_up
+                        elif down:
+                            pressed=2
+                            key = board.key_down
+                    if 0 != pressed:
+                        pressure = (self.k.notes_val[key])//16
+                        if pressure>peg:
+                            peg=pressure
+                            step = peg * 10
+                            tenths = min(1000, max(-1000, base + (step if 1==pressed else -step)))
+                            self.p.set_global_tuning(tenths)
+                            t = tenths
+                            label = "Tuning {:+d}.{}".format(t // 10, abs(t) % 10) if t % 10 else "Tuning {:+d}".format(t // 10)
+                            self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), label)
+                    if 0 != pressed and not (up or down):
+                        base = self.p.global_tuning_tenths
+                        peg = 0
+                        pressed = 0
+                self.loop(freeze_display=True)
+        finally:
+            self.k.ui_lock = False
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
@@ -408,12 +470,6 @@ class PocketOrgan:
         if changed:
             self.p.transpose = level+sharp
 
-
-    def loop_tune(self):
-        self.d.text("Not implemented")
-        while self.k.loop:
-            self.loop(freeze_display=True)
-
     def loop_waiting(self):
         "starting loop, waiting for 1st keypress"
         while True:
@@ -442,7 +498,10 @@ class PocketOrgan:
                 #MIDI instrument selection loop
                 self.loop_instr()
         elif self.k.capo:
-            self.loop_capo()
+            if self.k.shift:
+                self.loop_tune()
+            else:
+                self.loop_capo()
 
 def start():
     "Start and catch exception"

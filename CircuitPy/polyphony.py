@@ -53,6 +53,8 @@ class Polyphony:
         self.master_volume = 127
         self.set_channel_volume(self.channel_volume)
         self.set_master_volume(self.master_volume)
+        self.global_tuning_tenths = 0
+        self.set_global_tuning(0)
         self.chord = []        #Currently playing chord
         self.strumming = False #Enable strumming?
 #         self.strum_chord = []  #same chord, but with enough notes to cover all strumming keys
@@ -262,6 +264,10 @@ class Polyphony:
     def set_master_volume(self, vol):
         self.master_volume = vol
         self.midi.set_master_volume(vol)
+
+    def set_global_tuning(self, tenths):
+        self.global_tuning_tenths = max(-1000, min(1000, int(tenths)))
+        self.midi.set_gs_master_tune(self.global_tuning_tenths)
         
     def loop(self):
         self.metronome.loop()

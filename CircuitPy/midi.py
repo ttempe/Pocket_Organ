@@ -63,6 +63,33 @@ class Midi:
         for m in board.midi:
             m._send(n, 8)
         return n
+
+    def _gs_checksum(self, data):
+        s = sum(data) & 0x7F
+        c = (128 - s) & 0x7F
+        return c
+
+    def _nibblize16(self, value):
+        value &= 0xFFFF
+        return (
+            (value >> 12) & 0x0F,
+            (value >> 8) & 0x0F,
+            (value >> 4) & 0x0F,
+            value & 0x0F,
+        )
+
+    def set_gs_master_tune(self, tenths):
+        "tenths: -1000..+1000 (= -100.0..+100.0 cents). Center 0 = A440."
+        tenths = max(-1000, min(1000, int(tenths)))
+        encoded = 0x0400 + tenths
+        d0, d1, d2, d3 = self._nibblize16(encoded)
+        addr = (0x40, 0x00, 0x00, 0x00)
+        body = addr + (d0, d1, d2, d3)
+        chk = self._gs_checksum(body)
+        n = bytearray([0xF0, 0x41, 0x00, 0x42, 0x12] + list(body) + [chk, 0xF7])
+        for m in board.midi:
+            m._send(n, len(n))
+        return n
     
 #     def channel_aftertouch(self, channel, value):
 #         #No effect on the SAM2695
