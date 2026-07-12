@@ -97,15 +97,21 @@ class Looper:
             self.store.record_message(t, event)
             self.record_lengths[self.recording]+=1
 
-    def display(self):
+    def status_rg(self):
         #red    = recording
         #orange = recorded and paused
         #green  = recorded and playing
         playing = self.playing ^ self.toggle_play_waitlist
-        recording = (1 << self.recording) if (self.recording!=None) else 0
+        recording = (1 << self.recording) if (self.recording != None) else 0
         green = (self.recorded | playing) & ~recording
-        red =  recording | (self.recorded & ~playing)
-        self.b.display( red, green)
+        red = recording | (self.recorded & ~playing)
+        return red, green
+
+    def display(self):
+        red, green = self.status_rg()
+        lh = (1 << board.KEY_SHARP) | (1 << board.KEY_SEVENTH) | (1 << board.KEY_MINOR) | (1 << board.KEY_FIFTH)
+        note = 0 if self.recording is not None else (~self.recorded & board.LOOP_SLOTS) & board.KEY_NOTE_MASK
+        self.b.set_hints(note, lh, looper_red=red, looper_green=green)
 
     def loop_exists(self, n):
         "was that loop recorded already?"

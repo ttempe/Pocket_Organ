@@ -38,6 +38,16 @@ midi = [ adafruit_midi.MIDI(midi_out=usb_midi.ports[1]),
 backlight_map = [6, 5, 4, 7, 3, 2, 0, 1, 10, 9, 8, 11, 12, 13] 
 backlight = neopixel.NeoPixel(board.GP0, len(backlight_map), brightness=.25, auto_write=False)
 
+# Key indices (keyboard bitmap) and backlight hint masks
+KEY_THIRD = 8
+KEY_FIFTH = 9
+KEY_SEVENTH = 10
+KEY_SHIFT = 11
+KEY_SHARP = 12
+KEY_MINOR = 13
+KEY_NOTE_MASK = 0xFF
+LOOP_SLOTS = 0x3F  # note keys 0-5 used for looper
+
 #Buttons
 power_off = pinOut(board.GP13, value=False) #Set to high to turn off
 force_on  = pinOut(board.GP14, value=False) #Set to high to keep the user from turning off the instrument

@@ -15,7 +15,6 @@ import sys
 
 # TODO V31:
 # Write documentation for the instrument
-# Backlight potential other keys (hints) when pressing volume, capo, instr...
 # Turn off all midi sounds when turning on the instrument, and on interrupt
 # How much memory do I have? How fast will the looper run out? What happens then?
 # Audit the code, module by module
@@ -124,7 +123,7 @@ class PocketOrgan:
         #    self.off()
         
         #measure & display max loop time
-        t=ticks_ms()
+        t = ticks_ms()
         if board.verbose:
             self.longest_loop = max(self.longest_loop, t-self.last_t)
             if t-self.last_t_disp > 500:
@@ -132,8 +131,8 @@ class PocketOrgan:
                 #print("longest loop:",self.longest_loop)
                 self.longest_loop = 0
                 self.last_t_disp = t
-        self.last_t = ticks_ms()
-
+        self.last_t = t
+        self.b.loop(t)
 
     def _consume_shift_toggle(self, shift_was_down):
         if self.k.shift:
@@ -141,6 +140,22 @@ class PocketOrgan:
         if shift_was_down:
             return False, True
         return False, False
+
+
+    def _hints_volume(self):
+        lh = (1 << board.KEY_SEVENTH) | (1 << board.KEY_MINOR) | (1 << board.KEY_SHIFT)
+        self.b.set_hints(0, lh)
+
+    def _hints_capo(self, tuning):
+        if tuning:
+            lh = (1 << board.KEY_SEVENTH) | (1 << board.KEY_MINOR) | (1 << board.KEY_SHIFT)
+            self.b.set_hints(0, lh)
+        else:
+            lh = (1 << board.KEY_SHARP) | (1 << board.KEY_SHIFT)
+            self.b.set_hints(board.KEY_NOTE_MASK, lh)
+
+    def _hints_instr(self):
+        self.b.set_hints(board.KEY_NOTE_MASK, 1 << board.KEY_SHIFT)
 
     def loop_volume(self):
         master = not self.k.shift
@@ -158,6 +173,7 @@ class PocketOrgan:
             vname = "Master volume:" if master else "Channel volume:"
             base = self.p.master_volume if master else self.p.channel_volume
             self.d.disp_slider(base, vname)
+            self._hints_volume()
             while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
                 self.loop(freeze_display=True)
             while self.k.volume and self.k.shift:
@@ -179,6 +195,7 @@ class PocketOrgan:
                         peg = 0
                         pressed = 0
                         self.d.disp_slider(vol, vname)
+                        self._hints_volume()
                 if 0==pressed:
                     if self.k.pressed(board.key_up):
                         pressed=1
@@ -203,6 +220,7 @@ class PocketOrgan:
                     pressed = 0
         finally:
             self.k.ui_lock = False
+            self.b.clear_hints()
 
     def _tuning_label(self, tenths):
         t = tenths
@@ -232,6 +250,7 @@ class PocketOrgan:
                 self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), self._tuning_label(t))
             else:
                 self.d.text(print_txt(self.p.transpose))
+            self._hints_capo(tuning)
             while self.k.capo or (not tuning and (self.k.current_note_key != None or self.k.sharp)) or (tuning and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down))):
                 shift_was, toggled = self._consume_shift_toggle(shift_was)
                 if toggled:
@@ -246,6 +265,7 @@ class PocketOrgan:
                         key = None
                         sharp_old = self.k.sharp
                         self.d.text(print_txt(level + sharp if changed else self.p.transpose))
+                    self._hints_capo(tuning)
                 if tuning:
                     up = self.k.pressed(board.key_up)
                     down = self.k.pressed(board.key_down)
@@ -300,6 +320,7 @@ class PocketOrgan:
                 self.p.transpose = level + sharp
         finally:
             self.k.ui_lock = False
+            self.b.clear_hints()
 
     def loop_looper(self):
         #TODO: Allow to delete a track even while it's playing.
@@ -407,66 +428,70 @@ class PocketOrgan:
         Either one press on a note key (choose the 1st instrument of the family)
         or 2 successive presses (choose an instrument within this family).
         """
-        instr_old = None
-        family_key = None
-        high_bank = bool(self.k.shift)
-        bank_tip = lambda: "Tap Shift: {} bank".format("high" if high_bank else "low")
-        self.d.text("Choose family")
-        self.d.text(bank_tip(), 1, tip=True)
-        while self.k.instr and self.k.shift:
-            self.loop(freeze_display=True)
-        shift_was = False
-        while self.k.instr:
-            shift_was, toggled = self._consume_shift_toggle(shift_was)
-            if toggled:
-                high_bank = not high_bank
-                self.d.text(bank_tip(), 1, tip=True)
-                if family_key is not None:
-                    self.d.text(instr_names.instrument_families[family_key + (high_bank << 3)])
-            if self.k.current_note_key != None:
-                family_key = self.k.current_note_key
-                family = family_key + (high_bank << 3)
-                self.d.text(instr_names.instrument_families[family])
-                self.d.text("Choose instr in family", 1, tip=True)
-                instr2 = 0
-                while self.k.current_note_key != None and self.k.instr:
-                    shift_was, toggled = self._consume_shift_toggle(shift_was)
-                    if toggled:
-                        high_bank = not high_bank
-                        family = family_key + (high_bank << 3)
-                        self.d.text(instr_names.instrument_families[family])
-                        self.d.text(bank_tip(), 2, tip=True)
-                    self.loop(freeze_display=True)
-                while self.k.instr:
-                    shift_was, toggled = self._consume_shift_toggle(shift_was)
-                    if toggled:
-                        high_bank = not high_bank
-                        family = family_key + (high_bank << 3)
-                        self.d.text(instr_names.instrument_families[family])
-                        self.d.text(bank_tip(), 2, tip=True)
-                    while self.k.current_note_key == None and self.k.instr:
+        try:
+            instr_old = None
+            family_key = None
+            high_bank = bool(self.k.shift)
+            bank_tip = lambda: "Tap Shift: {} bank".format("high" if high_bank else "low")
+            self.d.text("Choose family")
+            self.d.text(bank_tip(), 1, tip=True)
+            self._hints_instr()
+            while self.k.instr and self.k.shift:
+                self.loop(freeze_display=True)
+            shift_was = False
+            while self.k.instr:
+                shift_was, toggled = self._consume_shift_toggle(shift_was)
+                if toggled:
+                    high_bank = not high_bank
+                    self.d.text(bank_tip(), 1, tip=True)
+                    if family_key is not None:
+                        self.d.text(instr_names.instrument_families[family_key + (high_bank << 3)])
+                if self.k.current_note_key != None:
+                    family_key = self.k.current_note_key
+                    family = family_key + (high_bank << 3)
+                    self.d.text(instr_names.instrument_families[family])
+                    self.d.text("Choose instr in family", 1, tip=True)
+                    instr2 = 0
+                    while self.k.current_note_key != None and self.k.instr:
                         shift_was, toggled = self._consume_shift_toggle(shift_was)
                         if toggled:
                             high_bank = not high_bank
+                            family = family_key + (high_bank << 3)
+                            self.d.text(instr_names.instrument_families[family])
                             self.d.text(bank_tip(), 2, tip=True)
                         self.loop(freeze_display=True)
-                    if self.k.current_note_key != None:
-                        if self.k.current_note_key == instr_old:
-                            instr2 = (instr2 + 1) & 0x07
-                        else:
-                            instr2 = self.k.current_note_key
-                            instr_old = self.k.current_note_key
-                    instr = (family << 3) + instr2
-                    self.d.text(instr_names.instrument_names[instr], 1)
-                    self.d.text("Press again for next", 2, tip=True)
-                    self.p.set_instr(instr)
-                    while self.k.current_note_key != None:
+                    while self.k.instr:
                         shift_was, toggled = self._consume_shift_toggle(shift_was)
                         if toggled:
                             high_bank = not high_bank
+                            family = family_key + (high_bank << 3)
+                            self.d.text(instr_names.instrument_families[family])
                             self.d.text(bank_tip(), 2, tip=True)
-                        self.loop(freeze_display=True)
-            self.loop(freeze_display=True)
+                        while self.k.current_note_key == None and self.k.instr:
+                            shift_was, toggled = self._consume_shift_toggle(shift_was)
+                            if toggled:
+                                high_bank = not high_bank
+                                self.d.text(bank_tip(), 2, tip=True)
+                            self.loop(freeze_display=True)
+                        if self.k.current_note_key != None:
+                            if self.k.current_note_key == instr_old:
+                                instr2 = (instr2 + 1) & 0x07
+                            else:
+                                instr2 = self.k.current_note_key
+                                instr_old = self.k.current_note_key
+                        instr = (family << 3) + instr2
+                        self.d.text(instr_names.instrument_names[instr], 1)
+                        self.d.text("Press again for next", 2, tip=True)
+                        self.p.set_instr(instr)
+                        while self.k.current_note_key != None:
+                            shift_was, toggled = self._consume_shift_toggle(shift_was)
+                            if toggled:
+                                high_bank = not high_bank
+                                self.d.text(bank_tip(), 2, tip=True)
+                            self.loop(freeze_display=True)
+                self.loop(freeze_display=True)
+        finally:
+            self.b.clear_hints()
 
     def loop_quick(self):
         #Quick loop record mode.

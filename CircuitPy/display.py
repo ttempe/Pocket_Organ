@@ -137,6 +137,7 @@ class Display:
         self.slider_zone.hidden=False
         self.slider_zone.pop()
         self.slider_zone.append(Rect(0, 0, max(1, val), 33, fill=WHITE, outline=WHITE)) #Todo: update lib and try self.slider_zone[1].width=val
+        self.erase_time = ticks_ms() + 2000
         self.disp.refresh()
 
         print(text, val, "*"*(val//4)+"-"*((127-val)//4))

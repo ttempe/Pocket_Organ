@@ -111,7 +111,7 @@ Reference pitch is A440 at 0. Tuning affects live play and loop playback. Capo =
 
 | Keys | Description |
 |------|-------------|
-| **Loop** (hold) | Looper UI; backlight shows track state |
+| **Loop** (hold) | Looper UI; empty slots glow **blue** (hint); recorded slots show red/green/orange status |
 | **Note key** (empty slot) | Arm record on that track; metronome starts |
 | **Note key** (tap again after release while arming) | Toggle **quick loop** mode (chord taps; metronome paused) |
 | **Note key** (recorded track) | Toggle play/stop |
@@ -127,6 +127,7 @@ Up to six loop slots on note keys. Each loop uses its own MIDI channel pair for 
 
 ## Tips
 
+- While **Vol**, **Loop**, **Instr**, or **Capo** is held, actionable keys glow **blue** (left-hand controls and relevant note keys).
 - While **Vol**, **Instr**, or **Capo** is held, a quick **Shift** tap switches sub-modes (master/channel, low/high bank, capo/tuning).
 - **Shift** at entry still picks the alternate sub-mode; release **Shift** before tapping to switch again.
 - **Vol**, **Instr**, and **Capo** UIs block accidental note input and mode changes while active.
