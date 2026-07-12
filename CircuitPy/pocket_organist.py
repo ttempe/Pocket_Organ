@@ -134,8 +134,16 @@ class PocketOrgan:
                 self.last_t_disp = t
         self.last_t = ticks_ms()
 
+
+    def _consume_shift_toggle(self, shift_was_down):
+        if self.k.shift:
+            return True, False
+        if shift_was_down:
+            return False, True
+        return False, False
+
     def loop_volume(self):
-        master = not(self.k.shift)
+        master = not self.k.shift
         if not master and self.l.recording is not None:
             self.k.ui_lock = True
             try:
@@ -152,10 +160,25 @@ class PocketOrgan:
             self.d.disp_slider(base, vname)
             while self.k.volume and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
                 self.loop(freeze_display=True)
+            while self.k.volume and self.k.shift:
+                self.loop(freeze_display=True)
             peg = 0
             pressed = 0
             vol = base
+            shift_was = False
             while self.k.volume or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
+                shift_was, toggled = self._consume_shift_toggle(shift_was)
+                if toggled:
+                    if master and self.l.recording is not None:
+                        self.d.text("Can't change channel vol while recording")
+                    else:
+                        master = not master
+                        base = self.p.master_volume if master else self.p.channel_volume
+                        vname = "Master volume:" if master else "Channel volume:"
+                        vol = base
+                        peg = 0
+                        pressed = 0
+                        self.d.disp_slider(vol, vname)
                 if 0==pressed:
                     if self.k.pressed(board.key_up):
                         pressed=1
@@ -181,59 +204,100 @@ class PocketOrgan:
         finally:
             self.k.ui_lock = False
 
-    def loop_tune(self):
+    def _tuning_label(self, tenths):
+        t = tenths
+        return "Tuning {:+d}.{}".format(t // 10, abs(t) % 10) if t % 10 else "Tuning {:+d}".format(t // 10)
+
+    def loop_capo_or_tune(self):
+        tuning = bool(self.k.shift)
+        print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
         self.k.ui_lock = True
         try:
             while self.k.capo and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down)):
                 self.loop(freeze_display=True)
+            while self.k.capo and self.k.shift:
+                self.loop(freeze_display=True)
+            key = None
+            sharp = False
+            sharp_old = 0
+            level = 0
+            changed = False
             base = self.p.global_tuning_tenths
-            t = base
-            label = "Tuning {:+d}.{}".format(t // 10, abs(t) % 10) if t % 10 else "Tuning {:+d}".format(t // 10)
-            self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), label)
             peg = 0
             pressed = 0
             frozen = False
-            tenths = base
-            while self.k.capo or self.k.pressed(board.key_up) or self.k.pressed(board.key_down):
-                up = self.k.pressed(board.key_up)
-                down = self.k.pressed(board.key_down)
-                if up and down:
-                    if not frozen:
-                        self.p.set_global_tuning(0)
-                        base = 0
-                        peg = 0
-                        pressed = 0
-                        self.d.disp_slider(64, "Tuning +0")
-                    frozen = True
-                elif frozen:
-                    if not up and not down:
+            shift_was = False
+            if tuning:
+                t = base
+                self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), self._tuning_label(t))
+            else:
+                self.d.text(print_txt(self.p.transpose))
+            while self.k.capo or (not tuning and (self.k.current_note_key != None or self.k.sharp)) or (tuning and (self.k.pressed(board.key_up) or self.k.pressed(board.key_down))):
+                shift_was, toggled = self._consume_shift_toggle(shift_was)
+                if toggled:
+                    tuning = not tuning
+                    if tuning:
+                        base = self.p.global_tuning_tenths
+                        peg = pressed = 0
                         frozen = False
-                        base = self.p.global_tuning_tenths
-                        peg = 0
-                        pressed = 0
+                        t = base
+                        self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), self._tuning_label(t))
+                    else:
+                        key = None
+                        sharp_old = self.k.sharp
+                        self.d.text(print_txt(level + sharp if changed else self.p.transpose))
+                if tuning:
+                    up = self.k.pressed(board.key_up)
+                    down = self.k.pressed(board.key_down)
+                    if up and down:
+                        if not frozen:
+                            self.p.set_global_tuning(0)
+                            base = 0
+                            peg = 0
+                            pressed = 0
+                            self.d.disp_slider(64, "Tuning +0")
+                        frozen = True
+                    elif frozen:
+                        if not up and not down:
+                            frozen = False
+                            base = self.p.global_tuning_tenths
+                            peg = 0
+                            pressed = 0
+                    else:
+                        if 0==pressed:
+                            if up:
+                                pressed=1
+                                tkey = board.key_up
+                            elif down:
+                                pressed=2
+                                tkey = board.key_down
+                        if 0 != pressed:
+                            pressure = (self.k.notes_val[tkey])//16
+                            if pressure>peg:
+                                peg=pressure
+                                step = peg * 10
+                                tenths = min(1000, max(-1000, base + (step if 1==pressed else -step)))
+                                self.p.set_global_tuning(tenths)
+                                t = tenths
+                                self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), self._tuning_label(t))
+                        if 0 != pressed and not (up or down):
+                            base = self.p.global_tuning_tenths
+                            peg = 0
+                            pressed = 0
                 else:
-                    if 0==pressed:
-                        if up:
-                            pressed=1
-                            key = board.key_up
-                        elif down:
-                            pressed=2
-                            key = board.key_down
-                    if 0 != pressed:
-                        pressure = (self.k.notes_val[key])//16
-                        if pressure>peg:
-                            peg=pressure
-                            step = peg * 10
-                            tenths = min(1000, max(-1000, base + (step if 1==pressed else -step)))
-                            self.p.set_global_tuning(tenths)
-                            t = tenths
-                            label = "Tuning {:+d}.{}".format(t // 10, abs(t) % 10) if t % 10 else "Tuning {:+d}".format(t // 10)
-                            self.d.disp_slider(min(127, max(0, 64 + t * 63 // 1000)), label)
-                    if 0 != pressed and not (up or down):
-                        base = self.p.global_tuning_tenths
-                        peg = 0
-                        pressed = 0
+                    if self.k.current_note_key != key and self.k.current_note_key != None:
+                        key = self.k.current_note_key
+                        level = keyboard.key_levels[key]
+                        self.d.text(print_txt(level + sharp))
+                        changed = True
+                    if self.k.sharp and not sharp_old:
+                        sharp = not sharp
+                        changed = True
+                        self.d.text(print_txt(level + sharp))
+                    sharp_old = self.k.sharp
                 self.loop(freeze_display=True)
+            if changed:
+                self.p.transpose = level + sharp
         finally:
             self.k.ui_lock = False
 
@@ -243,7 +307,7 @@ class PocketOrgan:
         if not self.l.stop_recording():
             self.d.text("Looper")
             self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
-            self.d.text('Tap "minor" to set rythm', 2, tip=True)
+            self.d.text('Tap "#" to set rythm', 2, tip=True)
         self.l.display()
         while self.k.looper:
             key = self.k.current_note_key
@@ -300,8 +364,8 @@ class PocketOrgan:
                         while self.k.pressed(key):
                             self.loop(freeze_display=True)
                         
-            elif self.k.minor:
-                #Set the beat by tapping it on the "minor" key
+            elif self.k.sharp:
+                #Set the beat by tapping it on the sharp key
                 #Note: human beat precision & recognition is ~ 10~15ms, or around one loop.
                 now = ticks_ms()
                 duration = now-last_tap_timestamp
@@ -314,16 +378,14 @@ class PocketOrgan:
                 else:
                     self.d.text("...tap again", 2, tip=True)
                 last_tap_timestamp=now
-                while self.k.minor:
-                    #wait for "minor" key release
+                while self.k.sharp:
                     self.loop(freeze_display=True)
-                    
-            elif (self.k.seventh and self.p.metronome.bpm<200)or (self.k.third and self.p.metronome.bpm>30):
-                #manually adjust the BPM (+/-)
-                self.p.metronome.set_bpm( (self.p.metronome.bpm//5)*5+5*self.k.seventh - 5*self.k.third)
+
+            elif (self.k.seventh and self.p.metronome.bpm<200) or (self.k.minor and self.p.metronome.bpm>30):
+                #manually adjust the BPM (+/-), 7th=Up m=Down
+                self.p.metronome.set_bpm((self.p.metronome.bpm//5)*5 + 5*self.k.seventh - 5*self.k.minor)
                 self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
-                while self.k.seventh or self.k.third:
-                    #wait for both keys release
+                while self.k.seventh or self.k.minor:
                     self.loop(freeze_display=True)
             
             elif self.k.fifth:
@@ -346,28 +408,51 @@ class PocketOrgan:
         or 2 successive presses (choose an instrument within this family).
         """
         instr_old = None
-        k1 = k1_shift = k2 = 0 #these are te successive keys pressed for instrument
+        family_key = None
+        high_bank = bool(self.k.shift)
+        bank_tip = lambda: "Tap Shift: {} bank".format("high" if high_bank else "low")
         self.d.text("Choose family")
-        self.d.text("Hold Shift  for more families.", 1, tip=True)
+        self.d.text(bank_tip(), 1, tip=True)
+        while self.k.instr and self.k.shift:
+            self.loop(freeze_display=True)
+        shift_was = False
         while self.k.instr:
-            #TODO: display whether the shift key is being pressed
-            if self.k.current_note_key != None: #1st key pressed
-                family = self.k.current_note_key + (self.k.shift<<3)
+            shift_was, toggled = self._consume_shift_toggle(shift_was)
+            if toggled:
+                high_bank = not high_bank
+                self.d.text(bank_tip(), 1, tip=True)
+                if family_key is not None:
+                    self.d.text(instr_names.instrument_families[family_key + (high_bank << 3)])
+            if self.k.current_note_key != None:
+                family_key = self.k.current_note_key
+                family = family_key + (high_bank << 3)
                 self.d.text(instr_names.instrument_families[family])
                 self.d.text("Choose instr in family", 1, tip=True)
                 instr2 = 0
                 while self.k.current_note_key != None and self.k.instr:
+                    shift_was, toggled = self._consume_shift_toggle(shift_was)
+                    if toggled:
+                        high_bank = not high_bank
+                        family = family_key + (high_bank << 3)
+                        self.d.text(instr_names.instrument_families[family])
+                        self.d.text(bank_tip(), 2, tip=True)
                     self.loop(freeze_display=True)
-                #1st key released
                 while self.k.instr:
+                    shift_was, toggled = self._consume_shift_toggle(shift_was)
+                    if toggled:
+                        high_bank = not high_bank
+                        family = family_key + (high_bank << 3)
+                        self.d.text(instr_names.instrument_families[family])
+                        self.d.text(bank_tip(), 2, tip=True)
                     while self.k.current_note_key == None and self.k.instr:
-                        #wait for 2nd key press, or Instr key release
+                        shift_was, toggled = self._consume_shift_toggle(shift_was)
+                        if toggled:
+                            high_bank = not high_bank
+                            self.d.text(bank_tip(), 2, tip=True)
                         self.loop(freeze_display=True)
                     if self.k.current_note_key != None:
-                        #2nd note key pressed
                         if self.k.current_note_key == instr_old:
-                            #Pressing the same key multiple time moves to the next instr within that family
-                            instr2 = (instr2 +1)&0x07
+                            instr2 = (instr2 + 1) & 0x07
                         else:
                             instr2 = self.k.current_note_key
                             instr_old = self.k.current_note_key
@@ -375,9 +460,11 @@ class PocketOrgan:
                     self.d.text(instr_names.instrument_names[instr], 1)
                     self.d.text("Press again for next", 2, tip=True)
                     self.p.set_instr(instr)
-                    
-                    #Wait for release of the note key
                     while self.k.current_note_key != None:
+                        shift_was, toggled = self._consume_shift_toggle(shift_was)
+                        if toggled:
+                            high_bank = not high_bank
+                            self.d.text(bank_tip(), 2, tip=True)
                         self.loop(freeze_display=True)
             self.loop(freeze_display=True)
 
@@ -443,33 +530,6 @@ class PocketOrgan:
                 self.check_function_keys()
         self.b.light_none()
 
-    def loop_capo(self):
-        print_txt = lambda lvl: "Capo {} ({})".format(lvl, instr_names.note_names[lvl])
-        self.d.text(print_txt(self.p.transpose)) #Disp previous capo level
-        key = None
-        sharp = False
-        sharp_old = 0
-        level = 0
-        changed = False
-        while self.k.capo or self.k.current_note_key!=None or self.k.sharp: #Hold control till the user releases the key
-            
-            if self.k.current_note_key != key and self.k.current_note_key != None: #Set level on keypress
-                key = self.k.current_note_key
-                level = keyboard.key_levels[key]
-                self.d.text(print_txt(level+sharp))
-                changed = True
-
-            if self.k.sharp and not(sharp_old): #Toggle sharp with every press
-                sharp = not(sharp)
-                changed = True
-                self.d.text(print_txt(level+sharp))
-                
-            sharp_old = self.k.sharp
-            self.loop(freeze_display=True)
-
-        if changed:
-            self.p.transpose = level+sharp
-
     def loop_waiting(self):
         "starting loop, waiting for 1st keypress"
         while True:
@@ -498,10 +558,7 @@ class PocketOrgan:
                 #MIDI instrument selection loop
                 self.loop_instr()
         elif self.k.capo:
-            if self.k.shift:
-                self.loop_tune()
-            else:
-                self.loop_capo()
+            self.loop_capo_or_tune()
 
 def start():
     "Start and catch exception"

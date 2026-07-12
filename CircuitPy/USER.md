@@ -70,36 +70,28 @@ Note names appear on the display while you play.
 
 | Keys | Description |
 |------|-------------|
-| **Vol** | **Master volume** — hold Vol, tap **7th** or **m** (Up/Down) to adjust; harder press = larger step |
-| **Shift + Vol** | **Channel volume** (live channels 0 and 1). Blocked while a loop is recording |
+| **Vol** (hold) | **Master volume** — tap **7th** or **m** (Up/Down) to adjust; harder press = larger step |
+| **Shift** (tap while Vol held) | Switch between **master** and **channel** volume (live channels 0 and 1). **Shift + Vol** at entry starts in channel volume |
+| | Channel volume blocked while a loop is recording |
 | | While Vol is held, note keys and mode changes are ignored |
 
 **Startup default:** master volume 75% (95/127); channel volume 100.
 
 ---
 
-## Capo
+## Capo and global tuning
 
 | Keys | Description |
 |------|-------------|
-| **Capo** (hold) | Transpose by semitones |
+| **Capo** (hold) | **Transpose** by semitones |
 | **Note key** | Set capo to that key's pitch class |
 | **#** (tap) | Toggle +1 semitone on the chosen step |
+| **Shift** (tap while Capo held) | Switch between **capo** and **global tuning**. **Shift + Capo** at entry starts in tuning |
+| **7th / m** (Up/Down, in tuning) | Raise or lower tuning (~1-7 cents per firm press) |
+| **7th + m together** (in tuning) | Reset to **+0**; frozen until both are released |
+| **Release Capo** | Exit; capo changes apply if you adjusted transpose during the session |
 
-Release **Capo** to apply.
-
----
-
-## Global tuning
-
-| Keys | Description |
-|------|-------------|
-| **Shift + Capo** (hold **Capo** to use; Shift only needed at entry) | Fine-tune entire synth (+/-100 cents) |
-| **7th / m** (Up/Down) | Raise or lower tuning (~1-7 cents per firm press) |
-| **7th + m together** | Reset to **+0**; frozen until both are released |
-| **Release Capo** | Exit tuning |
-
-Reference pitch is A440 at 0. Affects live play and loop playback. Separate from capo (semitones vs cents).
+Reference pitch is A440 at 0. Tuning affects live play and loop playback. Capo = semitone shift; tuning = fine cent offset.
 
 ---
 
@@ -109,7 +101,7 @@ Reference pitch is A440 at 0. Affects live play and loop playback. Separate from
 |------|-------------|
 | **Instr** (hold) | Choose MIDI instrument |
 | **Note key** | Pick instrument **family** |
-| **Shift** (while choosing family) | Eight additional families |
+| **Shift** (tap while Instr held) | Switch between **low** and **high** instrument banks (eight families each). **Shift + Instr** at entry starts in the high bank |
 | **Same or another note key** (second press) | Pick instrument within family; repeat same key to cycle |
 | | Not available while recording a loop |
 
@@ -124,8 +116,8 @@ Reference pitch is A440 at 0. Affects live play and loop playback. Separate from
 | **Note key** (tap again after release while arming) | Toggle **quick loop** mode (chord taps; metronome paused) |
 | **Note key** (recorded track) | Toggle play/stop |
 | **Note key** (hold >1.5 s on existing track) | Delete that loop |
-| **m** (tap twice) | Tap tempo — two taps set BPM; metronome turns on |
-| **3rd / 7th** | BPM -5 / +5 (while in looper) |
+| **#** (tap twice) | Tap tempo — two taps set BPM; metronome turns on |
+| **7th / m** | BPM +5 / -5 (while in looper) |
 | **5th** | Toggle metronome click (can stay on after leaving looper if enabled here or via tap tempo) |
 | **Release Loop** | Leave looper |
 
@@ -135,7 +127,7 @@ Up to six loop slots on note keys. Each loop uses its own MIDI channel pair for 
 
 ## Tips
 
-- **Shift** can be released during **Shift+Capo** tuning; only **Capo** must stay held.
-- **Vol** and **Shift+Capo** tuning block accidental note input and mode changes while active.
-- **Capo** = semitone shift; **Shift+Capo** tuning = fine cent offset.
+- While **Vol**, **Instr**, or **Capo** is held, a quick **Shift** tap switches sub-modes (master/channel, low/high bank, capo/tuning).
+- **Shift** at entry still picks the alternate sub-mode; release **Shift** before tapping to switch again.
+- **Vol**, **Instr**, and **Capo** UIs block accidental note input and mode changes while active.
 - Mode name appears briefly on the display when you change **Shift + 3rd / 5th / 7th**.

@@ -111,9 +111,14 @@ class Display:
 
     def text(self, text, line=0, tip=False, err=False):
         self.chord_name.text=""
+        self.slider_zone.hidden = True
         if tip:
             self.tips_zone.text = text
         else:
+            if line == 0:
+                self.tips_zone.text = ""
+                for z in self.text_zones:
+                    z.text = ""
             self.text_zones[line].text = text
         self.erase_time = ticks_ms() + 2000
 
@@ -124,8 +129,11 @@ class Display:
     def disp_slider(self, val, text):
         "Slider bar (eg: for volume), range: 0-127"
         val = min(127, max(0, val))
-        if self.slider_zone.hidden:
-            self.text(text)
+        self.chord_name.text = ""
+        self.tips_zone.text = ""
+        for z in self.text_zones:
+            z.text = ""
+        self.text_zones[0].text = text
         self.slider_zone.hidden=False
         self.slider_zone.pop()
         self.slider_zone.append(Rect(0, 0, max(1, val), 33, fill=WHITE, outline=WHITE)) #Todo: update lib and try self.slider_zone[1].width=val
