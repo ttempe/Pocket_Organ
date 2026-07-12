@@ -220,8 +220,8 @@ class Looper:
             self.p.midi.all_off(c)
 
     def leave_looper(self):
-        "Metronome is looper-scoped; fifth toggle and idle click stop on exit."
-        if self.recording is None:
+        "Auto metronome stops on exit; user-enabled (Fifth/tap) persists."
+        if self.recording is None and not self.p.metronome.user_wants:
             self.p.metronome.off()
 
     def apply_ui(self):
@@ -232,7 +232,7 @@ class Looper:
             self._stop_playing(i)
         self.toggle_play_waitlist = 0
         self.b.light_none()
-        if self.recording is None and not self.playing:
+        if self.recording is None and not self.playing and not self.p.metronome.user_wants:
             self.p.metronome.off()
 
     def pop_notes(self, loop):

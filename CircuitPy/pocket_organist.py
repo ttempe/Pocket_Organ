@@ -246,6 +246,7 @@ class PocketOrgan:
                 if last_tap_timestamp and duration < 2000 and duration >300:
                     #it's the 2nd tap
                     self.p.metronome.set_bpm(60000//duration)
+                    self.p.metronome.on(user=True)
                     self.d.text("{} BPM".format(self.p.metronome.bpm), 1)
                     self.d.text("tap till it's right!", 2, tip=True)
                 else:
@@ -285,7 +286,7 @@ class PocketOrgan:
         instr_old = None
         k1 = k1_shift = k2 = 0 #these are te successive keys pressed for instrument
         self.d.text("Choose family")
-        self.d.text("Hold Melody key for additional families.", 1, tip=True)
+        self.d.text("Hold Shift  for more families.", 1, tip=True)
         while self.k.instr:
             #TODO: display whether the shift key is being pressed
             if self.k.current_note_key != None: #1st key pressed

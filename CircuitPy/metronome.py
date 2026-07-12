@@ -6,6 +6,7 @@ class Metronome:
         self.bpm = 110
         self.beat_duration = 60000//self.bpm #in ms
         self.enable = False
+        self.user_wants = False
         self.paused = False
         self.last_beat = ticks_ms()     #in ms
         self.beats = 0         #nb of beats since device was turned on (fixed-point)
@@ -16,11 +17,14 @@ class Metronome:
         self.bpm = bpm
         self.beat_duration = int(60000/bpm)       
         
-    def on(self):
+    def on(self, user=False):
         self.enable = True
+        if user:
+            self.user_wants = True
     
     def off(self):
         self.enable = False
+        self.user_wants = False
         self.paused = False
         
     def pause(self):
@@ -34,6 +38,7 @@ class Metronome:
         
     def toggle(self):
         self.enable = not(self.enable)
+        self.user_wants = self.enable
     
     def loop(self):
         t = ticks_ms()
