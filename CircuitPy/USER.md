@@ -37,6 +37,7 @@ Press a **note key** (C, D, E, F, G, A, B, …) to play. Release the note key to
 | **m** | Minor (also affects 3rd/5th modifiers above) |
 | **Key pressure** | Expression (CC11) on the held note |
 | **Neighbour keys** (expr up/down rows) | Pitch bend while holding the root |
+| **Strum comb** (12 pads) | While holding a note key: touch pads to sound stacked chord tones (instead of the auto-arpeggio if any pad is already held). Release the note key to stop |
 
 ---
 

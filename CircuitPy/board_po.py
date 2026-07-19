@@ -56,6 +56,16 @@ key_loop  = pinIn(board.GP19, pull=digitalio.Pull.UP)
 key_instr = pinIn(board.GP20, pull=digitalio.Pull.UP)
 key_capo  = pinIn(board.GP21, pull=digitalio.Pull.UP)
 
+# Strum comb — Holtek BS8112A-3 (V32+: SCL=GP7, SDA=GP6). Older boards: no I2C.
+if version >= 32:
+    strum_i2c = busio.I2C(scl=board.GP7, sda=board.GP6)
+else:
+    strum_i2c = None
+STRUM_I2C_ADDR = 0x50  # Holtek default (0xA0/0xA1 with R/W)
+STRUM_N_KEYS = 12
+# Musical low->high pad order as BS8112A Key numbers (1..12). Slot 0 = lowest note = Key10.
+STRUM_KEY_MAP = (10, 9, 8, 7, 6, 5, 4, 3, 11, 12, 1, 2)
+
 #Analog keys keyboard (also provides battery and USB voltage readings)
 keyb_muxA = pinOut(board.GP1)
 keyb_muxB = pinOut(board.GP2)
@@ -76,7 +86,8 @@ key_up   = 10
 key_down = 13
 
 #Analog keys calibration, obtained with calibrate() in keyboard.py
-keyb_range=[8533, 11101, 6973, 10148, 8379, 7749, 9178, 9209, 13845, 1, 6650, 6496, 9801, 16, 8079, 11016]; keyb_min=[10743, 11616, 10599, 11937, 10209, 9583, 10570, 10315, 16538, 6786, 10458, 9972, 10507, 288, 10725, 12413] #V31-1
+keyb_range=[10701, 6865, 7111, 8464, 11984, 8133, 8056, 9194, 11700, 1, 6288, 6473, 8403, 147, 9041, 11070]; keyb_min=[11985, 10388, 11574, 11325, 13791, 9424, 10333, 9747, 15483, 6314, 9892, 9892, 12139, 909, 11596, 11424] #V32-A
+#keyb_range=[8533, 11101, 6973, 10148, 8379, 7749, 9178, 9209, 13845, 1, 6650, 6496, 9801, 16, 8079, 11016]; keyb_min=[10743, 11616, 10599, 11937, 10209, 9583, 10570, 10315, 16538, 6786, 10458, 9972, 10507, 288, 10725, 12413] #V31-1
 #keyb_range=[10291, 10674, 14523, 24, 8730, 7090, 17060, 32, 7786, 8434, 7754, 9563, 8034, 7658, 8818, 8858]; keyb_min=[10946, 9290, 12459, 6890, 9618, 10290, 13835, 488, 9346, 8626, 8866, 11026, 9394, 9602, 10234, 9282] #V31-2
 
 #End

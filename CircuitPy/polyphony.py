@@ -20,12 +20,12 @@ scale = [60, 62, 64, 65, 67, 69, 71, 72]
 LIVE_CHORD = 0
 LIVE_MELODY = 1
 
-# def bits(n): 
-#     "8-bit bit map iterator"
-#     for i in range(0, 8):
-#         if n&(1<<i):
-#             yield i
-            
+def bits(n, nb=12):
+    "bitmap iterator over set bits"
+    for i in range(nb):
+        if n & (1 << i):
+            yield i
+
 def round_note(n):
     return n%12 + 60
 
@@ -57,10 +57,10 @@ class Polyphony:
         self.set_global_tuning(0)
         self.chord = []        #Currently playing chord
         self.strumming = False #Enable strumming?
-#         self.strum_chord = []  #same chord, but with enough notes to cover all strumming keys
-#         self.strum_mute_old = False
-#         self.strum_keys_old = 0   #bitmap
-#         self.strum_keys_all = 0   #bitmap of all active notes
+        self.strum_chord = []  #same chord, but with enough notes to cover all strumming keys
+        self.strum_mute_old = False
+        self.strum_keys_old = 0   #bitmap
+        self.strum_keys_all = 0   #bitmap of all active notes
         self.default_velocity = 64
         
         #For continuous expression control
@@ -102,11 +102,10 @@ class Polyphony:
 
         if quick_mode:
             self.play_chord(self.default_velocity, 0)
-#        elif not self.k.strum_mute and not self.k.strum_keys:
-        else:
+        elif not self.k.strum_mute and not self.k.strum_keys:
             self.play_chord(self.default_velocity, 40)
-#         else:
-#             self.strum_keys_old = False #Play all keys on the next loop()
+        else:
+            self.strum_keys_old = 0  # Play all held pads on the next loop()
 
     def update_chord(self):
         #Triad
@@ -125,19 +124,19 @@ class Polyphony:
         unrounded_chord = [ self.root, self.root + 4 - self.minor + self.sus4 - self.sus2*2, self.root + 7 + self.aug - self.dim]
         if self.seventh:
             unrounded_chord.append(self.root+10-self.minor)
-#        self.stop_strumming()
-#        self.strum_chord = [unrounded_chord[0]-24]
-#        incr = -12
-#         while len(self.strum_chord)<len(board.keyboard_strum_keys):
-#             for n in unrounded_chord:
-#                 self.strum_chord.append(n+incr)
-#             incr +=12
+        self.stop_strumming()
+        self.strum_chord = [unrounded_chord[0]-24]
+        incr = -12
+        while len(self.strum_chord) < board.STRUM_N_KEYS:
+            for n in unrounded_chord:
+                self.strum_chord.append(n+incr)
+            incr += 12
                             
         #Prepare for display of chord name
         self.chord_shape_name =   ("m" if self.minor else "") + ("7" if self.seventh else "") + ("dim" if self.dim else "aug" if self.aug else "") + ("sus4" if self.sus4 else "sus2" if self.sus2 else "")
         self.chord_sharp_old = None #Force re-display next time
         #self.chord_disp_timestamp = 0 #Don't update -> display will be immediate on the next call to loop()
-#        self.strumming = True
+        self.strumming = True
 
     def play_chord(self, velocity, timing): #timing = number of ms between successive notes
         """Starts playing all notes for the chord.
@@ -152,22 +151,26 @@ class Polyphony:
         
     def stop_chord(self):
         #self.l.append(self.midi.all_off(self.l.chord_channel))
-#         strum = [self.strum_chord[i] for i in bits(self.k.strum_keys, len(board.keyboard_strum_keys))]
         for n in self.chord:
-#             if n not in strum:
-            self.l.append(self.midi.note_off(self.l.chord_channel, n, self.default_velocity))                
+            self.l.append(self.midi.note_off(self.l.chord_channel, n, self.default_velocity))
+        # Mute sounding pads but keep last strum_chord so pads still play after release
+        self._mute_strum_notes()
+        self.strum_keys_old = 0  # re-trigger any pads still held
         self.pending = []
         self.d.clear()
         self.playing_chord_key = None
         self.expr1_none=-10
         self.chord_sharp_old = None
         
-#     def stop_strumming(self):
-#         if self.strum_chord: #Are we strumming?
-#             #Mute any key that's not being held
-#             for k in bits(self.strum_keys_all, len(board.keyboard_strum_keys)):
-#                 self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
-#                 self.strum_keys_all = 0        
+    def _mute_strum_notes(self):
+        if self.strum_chord:
+            for k in bits(self.strum_keys_all, board.STRUM_N_KEYS):
+                self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
+            self.strum_keys_all = 0
+
+    def stop_strumming(self):
+        self._mute_strum_notes()
+        self.strumming = False
 
     def start_note(self, i, sharp=False):
         #Third/Fifth/7th buttons are also used to play an octave up/down in melody mode. TODO: create specific variables in keyboard.py
@@ -280,28 +283,30 @@ class Polyphony:
                 n = self.pending.pop(0)
                 self.l.append(self.midi.note_on(self.l.chord_channel, n[0], n[1]))
 
-        if not self.melody: #Melody mode takes precedence
-#             if self.strum_chord and self.strumming: #Are we strumming?
-#                 #If the user just activated the strum mute or released a chord key:
-#                 if (self.k.strum_mute and not self.strum_mute_old):
-#                     #Mute any key that's not being held
-#                     for k in bits(self.strum_keys_all & ~self.k.strum_keys, len(board.keyboard_strum_keys)):
-#                         self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
-#                     self.strum_keys_all = 0
-#                 #update newly released strum keys
-#                 elif self.k.strum_mute:
-#                     #Keys that were in _old but are no longer in _new
-#                     for i in bits(self.strum_keys_old & (~self.k.strum_keys), len(board.keyboard_strum_keys)):
-#                         self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
-# 
-#                 #update newly strummed keys
-#                 for i in bits(self.k.strum_keys & (~self.strum_keys_old), len(board.keyboard_strum_keys)):
-#                     self.l.append(self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
-#                     
-#                 self.strum_mute_old = self.k.strum_mute
-#                 self.strum_keys_old = self.k.strum_keys
-#                 self.strum_keys_all |= self.k.strum_keys
+        # Strumming updates in chord, melody, and drum modes
+        if self.strum_chord and self.strumming:
+            # Mute-on-release when no chord key held (or explicit strum_mute)
+            mute = self.k.strum_mute or (self.playing_chord_key is None)
+            if mute and not self.strum_mute_old:
+                #Just entered mute: silence pads that are not currently held
+                for k in bits(self.strum_keys_all & ~self.k.strum_keys, board.STRUM_N_KEYS):
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[k], self.default_velocity))
+                self.strum_keys_all = self.k.strum_keys
+            elif mute:
+                #Keys that were in _old but are no longer in _new
+                for i in bits(self.strum_keys_old & (~self.k.strum_keys), board.STRUM_N_KEYS):
+                    self.l.append(self.midi.note_off(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
+                    self.strum_keys_all &= ~(1 << i)
 
+            #update newly strummed keys
+            for i in bits(self.k.strum_keys & (~self.strum_keys_old), board.STRUM_N_KEYS):
+                self.l.append(self.midi.note_on(self.l.chord_channel, self.strum_chord[i], self.default_velocity))
+
+            self.strum_mute_old = mute
+            self.strum_keys_old = self.k.strum_keys
+            self.strum_keys_all |= self.k.strum_keys
+
+        if not self.melody: #Chord expression only outside melody play
             if self.playing_chord_key != None: #Playing a chord
                 #Update sharp/flat status
                 if self.playing_chord_level != self.k.current_key_level:

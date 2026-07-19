@@ -11,7 +11,7 @@ CircuitPython firmware for a portable MIDI chord organ with hall-effect keys, OL
 
 | Module | Role |
 |--------|------|
-| `board_po.py` | **Pin allocation and hardware constants only** — mux GPIO, ADC, buttons, display SPI, MIDI, calibration tables. Import as `import board_po as board`. |
+| `board_po.py` | **Pin allocation and hardware constants only** — mux GPIO, ADC, buttons, display SPI, MIDI, strum I2C (`strum_i2c`, `STRUM_*`), calibration tables. Import as `import board_po as board`. |
 | `mux.py` | MUX shift-register addressing, hall-sensor power (GP4), `vbat_read()` / `vusb_read()`. |
 | `keyboard.py` | Hall-key scanning, chord/melody/drum modes, calibration helpers. |
 | `display.py` | 128×64 SSD1306 via **displayio** (`auto_refresh=False`; call `disp.refresh()` after updates). |
@@ -20,6 +20,7 @@ CircuitPython firmware for a portable MIDI chord organ with hall-effect keys, OL
 | `looper.py` | Loop recording/playback. |
 | `midi.py` | MIDI message helpers (uses `board.midi`). |
 | `backlight.py` | NeoPixel key backlight; `backlight_map` in `board_po.py` maps key index to pixel. |
+| `bs8112a.py` | Holtek BS8112A-3 I2C driver; `read_keys()` → 12-bit pad mask. |
 | `instr_names.py` | GM instrument name tables. |
 | `version.py` | Board revision number. |
 
@@ -39,6 +40,7 @@ Legacy / test code lives in `misc/`.
 | **Looper** | In-memory `TrackStore`; CC7 baked at first note; `leave_looper()` / `apply_ui()` metronome cleanup. |
 | **Melody expression** | CC11 on melody channel from key pressure; pitch bend from 7th/m keys. |
 | **Display sliders** | `disp_slider()` always updates `text_zones[0].text` (dynamic titles e.g. tuning cents). |
+| **Strumming** | 12-pad comb via BS8112A on I2C (GP7 SCL, GP6 SDA, addr 0x50). Hold chord root, touch pads for stacked chord tones; `keyboard.strum_keys` / `polyphony` note on/off. |
 
 ## Conventions
 

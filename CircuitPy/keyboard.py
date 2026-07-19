@@ -1,6 +1,7 @@
 import time, array
 import board_po as board
 import mux
+import bs8112a
 import micropython
 
 #TODO:
@@ -10,6 +11,9 @@ chord  = micropython.const(0)
 melody = micropython.const(1)
 drum   = micropython.const(2)
 expr_bend_up   = micropython.const(13)
+# Melody pitch bend (USER.md: 7th = up, m = down)
+melody_bend_up   = micropython.const(10)
+melody_bend_down = micropython.const(13)
 
 keys_sharp = [1, 2, None, 4, 5, 6, None, None]
 keys_flat  = [None, 0, 1, None, 3, 4, 5, None]
@@ -38,6 +42,9 @@ class Keyboard:
         self.current_note_level = None
         self.mode = chord
         self._v = array.array('l', (0 for _ in range(16))) #pre-allocation, for storing intermediary sensor readings
+        self.strum = bs8112a.make(board.strum_i2c, board.STRUM_I2C_ADDR)
+        self.strum_keys = 0
+        self.strum_mute = False  # no mute hardware yet
         #self._re_calibrate()
         self.loop()
 
@@ -156,18 +163,12 @@ class Keyboard:
         else:
            self.current_key_level = None
 
-#         #Update the strum keys status
-#         b = self.uc3.button
-#         self.strum_keys=0
-#         for n, k in enumerate(board.keyboard_strum_keys):
-#             self.strum_keys += self.uc3.button(k)<<n
-            
-#         #Strumming comb as an analog slider
-#         n, t = 0, 0
-#         for i in range(len(board.keyboard_strum_keys)):
-#             n += (self.strum_keys >> i)&1
-#             t += ((self.strum_keys >> i)&1) * i
-#             self.slider_val = int( t / n * 127 / len(board.keyboard_strum_keys) ) if n else None
+        raw = self.strum.read_keys()
+        m = 0
+        for slot, chip_key in enumerate(board.STRUM_KEY_MAP):
+            if raw & (1 << (chip_key - 1)):
+                m |= 1 << slot
+        self.strum_keys = m
         
 #     def disp(self):#for calibration
 #         notes_thres = 0
