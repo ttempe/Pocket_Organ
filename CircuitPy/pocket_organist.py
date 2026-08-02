@@ -7,11 +7,10 @@ import instr_names
 import battery
 import midi
 import board_po as board
-
+import profiler
 from supervisor import ticks_ms
-from time import sleep
+from time import sleep, monotonic_ns
 import gc #Garbage collector
-import sys
 
 # TODO V31:
 # Write documentation for the instrument
@@ -68,6 +67,7 @@ class PocketOrgan:
         self.last_t_disp = 0
         self.longest_loop = 0
         self.last_mode = self.k.mode
+        self.gc_counter = 0 # Counter to avoid calling gc.collect() too often
 
     def off(self):
         #TODO: wait for end of disk write operation
@@ -109,30 +109,30 @@ class PocketOrgan:
                         
 
     def loop(self, freeze_display=False):
+        profiler.stamp()
         self.l.loop()
+        profiler.stamp("looper")
         self.p.loop()
+        profiler.stamp("poly")
         if not freeze_display:
-            self.d.loop() 
+            self.d.loop()
+        profiler.stamp("disp")
         self.bat.loop()
-        gc.collect()
+        profiler.stamp("bat")
+        self.gc_counter += 1
+        if self.gc_counter > 20:
+            gc.collect()
+            self.gc_counter = 0
+        profiler.stamp("gc")
         self.k.loop()
+        profiler.stamp("kbd")
+        self.b.loop()
+        profiler.stamp("bl")
+
         if self.k.mode != self.last_mode:
             self.last_mode = self.k.mode
             self.d.text(_MODE_NAMES[self.k.mode])
-        #if board.key_power.value: #Todo
-        #    self.off()
-        
-        #measure & display max loop time
-        t = ticks_ms()
-        if board.verbose:
-            self.longest_loop = max(self.longest_loop, t-self.last_t)
-            if t-self.last_t_disp > 500:
-                self.d.latency.text="{}ms".format(self.longest_loop)
-                #print("longest loop:",self.longest_loop)
-                self.longest_loop = 0
-                self.last_t_disp = t
-        self.last_t = t
-        self.b.loop(t)
+        profiler.stamp("end")
 
     def _consume_shift_toggle(self, shift_was_down):
         if self.k.shift:
