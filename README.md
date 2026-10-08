@@ -4,11 +4,11 @@ A modern musical instrument instrument that fits in your pocket
 
 [![Main features](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V26/V26_video_thumb.png)](https://youtu.be/aTIo758k2n8)
 
-![Facebook](https://www.facebook.com/Thomass-pocket-organ-109581037453852)
+https://www.facebook.com/Thomass-pocket-organ-109581037453852
 
-![Hope conference](https://archive.org/details/hopeconf2020/20200730_0900_The_Pocket_Organ.mp4)
+https://archive.org/details/hopeconf2020/20200730_0900_The_Pocket_Organ.mp4
 
-![Youtube](https://www.youtube.com/watch?v=AYvCeNSxtIc&list=PLIjRtindY5dAYAr6EwiWz4Ym5uZk0-Hvn)
+https://www.youtube.com/watch?v=AYvCeNSxtIc&list=PLIjRtindY5dAYAr6EwiWz4Ym5uZk0-Hvn
 
 Most instruments we play today are designed around the manufacturing constrains of hundreds of years ago.
 Newer instruments are often electronic versions, with the same or similar user interface.
@@ -53,7 +53,7 @@ I've restarted from scratch at the beginning of 2020. This branch has:
 
 ![Photo of V12 prototype](https://github.com/ttempe/Pocket_Organ/blob/master/Pictures/V20/pocket_organ_V20.jpg)
 
-![Youtube tutorials](https://www.youtube.com/watch?v=Pm5AramwmKs&list=PLIjRtindY5dBtU5IU78ZPE2rcO35D6sfV)
+https://www.youtube.com/watch?v=Pm5AramwmKs&list=PLIjRtindY5dBtU5IU78ZPE2rcO35D6sfV
 
 I've given up this path, as it was difficult to obtain consistent performance on all keys (especially when pressing multiple keys at once), and sourcing sensor ICs was a pain.
 
