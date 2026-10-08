@@ -11,7 +11,7 @@ https://archive.org/details/hopeconf2020/20200730_0900_The_Pocket_Organ.mp4
 Most instruments we play today are designed around the manufacturing constrains of hundreds of years ago.
 Newer instruments are often electronic versions, with the same or similar user interface.
 
-Really novel instruments are either:
+Most really novel instruments are either:
 1. excellent, but expensive small-volume brand-name products that only a dedicated musician would buy (eg: the Roli Seaboard, the Dualo Du-Touch, the Hang steel drum, the Sylphyo electronic woodwind, Artiphon Instrument 1, Jamstik ...)
 2. cheap, but not good enough for a musician, lacking in depth and/or playability (eg: the roll-up keyboards, stylophone, Otamatone...)
 
