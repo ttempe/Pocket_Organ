@@ -1,4 +1,4 @@
-# Pocket Organ
+# Pocket Organist
 
 A modern musical instrument instrument that fits in your pocket
 
@@ -24,7 +24,7 @@ The aim of this project is to develop a real musical instrument that:
 * is so affordable that aspiring musicians would consider it
 * is designed to meet the expectations of real musicians (low latency, continuous expression, advanced features...)
 * is convenient and versatile, fitting in your pocket and playable over headphones (includes a synthetizer) or a MIDI workstation.
-* is widely available, ideally from multiple manufacturers, under the generic term "pocket organ".
+* is widely available, ideally from multiple manufacturers, under the generic term "pocket organist".
 
 See the general presentation: https://github.com/ttempe/Pocket_Organ/blob/master/Doc/2019-06-22%20Pocket%20Organ.pdf
 
@@ -88,7 +88,7 @@ In building the user interface, I'm trying to spare some fun for each level of p
 
 More advanced play (playing one note at a time, adding expression, more exotic chord shapes...) are all there waiting for you to build up your dexterity and coordination; each step takes one more finger to play.
 
-My ultimate goal is that the design of the instrument should progressively nudge the player on the first steps of his musical path. Each successive step should bring additional challenge, and more reward. After a few months, an assiduous player should feel confident to move to his second instrument. But if I've done my job right, the pocket organ will remain an instrument of choice.
+My ultimate goal is that the design of the instrument should progressively nudge the player on the first steps of his musical path. Each successive step should bring additional challenge, and more reward. After a few months, an assiduous player should feel confident to move to his second instrument. But if I've done my job right, the pocket organist will remain an instrument of choice.
 
 # Features
 
